@@ -5,6 +5,7 @@ export type SkillKind = "front" | "pierce" | "sweep" | "random" | "all" | "heal"
 export type Side = "player" | "enemy";
 export type FieldKind = "grass" | "snow" | "magma" | "forest" | "waste";
 export type BattleSpeed = 1 | 2 | 4;
+export type NavSide = "left" | "right";
 export type Screen =
   | "title"
   | "palace"
@@ -161,10 +162,15 @@ export interface SaveState {
   leaderId: string | null;
   captured: string[];
   battleSpeed: BattleSpeed;
+  navSide: NavSide;
 }
 
 export function clampBattleSpeed(n: unknown): BattleSpeed {
   return n === 4 || n === 2 ? n : 1;
+}
+
+export function clampNavSide(v: unknown): NavSide {
+  return v === "left" ? "left" : "right";
 }
 
 export function nextBattleSpeed(n: BattleSpeed): BattleSpeed {

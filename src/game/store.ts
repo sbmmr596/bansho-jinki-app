@@ -27,7 +27,7 @@ import type {
   SaveState,
   Screen,
 } from "./types";
-import { clampBattleSpeed } from "./types";
+import { clampBattleSpeed, clampNavSide, type NavSide } from "./types";
 
 interface GameStore extends SaveState {
   hydrated: boolean;
@@ -57,6 +57,7 @@ interface GameStore extends SaveState {
   setLeader: (cardId: string) => void;
   setSelected: (id: string | null) => void;
   setBattleSpeed: (n: BattleSpeed) => void;
+  setNavSide: (side: NavSide) => void;
   startBattle: () => void;
   finishBattle: (endOverride?: Extract<BattleEvent, { kind: "end" }>) => void;
   afterResult: () => void;
@@ -198,6 +199,7 @@ export const useGame = create<GameStore>((set, get) => ({
       leaderId: s.leaderId,
       captured: s.captured,
       battleSpeed: clampBattleSpeed(s.battleSpeed),
+      navSide: clampNavSide(s.navSide),
     });
   },
 
@@ -210,6 +212,11 @@ export const useGame = create<GameStore>((set, get) => ({
 
   setBattleSpeed: (battleSpeed) => {
     set({ battleSpeed });
+    get().persist();
+  },
+
+  setNavSide: (navSide) => {
+    set({ navSide: clampNavSide(navSide) });
     get().persist();
   },
 

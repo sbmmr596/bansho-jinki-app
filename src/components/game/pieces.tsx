@@ -430,6 +430,8 @@ export function Shell({
   nav?: Screen;
   wide?: boolean;
 }) {
+  const navSide = useGame((s) => s.navSide);
+  const sideNav = nav ? <SideNav screen={nav} side={navSide} /> : null;
   return (
     <div className="relative flex h-full min-h-0 flex-1 overflow-hidden text-fg">
       {bg ? (
@@ -441,6 +443,7 @@ export function Shell({
         />
       ) : null}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-bg/80 via-bg/70 to-bg/80" />
+      {navSide === "left" ? sideNav : null}
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col px-3 py-2">
         <header className="mb-2 flex h-9 shrink-0 items-center gap-2">
           {onBack ? (
@@ -459,12 +462,12 @@ export function Shell({
           {children}
         </div>
       </div>
-      {nav ? <SideNav screen={nav} /> : null}
+      {navSide === "right" ? sideNav : null}
     </div>
   );
 }
 
-export function SideNav({ screen }: { screen: string }) {
+export function SideNav({ screen, side = "right" }: { screen: string; side?: "left" | "right" }) {
   const setScreen = useGame((s) => s.setScreen);
   const setDebugOpen = useGame((s) => s.setDebugOpen);
   const items = [
@@ -475,15 +478,25 @@ export function SideNav({ screen }: { screen: string }) {
     { id: "collection" as const, label: "図鑑" },
     { id: "summon" as const, label: "召喚" },
   ];
+  const edgePad =
+    side === "left"
+      ? "pl-[max(0.25rem,env(safe-area-inset-left,0px))]"
+      : "pr-[max(0.25rem,env(safe-area-inset-right,0px))]";
   return (
-    <nav className="relative z-20 flex w-16 shrink-0 flex-col border-l border-border bg-ink/95 py-1">
+    <nav
+      className={cn(
+        "relative z-20 flex w-[4.75rem] shrink-0 flex-col bg-ink/95 py-1.5",
+        edgePad,
+        side === "left" ? "border-r border-border order-first" : "border-l border-border",
+      )}
+    >
       {items.map((it) => (
         <button
           key={it.id}
           type="button"
           onClick={() => setScreen(it.id)}
           className={cn(
-            "flex min-h-0 flex-1 flex-col items-center justify-center text-[10px] tracking-wide",
+            "flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-xs tracking-wide active:bg-raised/60",
             screen === it.id || (screen === "scout" && it.id === "map")
               ? "text-brass"
               : "text-muted",
@@ -499,7 +512,7 @@ export function SideNav({ screen }: { screen: string }) {
           e.stopPropagation();
           setDebugOpen(true);
         }}
-        className="debug-hit flex h-11 shrink-0 items-center justify-center text-[10px] text-faint"
+        className="debug-hit flex h-12 shrink-0 items-center justify-center text-[11px] text-faint active:bg-raised/60"
       >
         内部
       </button>
