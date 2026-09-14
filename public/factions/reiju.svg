@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+  <defs>
+    <linearGradient id="reiju-g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#dce8c8"/>
+      <stop offset="42%" stop-color="#4e8a52"/>
+      <stop offset="100%" stop-color="#142414"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="600" fill="url(#reiju-g)"/>
+  <circle cx="200" cy="200" r="112" fill="none" stroke="#e8f0d0" stroke-width="6" opacity="0.4"/>
+  <circle cx="200" cy="200" r="64" fill="#dce8c8" opacity="0.28"/>
+  <circle cx="226" cy="186" r="48" fill="#f4ead0" opacity="0.85"/>
+  <circle cx="242" cy="178" r="32" fill="#3a6a40"/>
+  <path d="M200 128 L236 196 L200 182 L164 196 Z" fill="#f4ead0"/>
+  <path d="M36 500 Q200 410 364 500 Q200 580 36 500" fill="#1e3a1c" opacity="0.4"/>
+</svg>

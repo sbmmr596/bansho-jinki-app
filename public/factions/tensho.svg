@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+  <defs>
+    <linearGradient id="tensho-g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#eef8fc"/>
+      <stop offset="38%" stop-color="#7eb8cc"/>
+      <stop offset="100%" stop-color="#163848"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="600" fill="url(#tensho-g)"/>
+  <g fill="#fff" opacity="0.28">
+    <ellipse cx="200" cy="168" rx="150" ry="36"/>
+    <ellipse cx="90" cy="128" rx="80" ry="24"/>
+    <ellipse cx="320" cy="120" rx="70" ry="22"/>
+    <ellipse cx="70" cy="430" rx="90" ry="26"/>
+    <ellipse cx="330" cy="460" rx="80" ry="22"/>
+  </g>
+  <path d="M200 96 C148 188 70 250 48 330 C130 280 164 230 200 150 C236 230 270 280 352 330 C330 250 252 188 200 96 Z" fill="#f4fbff" opacity="0.55"/>
+  <circle cx="200" cy="236" r="40" fill="#fff6c8" opacity="0.8"/>
+</svg>

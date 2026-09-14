@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+  <defs>
+    <linearGradient id="tekki-g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c4cad2"/>
+      <stop offset="48%" stop-color="#5a626c"/>
+      <stop offset="100%" stop-color="#1a1c20"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="600" fill="url(#tekki-g)"/>
+  <g fill="none" stroke="#e4e8ee" stroke-width="3" opacity="0.35">
+    <rect x="28" y="36" width="344" height="528" rx="10"/>
+    <rect x="58" y="72" width="284" height="456" rx="6"/>
+    <path d="M58 220 H342 M58 380 H342 M200 72 V528"/>
+  </g>
+  <g fill="#d5dbe2">
+    <circle cx="58" cy="72" r="7"/><circle cx="342" cy="72" r="7"/>
+    <circle cx="58" cy="528" r="7"/><circle cx="342" cy="528" r="7"/>
+  </g>
+  <path d="M200 168 L258 268 L200 368 L142 268 Z" fill="#e8edf2" opacity="0.7"/>
+  <path d="M200 204 L232 268 L200 332 L168 268 Z" fill="#3a4048"/>
+</svg>

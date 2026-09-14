@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+  <defs>
+    <radialGradient id="yukei-g" cx="50%" cy="32%" r="78%">
+      <stop offset="0%" stop-color="#b0a8d8"/>
+      <stop offset="50%" stop-color="#3c3868"/>
+      <stop offset="100%" stop-color="#100e18"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="600" fill="url(#yukei-g)"/>
+  <circle cx="200" cy="188" r="86" fill="none" stroke="#d8d0f4" stroke-width="5" opacity="0.4"/>
+  <path d="M236 140 A58 58 0 1 1 236 236 A42 42 0 1 0 236 140" fill="#ece6ff" opacity="0.78"/>
+  <circle cx="96" cy="430" r="52" fill="#b0a8d8" opacity="0.12"/>
+  <circle cx="318" cy="390" r="36" fill="#b0a8d8" opacity="0.14"/>
+  <circle cx="70" cy="160" r="10" fill="#ece6ff" opacity="0.35"/>
+  <circle cx="330" cy="120" r="7" fill="#ece6ff" opacity="0.3"/>
+  <path d="M30 520 Q200 440 370 520" fill="none" stroke="#c8c0e8" stroke-width="3" opacity="0.35"/>
+</svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+  <defs>
+    <radialGradient id="koryu-g" cx="50%" cy="38%" r="72%">
+      <stop offset="0%" stop-color="#f0d78a"/>
+      <stop offset="45%" stop-color="#b8943c"/>
+      <stop offset="100%" stop-color="#3a240c"/>
+    </radialGradient>
+    <pattern id="koryu-sc" width="28" height="16" patternUnits="userSpaceOnUse">
+      <path d="M0 8 Q7 0 14 8 Q21 16 28 8" fill="none" stroke="#f7e7b0" stroke-width="1.2" opacity="0.28"/>
+    </pattern>
+  </defs>
+  <rect width="400" height="600" fill="url(#koryu-g)"/>
+  <rect width="400" height="600" fill="url(#koryu-sc)"/>
+  <circle cx="200" cy="220" r="128" fill="none" stroke="#f3e6b8" stroke-width="7" opacity="0.45"/>
+  <circle cx="200" cy="220" r="98" fill="none" stroke="#fff4c8" stroke-width="2" opacity="0.55"/>
+  <path d="M200 128 L218 204 L298 204 L234 250 L258 326 L200 278 L142 326 L166 250 L102 204 L182 204 Z" fill="#fff4c8" opacity="0.88"/>
+  <path d="M40 530 Q200 430 360 530" fill="none" stroke="#e8c86a" stroke-width="10" opacity="0.28"/>
+</svg>
