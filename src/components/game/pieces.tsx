@@ -485,7 +485,7 @@ export function SideNav({ screen, side = "right" }: { screen: string; side?: "le
   return (
     <nav
       className={cn(
-        "relative z-20 flex w-[4.75rem] shrink-0 flex-col bg-ink/95 py-1.5",
+        "relative z-20 flex w-[4.75rem] shrink-0 flex-col bg-ink/95 py-1",
         edgePad,
         side === "left" ? "border-r border-border order-first" : "border-l border-border",
       )}
@@ -496,13 +496,13 @@ export function SideNav({ screen, side = "right" }: { screen: string; side?: "le
           type="button"
           onClick={() => setScreen(it.id)}
           className={cn(
-            "flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-xs tracking-wide active:bg-raised/60",
+            "flex min-h-10 flex-1 flex-col items-center justify-center px-0.5 text-[11px] leading-none tracking-wide whitespace-nowrap active:bg-raised/60",
             screen === it.id || (screen === "scout" && it.id === "map")
               ? "text-brass"
               : "text-muted",
           )}
         >
-          {it.label}
+          <span className="block whitespace-nowrap">{it.label}</span>
         </button>
       ))}
       <button
@@ -512,7 +512,7 @@ export function SideNav({ screen, side = "right" }: { screen: string; side?: "le
           e.stopPropagation();
           setDebugOpen(true);
         }}
-        className="debug-hit flex h-12 shrink-0 items-center justify-center text-[11px] text-faint active:bg-raised/60"
+        className="debug-hit flex h-10 shrink-0 items-center justify-center whitespace-nowrap text-[11px] leading-none text-faint active:bg-raised/60"
       >
         内部
       </button>
