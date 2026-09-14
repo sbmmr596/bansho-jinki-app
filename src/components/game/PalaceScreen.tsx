@@ -61,14 +61,14 @@ export function PalaceScreen() {
               進行を消す
             </button>
           </div>
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-faint">操作ボタン</span>
-            <div className="flex overflow-hidden rounded-md hairline">
+          <div className="flex shrink-0 flex-nowrap items-center gap-2 text-sm">
+            <span className="shrink-0 whitespace-nowrap text-faint">操作ボタン</span>
+            <div className="flex shrink-0 overflow-hidden rounded-md hairline">
               <button
                 type="button"
                 onClick={() => setNavSide("right")}
                 className={
-                  "h-11 min-w-16 px-3 " +
+                  "h-11 w-14 shrink-0 whitespace-nowrap px-2 " +
                   (navSide === "right" ? "bg-brass/25 text-brass" : "bg-surface text-muted")
                 }
               >
@@ -78,7 +78,7 @@ export function PalaceScreen() {
                 type="button"
                 onClick={() => setNavSide("left")}
                 className={
-                  "h-11 min-w-16 px-3 " +
+                  "h-11 w-14 shrink-0 whitespace-nowrap px-2 " +
                   (navSide === "left" ? "bg-brass/25 text-brass" : "bg-surface text-muted")
                 }
               >
