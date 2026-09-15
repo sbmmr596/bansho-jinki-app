@@ -331,13 +331,20 @@ export function CharSprite({
           <HpBar hp={hp} max={maxHp} />
         </div>
       ) : null}
+      <span
+        className={cn(
+          "unit-foot-shadow pointer-events-none absolute bottom-[1%] left-1/2 z-0 -translate-x-1/2 rounded-[50%]",
+          dimmed && "opacity-40",
+        )}
+        aria-hidden
+      />
       {src ? (
         <img
           src={src}
           alt={card.name}
           onError={onError}
           className={cn(
-            "h-[86%] w-auto max-w-full object-contain drop-shadow-[0_6px_6px_rgba(0,0,0,0.55)]",
+            "relative z-[1] h-[86%] w-auto max-w-full object-contain",
             flip && "-scale-x-100",
           )}
         />
