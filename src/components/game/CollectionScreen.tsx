@@ -22,7 +22,7 @@ export function CollectionScreen() {
     <Shell title="図鑑" extra={<GoldChip gold={gold} />} bg="/bg/palace.jpg" nav="collection" wide>
       <div className="flex h-full min-h-0 gap-3">
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="mb-2 flex shrink-0 gap-1 overflow-x-auto">
+          <div className="mb-2 flex shrink-0 gap-1 overflow-x-auto pb-0.5">
             <FilterChip active={faction === "all"} onClick={() => setFaction("all")}>
               全
             </FilterChip>
@@ -32,7 +32,7 @@ export function CollectionScreen() {
               </FilterChip>
             ))}
           </div>
-          <div className="grid auto-rows-min grid-cols-5 gap-1.5 overflow-y-auto sm:grid-cols-6">
+          <div className="grid auto-rows-min grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-5">
             {list.map((c) => {
               const have = owned[c.id];
               return (
@@ -44,7 +44,6 @@ export function CollectionScreen() {
                     dimmed={!have}
                     selected={focus === c.id}
                     rank={have?.rank}
-                    className="w-full"
                     onClick={() => setFocus(c.id)}
                   />
                 </div>
@@ -52,30 +51,39 @@ export function CollectionScreen() {
             })}
           </div>
         </div>
+
         {card ? (
-          <div className="panel flex w-[280px] shrink-0 gap-3 overflow-y-auto rounded-lg p-3">
-            <CardFace key={card.id} card={card} level={own?.level} rank={own?.rank} size="sm" />
-            <div className="min-w-0 flex-1 text-xs">
-              <p className="font-display text-sm text-fg">{card.name}</p>
-              <p className="text-muted">{card.title}</p>
-              <div className="mt-1 flex flex-wrap gap-1">
-                <TypeBadge type={card.type} />
-                <span className="text-muted">{FACTION_LABEL[card.faction]}</span>
-                <span className="text-brass">{card.rarity}</span>
+          <aside className="panel flex w-[300px] shrink-0 flex-col gap-3 overflow-y-auto rounded-lg p-3">
+            <div className="flex gap-3">
+              <CardFace key={card.id} card={card} level={own?.level} rank={own?.rank} size="md" />
+              <div className="flex min-w-0 flex-1 flex-col gap-1 text-xs">
+                <p className="font-display text-sm leading-snug text-fg">{card.name}</p>
+                <p className="leading-snug text-muted">{card.title}</p>
+                <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                  <TypeBadge type={card.type} />
+                  <span className="text-muted">{FACTION_LABEL[card.faction]}</span>
+                  <span className="text-brass">{card.rarity}</span>
+                </div>
+                {own ? (
+                  <p className="mt-auto text-muted">所持 {own.count}</p>
+                ) : (
+                  <p className="mt-auto text-faint">未所持</p>
+                )}
               </div>
+            </div>
+
+            <div className="border-t border-fg/10 pt-2">
               <StatRow card={card} level={own?.level ?? 1} rank={own?.rank ?? 0} />
-              {own ? (
-                <p className="mt-1 text-muted">所持 {own.count}</p>
-              ) : (
-                <p className="mt-1 text-faint">未所持</p>
-              )}
-              <p className="mt-2 text-fg">
-                {card.skill.name}
+            </div>
+
+            <div className="space-y-1.5 border-t border-fg/10 pt-2 text-xs">
+              <p className="text-fg">
+                <span className="font-medium">{card.skill.name}</span>
                 <span className="ml-1 text-muted">{card.skill.desc}</span>
               </p>
-              <p className="mt-1 text-muted">{FORMATIONS[card.formation]?.name}</p>
+              <p className="text-muted">陣形　{FORMATIONS[card.formation]?.name}</p>
             </div>
-          </div>
+          </aside>
         ) : null}
       </div>
     </Shell>
