@@ -201,7 +201,7 @@ export function CardFace({
       />
       <p
         className={cn(
-          "card-layer-name pointer-events-none absolute inset-x-[1%] top-[1.5%] z-[3] flex w-[98%] items-center gap-0 font-display leading-none",
+          "card-layer-name pointer-events-none absolute inset-x-[1%] top-[1.5%] z-[1] flex w-[98%] items-center gap-0 font-display leading-none",
           nameChars.length <= 2 ? "justify-center" : "justify-between",
           compact ? "text-[1.1em]" : "text-[1.4em]",
         )}
@@ -214,22 +214,24 @@ export function CardFace({
         ))}
       </p>
       {!src ? (
-        <Crest card={card} />
+        <div className="pointer-events-none absolute inset-0 z-[2]">
+          <Crest card={card} />
+        </div>
       ) : (
         <img
           src={src}
           alt=""
           onError={onError}
-          className="card-layer-char pointer-events-none absolute inset-x-0 bottom-[16%] top-[16%] mx-auto w-full object-contain object-bottom"
+          className="card-layer-char pointer-events-none absolute inset-x-0 bottom-[16%] top-[16%] z-[2] mx-auto w-full object-contain object-bottom"
         />
       )}
-      <div className="card-layer-frame pointer-events-none absolute inset-0 rounded-[inherit]" />
+      <div className="card-layer-frame pointer-events-none absolute inset-0 z-[2] rounded-[inherit]" />
       {leader ? (
-        <span className="card-leader pointer-events-none absolute inset-x-1 bottom-[18%] z-[4] py-px text-center text-[8px]">
+        <span className="card-leader pointer-events-none absolute inset-x-1 bottom-[18%] z-[3] py-px text-center text-[8px]">
           LEADER
         </span>
       ) : null}
-      <div className="card-foot pointer-events-none absolute inset-x-0 bottom-0 z-[3] flex items-end justify-between gap-1 px-[2%] pb-[2.5%] pt-4">
+      <div className="card-foot pointer-events-none absolute inset-x-0 bottom-0 z-[4] flex items-end justify-between gap-1 px-[2%] pb-[2.5%] pt-4">
         <span
           className={cn(
             "card-hex card-type-badge inline-flex shrink-0 items-center justify-center font-semibold leading-none",
@@ -447,10 +449,10 @@ export function Shell({
           src={bg}
           alt=""
           crossOrigin="anonymous"
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-60"
         />
       ) : null}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-bg/80 via-bg/70 to-bg/80" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-bg/50 via-bg/30 to-bg/50" />
       {navSide === "left" ? sideNav : null}
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col px-3 py-2">
         <header className="mb-2 flex h-9 shrink-0 items-center gap-2">
