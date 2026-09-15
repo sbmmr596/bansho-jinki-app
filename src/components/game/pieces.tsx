@@ -199,8 +199,8 @@ export function CardFace({
       />
       <p
         className={cn(
-          "card-layer-name pointer-events-none absolute inset-x-0 top-[3%] px-0.5 text-center font-display leading-none",
-          compact ? "text-[0.65em]" : "text-[0.85em]",
+          "card-layer-name pointer-events-none absolute inset-x-[4%] top-[2.5%] z-[3] px-0.5 text-center font-display leading-tight tracking-wide",
+          compact ? "text-[0.78em]" : "text-[1.05em]",
         )}
       >
         {compact ? shortName : card.name}
@@ -221,30 +221,30 @@ export function CardFace({
           LEADER
         </span>
       ) : null}
-      <div className="card-foot pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-0.5 px-0.5 pb-0.5 pt-3">
+      <div className="card-foot pointer-events-none absolute inset-x-0 bottom-0 z-[3] flex items-end justify-between gap-0.5 px-[3%] pb-[2%] pt-3">
         <span
           className={cn(
-            "card-hex inline-flex items-center justify-center font-medium",
-            compact ? "h-4 w-5 text-[8px]" : "h-5 w-6 text-[9px]",
+            "card-hex card-type-badge inline-flex shrink-0 items-center justify-center font-semibold leading-none",
+            compact ? "h-[1.55em] w-[1.7em] text-[0.95em]" : "h-[1.65em] w-[1.85em] text-[1.05em]",
             TYPE_CLASS[card.type],
           )}
         >
           {TYPE_LABEL[card.type]}
         </span>
         {!compact && level ? (
-          <span className="min-w-0 flex-1 truncate text-center text-[8px] text-fg/90 tabular">
+          <span className="card-layer-name min-w-0 flex-1 truncate text-center text-[0.75em] tabular">
             Lv.{lv}
             {rank ? <span className="text-brass">+{rank}</span> : null}
           </span>
         ) : rank ? (
-          <span className="min-w-0 flex-1 truncate text-center text-[8px] text-brass tabular">+{rank}</span>
+          <span className="card-layer-name min-w-0 flex-1 truncate text-center text-[0.75em] text-brass tabular">+{rank}</span>
         ) : (
           <span />
         )}
         <span
           className={cn(
-            "card-hex card-cost-num inline-flex items-center justify-center bg-ink/70 font-medium tabular",
-            compact ? "h-4 w-5 text-[8px]" : "h-5 w-6 text-[9px]",
+            "card-hex card-cost-num inline-flex shrink-0 items-center justify-center bg-ink/75 font-semibold leading-none tabular",
+            compact ? "h-[1.55em] w-[1.7em] text-[0.95em]" : "h-[1.65em] w-[1.85em] text-[1.05em]",
           )}
         >
           {card.cost}

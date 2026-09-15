@@ -310,19 +310,26 @@ body {
 }
 
 
-/* Card text outlines — keep names/cost readable on busy art */
+/* Card name / type / cost — Shinra-like balance + outline */
 .card-layer-name {
   z-index: 3;
   color: #f4ebe0;
-  -webkit-text-stroke: 0.14em #0b0907;
+  -webkit-text-stroke: 0.11em #0b0907;
   paint-order: stroke fill;
   text-shadow:
-    0 0.06em 0.08em rgb(0 0 0 / 0.55),
-    0 0 0.12em rgb(0 0 0 / 0.35);
+    0 0.05em 0.07em rgb(0 0 0 / 0.55),
+    0 0 0.1em rgb(0 0 0 / 0.3);
+}
+.card-hex {
+  clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+  box-shadow: 0 0 0 1px rgb(244 235 224 / 0.35);
+}
+.card-type-badge,
+.card-cost-num {
+  -webkit-text-stroke: 0.12em #0b0907;
+  paint-order: stroke fill;
+  text-shadow: 0 0.05em 0.06em rgb(0 0 0 / 0.45);
 }
 .card-cost-num {
   color: #f4ebe0;
-  -webkit-text-stroke: 0.16em #0b0907;
-  paint-order: stroke fill;
-  text-shadow: 0 0.06em 0.08em rgb(0 0 0 / 0.5);
 }
