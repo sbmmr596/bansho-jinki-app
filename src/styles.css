@@ -308,3 +308,21 @@ body {
   object-fit: cover;
   object-position: 50% 8%;
 }
+
+
+/* Card text outlines — keep names/cost readable on busy art */
+.card-layer-name {
+  z-index: 3;
+  color: #f4ebe0;
+  -webkit-text-stroke: 0.14em #0b0907;
+  paint-order: stroke fill;
+  text-shadow:
+    0 0.06em 0.08em rgb(0 0 0 / 0.55),
+    0 0 0.12em rgb(0 0 0 / 0.35);
+}
+.card-cost-num {
+  color: #f4ebe0;
+  -webkit-text-stroke: 0.16em #0b0907;
+  paint-order: stroke fill;
+  text-shadow: 0 0.06em 0.08em rgb(0 0 0 / 0.5);
+}
