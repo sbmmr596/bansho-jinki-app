@@ -201,7 +201,7 @@ export function CardFace({
       />
       <p
         className={cn(
-          "card-layer-name pointer-events-none absolute inset-x-[1%] top-[1.5%] z-[1] flex w-[98%] items-center gap-0 font-display leading-none",
+          "card-layer-name pointer-events-none absolute inset-x-[1%] top-[1.5%] z-[1] flex w-[98%] items-center gap-0 leading-none",
           nameChars.length <= 2 ? "justify-center" : "justify-between",
           compact ? "text-[1.1em]" : "text-[1.4em]",
         )}
@@ -242,12 +242,12 @@ export function CardFace({
           {TYPE_LABEL[card.type]}
         </span>
         {!compact && level ? (
-          <span className="card-layer-name min-w-0 flex-1 truncate text-center text-[0.9em] tabular">
+          <span className="card-text-outline min-w-0 flex-1 truncate text-center text-[0.9em] tabular">
             Lv.{lv}
             {rank ? <span className="text-brass">+{rank}</span> : null}
           </span>
         ) : rank ? (
-          <span className="card-layer-name min-w-0 flex-1 truncate text-center text-[0.9em] text-brass tabular">+{rank}</span>
+          <span className="card-text-outline min-w-0 flex-1 truncate text-center text-[0.9em] text-brass tabular">+{rank}</span>
         ) : (
           <span />
         )}

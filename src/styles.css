@@ -10,6 +10,7 @@
 @theme {
   --font-sans: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", sans-serif;
   --font-display: "Shippori Mincho", "Hiragino Mincho ProN", serif;
+  --font-card-name: "Dela Gothic One", "Zen Kaku Gothic New", "Hiragino Sans", sans-serif;
   --color-bg: #0b0907;
   --color-ink: #16120e;
   --color-surface: #1f1a14;
@@ -310,17 +311,29 @@ body {
 }
 
 
-/* Card name / type / cost — Shinra-like balance + outline */
+/* Card name — ultra-bold gothic + fat outline (Shinra-like) */
 .card-layer-name {
-  color: #f4ebe0;
-  -webkit-text-stroke: 0.1em #0b0907;
+  font-family: var(--font-card-name);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: #fff6ea;
+  -webkit-text-stroke: 0.22em #120c08;
   paint-order: stroke fill;
   text-shadow:
-    0 0.05em 0.07em rgb(0 0 0 / 0.55),
-    0 0 0.1em rgb(0 0 0 / 0.3);
+    0.05em 0.05em 0 #120c08,
+    -0.05em -0.05em 0 #120c08,
+    0.05em -0.05em 0 #120c08,
+    -0.05em 0.05em 0 #120c08,
+    0 0.08em 0.12em rgb(0 0 0 / 0.55);
 }
 .card-layer-name > span {
   display: inline-block;
+}
+.card-text-outline {
+  color: #f4ebe0;
+  -webkit-text-stroke: 0.1em #0b0907;
+  paint-order: stroke fill;
+  text-shadow: 0 0.05em 0.07em rgb(0 0 0 / 0.5);
 }
 .card-hex {
   clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
