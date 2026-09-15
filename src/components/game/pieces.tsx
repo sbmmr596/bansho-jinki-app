@@ -243,7 +243,7 @@ export function CardFace({
         )}
         <span
           className={cn(
-            "card-hex inline-flex items-center justify-center bg-card-cost font-medium text-bg tabular",
+            "card-hex card-cost-num inline-flex items-center justify-center bg-ink/70 font-medium tabular",
             compact ? "h-4 w-5 text-[8px]" : "h-5 w-6 text-[9px]",
           )}
         >
