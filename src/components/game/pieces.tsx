@@ -153,6 +153,8 @@ export function CardFace({
   const Tag = onClick ? "button" : "div";
   const shortName = card.name.replace(/^.+の/, "").replace(/^煌龍帝|^鉄騎将軍|^天翔姫|^紅蓮の|^滅刃王|^霊獣王|^征嵐|^金鱗姫/, "");
   const compact = size === "mini" || size === "xs";
+  const nameLabel = compact ? shortName : card.name;
+  const nameChars = Array.from(nameLabel);
   const lv = level ?? 1;
   const clearHold = () => window.clearTimeout(hold.current);
   const startHold = () => {
@@ -197,13 +199,19 @@ export function CardFace({
         alt=""
         className="card-layer-bg pointer-events-none absolute inset-0 h-full w-full object-cover"
       />
-      <p
+            <p
         className={cn(
-          "card-layer-name pointer-events-none absolute inset-x-[4%] top-[2.5%] z-[3] px-0.5 text-center font-display leading-tight tracking-wide",
-          compact ? "text-[0.78em]" : "text-[1.05em]",
+          "card-layer-name pointer-events-none absolute inset-x-[1%] top-[1.5%] z-[3] flex w-[98%] items-center gap-0 font-display leading-none",
+          nameChars.length <= 2 ? "justify-center" : "justify-between",
+          compact ? "text-[1.1em]" : "text-[1.4em]",
         )}
+        aria-label={nameLabel}
       >
-        {compact ? shortName : card.name}
+        {nameChars.map((ch, i) => (
+          <span key={`${ch}-${i}`} className="shrink-0">
+            {ch === " " ? " " : ch}
+          </span>
+        ))}
       </p>
       {!src ? (
         <Crest card={card} />
