@@ -314,11 +314,14 @@ body {
 .card-layer-name {
   z-index: 3;
   color: #f4ebe0;
-  -webkit-text-stroke: 0.11em #0b0907;
+  -webkit-text-stroke: 0.1em #0b0907;
   paint-order: stroke fill;
   text-shadow:
     0 0.05em 0.07em rgb(0 0 0 / 0.55),
     0 0 0.1em rgb(0 0 0 / 0.3);
+}
+.card-layer-name > span {
+  display: inline-block;
 }
 .card-hex {
   clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
