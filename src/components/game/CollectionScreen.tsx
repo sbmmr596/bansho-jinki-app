@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { CARDS, FACTION_LABEL, FORMATIONS } from "@/game/data";
+import { CARDS, FACTION_LABEL, FORMATIONS, TYPE_LABEL } from "@/game/data";
 import type { Faction } from "@/game/types";
 import { useGame } from "@/game/store";
 import { CardFace, GoldChip, Shell, StatRow, TypeBadge } from "./pieces";
+import { cn } from "@/lib/utils";
 
 const FACTIONS: Faction[] = ["koryu", "tekki", "tensho", "metsujin", "reiju", "yukei"];
 
@@ -17,6 +18,7 @@ export function CollectionScreen() {
   );
   const card = focus ? CARDS.find((c) => c.id === focus) : null;
   const own = card ? owned[card.id] : null;
+  const form = card ? FORMATIONS[card.formation] : null;
 
   return (
     <Shell title="図鑑" extra={<GoldChip gold={gold} />} bg="/bg/palace.jpg" nav="collection" wide>
@@ -53,7 +55,7 @@ export function CollectionScreen() {
         </div>
 
         {card ? (
-          <aside className="panel flex w-[300px] shrink-0 flex-col gap-3 overflow-y-auto rounded-lg p-3">
+          <aside className="panel flex w-[320px] shrink-0 flex-col gap-2.5 overflow-y-auto rounded-lg p-3">
             <div className="flex gap-3">
               <CardFace key={card.id} card={card} level={own?.level} rank={own?.rank} size="md" />
               <div className="flex min-w-0 flex-1 flex-col gap-1 text-xs">
@@ -64,6 +66,9 @@ export function CollectionScreen() {
                   <span className="text-muted">{FACTION_LABEL[card.faction]}</span>
                   <span className="text-brass">{card.rarity}</span>
                 </div>
+                <p className="text-[11px] text-muted">
+                  コスト <span className="tabular text-fg">{card.cost}</span>
+                </p>
                 {own ? (
                   <p className="mt-auto text-muted">所持 {own.count}</p>
                 ) : (
@@ -76,18 +81,68 @@ export function CollectionScreen() {
               <StatRow card={card} level={own?.level ?? 1} rank={own?.rank ?? 0} />
             </div>
 
-            <div className="space-y-1.5 border-t border-fg/10 pt-2 text-xs">
-              <p className="text-fg">
-                <span className="font-medium">{card.skill.name}</span>
-                <span className="ml-1 text-muted">{card.skill.desc}</span>
-              </p>
-              <p className="text-muted">陣形　{FORMATIONS[card.formation]?.name}</p>
+            {/* Fill remaining panel height like original detail: formation + skill */}
+            <div className="flex min-h-0 flex-1 flex-col gap-2 border-t border-fg/10 pt-2">
+              <div className="flex items-start gap-2.5 rounded-md bg-raised/50 p-2 hairline">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] tracking-wide text-faint">リーダー陣形</p>
+                  <p className="font-display text-sm leading-snug text-fg">{form?.name ?? "—"}</p>
+                  <p className="mt-0.5 text-[11px] leading-snug text-muted">{form?.desc}</p>
+                </div>
+                {form ? <FormationPreview slots={form.slots} /> : null}
+              </div>
+
+              <div className="flex flex-1 flex-col rounded-md bg-raised/50 p-2 hairline">
+                <p className="text-[10px] tracking-wide text-faint">奥義</p>
+                <p className="font-display text-sm text-fg">{card.skill.name}</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted">{card.skill.desc}</p>
+                <p className="mt-auto pt-2 text-[10px] text-brass">
+                  属性 {TYPE_LABEL[card.type]}　／　種別 {skillKindLabel(card.skill.kind)}
+                </p>
+              </div>
             </div>
           </aside>
         ) : null}
       </div>
     </Shell>
   );
+}
+
+function FormationPreview({ slots }: { slots: boolean[] }) {
+  return (
+    <div
+      className="grid h-[4.5rem] w-[4.5rem] shrink-0 grid-cols-3 grid-rows-3 gap-0.5"
+      aria-hidden
+    >
+      {[0, 1, 2].map((row) =>
+        [2, 1, 0].map((col) => {
+          const slot = row * 3 + col;
+          const open = slots[slot];
+          return (
+            <div
+              key={slot}
+              className={cn(
+                "rounded-[2px]",
+                open ? "bg-brass/80" : "bg-bg/70 ring-1 ring-fg/10",
+              )}
+            />
+          );
+        }),
+      )}
+    </div>
+  );
+}
+
+function skillKindLabel(kind: string) {
+  const map: Record<string, string> = {
+    front: "正面",
+    pierce: "貫通",
+    sweep: "薙ぎ",
+    all: "全体",
+    random: "乱撃",
+    heal: "回復",
+  };
+  return map[kind] ?? kind;
 }
 
 function FilterChip({
