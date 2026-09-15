@@ -312,7 +312,6 @@ body {
 
 /* Card name / type / cost — Shinra-like balance + outline */
 .card-layer-name {
-  z-index: 3;
   color: #f4ebe0;
   -webkit-text-stroke: 0.1em #0b0907;
   paint-order: stroke fill;
