@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { CARD_BY_ID } from "@/game/data";
 import { useGame } from "@/game/store";
+import { requestGameDisplay } from "@/lib/display-mode";
 import { CardFace, GhostButton, PrimaryButton } from "./pieces";
 
 const FEATURED = ["kaien", "azuha", "fenrir"] as const;
@@ -27,6 +28,11 @@ export function TitleScreen() {
     }
   };
 
+  const start = (fn: () => void) => () => {
+    void requestGameDisplay(document.querySelector(".game-frame") as HTMLElement | null);
+    fn();
+  };
+
   return (
     <div className="relative flex h-full min-h-0 w-full overflow-hidden text-fg">
       <img
@@ -48,6 +54,9 @@ export function TitleScreen() {
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
             カードを集め、陣を敷き、地を取れ。属性の利を読んで覇を決する。
           </p>
+          <p className="mt-2 max-w-sm text-[11px] leading-relaxed text-faint">
+            スマホは横向き推奨。ホーム画面追加（PWA）だと横固定・全画面に近づきます。
+          </p>
         </div>
         <div className="flex shrink-0 items-end gap-2">
           {FEATURED.map((id) => {
@@ -57,16 +66,16 @@ export function TitleScreen() {
         </div>
         <div className="flex w-44 shrink-0 flex-col gap-2">
           {hasExisting ? (
-            <PrimaryButton onClick={continueGame} className="h-11">
+            <PrimaryButton onClick={start(continueGame)} className="h-11">
               つづきから
             </PrimaryButton>
           ) : null}
           {hasExisting ? (
-            <GhostButton onClick={newGame} className="h-11">
+            <GhostButton onClick={start(newGame)} className="h-11">
               はじめから
             </GhostButton>
           ) : (
-            <PrimaryButton onClick={newGame} className="h-11">
+            <PrimaryButton onClick={start(newGame)} className="h-11">
               はじめる
             </PrimaryButton>
           )}

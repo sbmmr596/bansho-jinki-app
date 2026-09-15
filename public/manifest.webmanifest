@@ -1,0 +1,13 @@
+{
+  "name": "万象陣記",
+  "short_name": "万象陣記",
+  "description": "カードを集め、陣を敷き、地を取れ。",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0b0907",
+  "theme_color": "#0b0907",
+  "icons": [
+    { "src": "/__grok/icon-180.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
