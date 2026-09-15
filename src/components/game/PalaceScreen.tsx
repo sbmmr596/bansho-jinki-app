@@ -66,16 +66,6 @@ export function PalaceScreen() {
             <div className="flex shrink-0 overflow-hidden rounded-md hairline">
               <button
                 type="button"
-                onClick={() => setNavSide("right")}
-                className={
-                  "h-11 w-14 shrink-0 whitespace-nowrap px-2 " +
-                  (navSide === "right" ? "bg-brass/25 text-brass" : "bg-surface text-muted")
-                }
-              >
-                右
-              </button>
-              <button
-                type="button"
                 onClick={() => setNavSide("left")}
                 className={
                   "h-11 w-14 shrink-0 whitespace-nowrap px-2 " +
@@ -83,6 +73,16 @@ export function PalaceScreen() {
                 }
               >
                 左
+              </button>
+              <button
+                type="button"
+                onClick={() => setNavSide("right")}
+                className={
+                  "h-11 w-14 shrink-0 whitespace-nowrap px-2 " +
+                  (navSide === "right" ? "bg-brass/25 text-brass" : "bg-surface text-muted")
+                }
+              >
+                右
               </button>
             </div>
           </div>
