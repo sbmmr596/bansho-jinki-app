@@ -325,11 +325,13 @@ body {
 }
 .card-hex {
   clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
-  box-shadow: 0 0 0 1px rgb(244 235 224 / 0.35);
+  box-shadow:
+    0 0 0 1.5px rgb(244 235 224 / 0.55),
+    0 1px 2px rgb(0 0 0 / 0.45);
 }
 .card-type-badge,
 .card-cost-num {
-  -webkit-text-stroke: 0.12em #0b0907;
+  -webkit-text-stroke: 0.1em #0b0907;
   paint-order: stroke fill;
   text-shadow: 0 0.05em 0.06em rgb(0 0 0 / 0.45);
 }

@@ -199,7 +199,7 @@ export function CardFace({
         alt=""
         className="card-layer-bg pointer-events-none absolute inset-0 h-full w-full object-cover"
       />
-            <p
+      <p
         className={cn(
           "card-layer-name pointer-events-none absolute inset-x-[1%] top-[1.5%] z-[3] flex w-[98%] items-center gap-0 font-display leading-none",
           nameChars.length <= 2 ? "justify-center" : "justify-between",
@@ -229,30 +229,30 @@ export function CardFace({
           LEADER
         </span>
       ) : null}
-      <div className="card-foot pointer-events-none absolute inset-x-0 bottom-0 z-[3] flex items-end justify-between gap-0.5 px-[3%] pb-[2%] pt-3">
+      <div className="card-foot pointer-events-none absolute inset-x-0 bottom-0 z-[3] flex items-end justify-between gap-1 px-[2%] pb-[2.5%] pt-4">
         <span
           className={cn(
             "card-hex card-type-badge inline-flex shrink-0 items-center justify-center font-semibold leading-none",
-            compact ? "h-[1.55em] w-[1.7em] text-[0.95em]" : "h-[1.65em] w-[1.85em] text-[1.05em]",
+            compact ? "h-[2em] w-[2.2em] text-[1.2em]" : "h-[2.2em] w-[2.45em] text-[1.35em]",
             TYPE_CLASS[card.type],
           )}
         >
           {TYPE_LABEL[card.type]}
         </span>
         {!compact && level ? (
-          <span className="card-layer-name min-w-0 flex-1 truncate text-center text-[0.75em] tabular">
+          <span className="card-layer-name min-w-0 flex-1 truncate text-center text-[0.9em] tabular">
             Lv.{lv}
             {rank ? <span className="text-brass">+{rank}</span> : null}
           </span>
         ) : rank ? (
-          <span className="card-layer-name min-w-0 flex-1 truncate text-center text-[0.75em] text-brass tabular">+{rank}</span>
+          <span className="card-layer-name min-w-0 flex-1 truncate text-center text-[0.9em] text-brass tabular">+{rank}</span>
         ) : (
           <span />
         )}
         <span
           className={cn(
             "card-hex card-cost-num inline-flex shrink-0 items-center justify-center bg-ink/75 font-semibold leading-none tabular",
-            compact ? "h-[1.55em] w-[1.7em] text-[0.95em]" : "h-[1.65em] w-[1.85em] text-[1.05em]",
+            compact ? "h-[2em] w-[2.2em] text-[1.2em]" : "h-[2.2em] w-[2.45em] text-[1.35em]",
           )}
         >
           {card.cost}
