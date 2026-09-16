@@ -357,3 +357,87 @@ body {
   height: 11%;
   background: radial-gradient(ellipse at center, rgb(0 0 0 / 0.72) 0%, rgb(0 0 0 / 0.4) 42%, rgb(0 0 0 / 0.12) 68%, transparent 78%);
 }
+
+/* Rarity prism / holo sweep — plays once on first mount (iteration-count: 1) */
+@keyframes card-prism-sweep {
+  0% {
+    transform: translateX(-130%) skewX(-18deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  78% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(130%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+.card-prism {
+  overflow: hidden;
+  border-radius: inherit;
+}
+.card-prism::before {
+  content: "";
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: 0;
+  width: 55%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.05) 28%,
+    rgb(255 120 200 / 0.22) 40%,
+    rgb(255 230 120 / 0.28) 46%,
+    rgb(120 255 220 / 0.28) 52%,
+    rgb(140 160 255 / 0.22) 58%,
+    rgb(255 255 255 / 0.06) 70%,
+    transparent 100%
+  );
+  mix-blend-mode: screen;
+  animation: card-prism-sweep 1.15s ease-out 1 forwards;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+.card-prism-r::before {
+  width: 42%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.08) 35%,
+    rgb(200 220 255 / 0.18) 48%,
+    rgb(255 255 255 / 0.08) 62%,
+    transparent 100%
+  );
+  animation-duration: 0.95s;
+  opacity: 0.75;
+}
+.card-prism-sr::before {
+  width: 58%;
+  animation-duration: 1.2s;
+}
+.card-prism-ur::before {
+  width: 68%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.12) 22%,
+    rgb(255 80 180 / 0.35) 36%,
+    rgb(255 220 80 / 0.4) 44%,
+    rgb(80 255 200 / 0.4) 52%,
+    rgb(120 140 255 / 0.35) 60%,
+    rgb(255 255 255 / 0.14) 72%,
+    transparent 100%
+  );
+  animation-duration: 1.35s;
+  filter: saturate(1.25);
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-prism::before {
+    animation: none;
+    opacity: 0;
+  }
+}

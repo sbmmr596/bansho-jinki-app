@@ -1,19 +1,52 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" fill="none">
   <defs>
-    <linearGradient id="tensho-g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#eef8fc"/>
-      <stop offset="38%" stop-color="#7eb8cc"/>
-      <stop offset="100%" stop-color="#163848"/>
+    <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4fbff"/>
+      <stop offset="22%" stop-color="#a8d8ec"/>
+      <stop offset="55%" stop-color="#4a90a8"/>
+      <stop offset="100%" stop-color="#0e2838"/>
     </linearGradient>
+    <linearGradient id="sf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff"/>
+      <stop offset="50%" stop-color="#7eb8cc"/>
+      <stop offset="100%" stop-color="#c8e8f4"/>
+    </linearGradient>
+    <radialGradient id="ssun" cx="50%" cy="40%" r="30%">
+      <stop offset="0%" stop-color="#fff8d0" stop-opacity=".9"/>
+      <stop offset="60%" stop-color="#ffe090" stop-opacity=".35"/>
+      <stop offset="100%" stop-color="#ffe090" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="sv" cx="50%" cy="82%" r="48%">
+      <stop offset="0%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity=".4"/>
+    </radialGradient>
   </defs>
-  <rect width="400" height="600" fill="url(#tensho-g)"/>
-  <g fill="#fff" opacity="0.28">
-    <ellipse cx="200" cy="168" rx="150" ry="36"/>
-    <ellipse cx="90" cy="128" rx="80" ry="24"/>
-    <ellipse cx="320" cy="120" rx="70" ry="22"/>
-    <ellipse cx="70" cy="430" rx="90" ry="26"/>
-    <ellipse cx="330" cy="460" rx="80" ry="22"/>
+  <rect width="400" height="600" fill="url(#sg)"/>
+  <rect width="400" height="600" fill="url(#ssun)"/>
+  <rect width="400" height="600" fill="url(#sv)"/>
+  <!-- clouds soft -->
+  <g fill="#fff" opacity=".2">
+    <ellipse cx="200" cy="150" rx="140" ry="28"/>
+    <ellipse cx="80" cy="110" rx="70" ry="18"/>
+    <ellipse cx="330" cy="100" rx="60" ry="16"/>
+    <ellipse cx="60" cy="460" rx="80" ry="20"/>
+    <ellipse cx="340" cy="480" rx="70" ry="18"/>
   </g>
-  <path d="M200 96 C148 188 70 250 48 330 C130 280 164 230 200 150 C236 230 270 280 352 330 C330 250 252 188 200 96 Z" fill="#f4fbff" opacity="0.55"/>
-  <circle cx="200" cy="236" r="40" fill="#fff6c8" opacity="0.8"/>
+  <rect x="10" y="10" width="380" height="580" rx="16" stroke="url(#sf)" stroke-width="3" opacity=".8"/>
+  <rect x="22" y="22" width="356" height="556" rx="12" stroke="#e8f6fc" stroke-width="1.2" opacity=".4"/>
+  <!-- corner feathers -->
+  <g stroke="#e8f6fc" stroke-width="1.4" opacity=".5">
+    <path d="M36 64 C56 48 72 56 78 78 M364 64 C344 48 328 56 322 78"/>
+    <path d="M36 536 C56 552 72 544 78 522 M364 536 C344 552 328 544 322 522"/>
+  </g>
+  <!-- emblem: wings + sun -->
+  <g opacity=".48" transform="translate(200 200)">
+    <circle r="36" fill="#fff6c8" opacity=".85"/>
+    <circle r="22" fill="#ffe8a0" opacity=".5"/>
+    <path d="M-36 8 C-90 40 -130 90 -140 140 C-90 100 -55 55 -28 28 Z" fill="#f4fbff" opacity=".55"/>
+    <path d="M36 8 C90 40 130 90 140 140 C90 100 55 55 28 28 Z" fill="#f4fbff" opacity=".55"/>
+    <path d="M-28-20 C-70-10 -100 20 -110 55 C-70 30 -45 5 -20-8 Z" fill="#fff" opacity=".35"/>
+    <path d="M28-20 C70-10 100 20 110 55 C70 30 45 5 20-8 Z" fill="#fff" opacity=".35"/>
+  </g>
+  <path d="M40 555 Q200 515 360 555" stroke="#a8d8ec" stroke-width="3" opacity=".3"/>
 </svg>

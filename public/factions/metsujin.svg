@@ -1,15 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" fill="none">
   <defs>
-    <radialGradient id="metsujin-g" cx="50%" cy="40%" r="78%">
-      <stop offset="0%" stop-color="#e87848"/>
-      <stop offset="48%" stop-color="#8a2018"/>
-      <stop offset="100%" stop-color="#140606"/>
+    <radialGradient id="mg" cx="50%" cy="38%" r="80%">
+      <stop offset="0%" stop-color="#f09058"/>
+      <stop offset="32%" stop-color="#c03820"/>
+      <stop offset="68%" stop-color="#5a1010"/>
+      <stop offset="100%" stop-color="#0e0404"/>
+    </radialGradient>
+    <linearGradient id="mf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffd0a0"/>
+      <stop offset="50%" stop-color="#e06040"/>
+      <stop offset="100%" stop-color="#8a2018"/>
+    </linearGradient>
+    <pattern id="mp" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M14 0 L28 14 L14 28 L0 14 Z" stroke="#ffb080" stroke-width=".7" opacity=".1"/>
+    </pattern>
+    <radialGradient id="mv" cx="50%" cy="80%" r="52%">
+      <stop offset="0%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity=".5"/>
     </radialGradient>
   </defs>
-  <rect width="400" height="600" fill="url(#metsujin-g)"/>
-  <path d="M60 560 Q110 300 200 120 Q290 300 340 560" fill="#f0a060" opacity="0.22"/>
-  <path d="M120 560 Q160 340 200 160 Q240 340 280 560" fill="#ffd0a0" opacity="0.2"/>
-  <path d="M200 110 L228 310 L200 500 L172 310 Z" fill="#f8d8a8" opacity="0.55"/>
-  <path d="M70 250 L200 288 L330 250 L200 340 Z" fill="#c43a2a" opacity="0.55"/>
-  <path d="M86 210 L200 246 L314 210" fill="none" stroke="#ffd8a0" stroke-width="4" opacity="0.45"/>
+  <rect width="400" height="600" fill="url(#mg)"/>
+  <rect width="400" height="600" fill="url(#mp)"/>
+  <path d="M50 580 Q110 280 200 80 Q290 280 350 580" fill="#f0a060" opacity=".18"/>
+  <path d="M110 580 Q160 320 200 120 Q240 320 290 580" fill="#ffd0a0" opacity=".12"/>
+  <rect width="400" height="600" fill="url(#mv)"/>
+  <rect x="10" y="10" width="380" height="580" rx="10" stroke="url(#mf)" stroke-width="3.2" opacity=".88"/>
+  <rect x="22" y="22" width="356" height="556" rx="6" stroke="#ffd0a0" stroke-width="1.2" opacity=".38"/>
+  <!-- corner blades -->
+  <g stroke="#ffd8a0" stroke-width="1.8" opacity=".55">
+    <path d="M42 58 L70 42 L78 70 M358 58 L330 42 L322 70"/>
+    <path d="M42 542 L70 558 L78 530 M358 542 L330 558 L322 530"/>
+  </g>
+  <!-- emblem: crossed blades + flame -->
+  <g opacity=".5" transform="translate(200 215)">
+    <circle r="108" stroke="#ffd0a0" stroke-width="4" opacity=".7"/>
+    <circle r="80" stroke="#e06040" stroke-width="1.5" opacity=".5"/>
+    <path d="M-70-50 L70 70 M70-50 L-70 70" stroke="#ffd8a0" stroke-width="7" stroke-linecap="round" opacity=".55"/>
+    <path d="M-70-50 L70 70 M70-50 L-70 70" stroke="#8a2018" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
+    <path d="M0-72 C18-40 22-10 0 28 C-22-10 -18-40 0-72 Z" fill="#f8d8a8" opacity=".7"/>
+    <path d="M0-48 C10-28 12-8 0 12 C-12-8 -10-28 0-48 Z" fill="#c03820" opacity=".55"/>
+  </g>
+  <path d="M36 555 Q200 510 364 555" stroke="#e06040" stroke-width="6" opacity=".25"/>
 </svg>

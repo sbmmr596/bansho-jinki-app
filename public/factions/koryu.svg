@@ -1,18 +1,45 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" fill="none">
   <defs>
-    <radialGradient id="koryu-g" cx="50%" cy="38%" r="72%">
-      <stop offset="0%" stop-color="#f0d78a"/>
-      <stop offset="45%" stop-color="#b8943c"/>
-      <stop offset="100%" stop-color="#3a240c"/>
+    <radialGradient id="kg" cx="50%" cy="36%" r="78%">
+      <stop offset="0%" stop-color="#f7e6a8"/>
+      <stop offset="35%" stop-color="#c9a04a"/>
+      <stop offset="72%" stop-color="#6a4818"/>
+      <stop offset="100%" stop-color="#1e1206"/>
     </radialGradient>
-    <pattern id="koryu-sc" width="28" height="16" patternUnits="userSpaceOnUse">
-      <path d="M0 8 Q7 0 14 8 Q21 16 28 8" fill="none" stroke="#f7e7b0" stroke-width="1.2" opacity="0.28"/>
+    <linearGradient id="kf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff4c8" stop-opacity=".9"/>
+      <stop offset="50%" stop-color="#d4a84a" stop-opacity=".75"/>
+      <stop offset="100%" stop-color="#8a6020" stop-opacity=".85"/>
+    </linearGradient>
+    <pattern id="ks" width="24" height="14" patternUnits="userSpaceOnUse">
+      <path d="M0 7 Q6 0 12 7 Q18 14 24 7" stroke="#ffe9a8" stroke-width="1" opacity=".22"/>
     </pattern>
+    <radialGradient id="kv" cx="50%" cy="78%" r="55%">
+      <stop offset="0%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity=".45"/>
+    </radialGradient>
   </defs>
-  <rect width="400" height="600" fill="url(#koryu-g)"/>
-  <rect width="400" height="600" fill="url(#koryu-sc)"/>
-  <circle cx="200" cy="220" r="128" fill="none" stroke="#f3e6b8" stroke-width="7" opacity="0.45"/>
-  <circle cx="200" cy="220" r="98" fill="none" stroke="#fff4c8" stroke-width="2" opacity="0.55"/>
-  <path d="M200 128 L218 204 L298 204 L234 250 L258 326 L200 278 L142 326 L166 250 L102 204 L182 204 Z" fill="#fff4c8" opacity="0.88"/>
-  <path d="M40 530 Q200 430 360 530" fill="none" stroke="#e8c86a" stroke-width="10" opacity="0.28"/>
+  <rect width="400" height="600" fill="url(#kg)"/>
+  <rect width="400" height="600" fill="url(#ks)"/>
+  <rect width="400" height="600" fill="url(#kv)"/>
+  <!-- ornate outer frame -->
+  <rect x="10" y="10" width="380" height="580" rx="14" stroke="url(#kf)" stroke-width="3" opacity=".85"/>
+  <rect x="22" y="22" width="356" height="556" rx="10" stroke="#ffe9b0" stroke-width="1.2" opacity=".4"/>
+  <rect x="32" y="32" width="336" height="536" rx="6" stroke="#c09030" stroke-width=".8" opacity=".35"/>
+  <!-- corner flourishes -->
+  <g stroke="#ffe9b0" stroke-width="1.6" opacity=".55">
+    <path d="M40 70 V48 H62 M40 530 V552 H62 M360 70 V48 H338 M360 530 V552 H338"/>
+    <path d="M48 56 Q70 48 78 70 M352 56 Q330 48 322 70 M48 544 Q70 552 78 530 M352 544 Q330 552 322 530"/>
+  </g>
+  <!-- emblem: dragon star -->
+  <g opacity=".42" transform="translate(200 210)">
+    <circle r="118" stroke="#ffe9b0" stroke-width="5"/>
+    <circle r="92" stroke="#fff4c8" stroke-width="1.5" opacity=".7"/>
+    <circle r="64" stroke="#d4a84a" stroke-width="2" stroke-dasharray="4 6" opacity=".5"/>
+    <path d="M0-78 L14-18 L78-18 L26 18 L44 78 L0 40 L-44 78 L-26 18 L-78-18 L-14-18 Z" fill="#fff4c8" opacity=".75"/>
+    <circle r="16" fill="#6a4818" opacity=".5"/>
+  </g>
+  <!-- bottom wave -->
+  <path d="M28 548 Q120 500 200 520 T372 548" stroke="#e8c86a" stroke-width="8" opacity=".22"/>
+  <path d="M40 558 Q140 520 200 538 T360 558" stroke="#ffe9b0" stroke-width="2" opacity=".3"/>
 </svg>
