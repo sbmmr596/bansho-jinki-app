@@ -194,14 +194,21 @@ export function CardFace({
         className,
       )}
     >
+      {/* Layer order bottom→top: bg → prism → name → char → foot (type/cost/Lv) */}
       <img
         src={factionBg(card)}
         alt=""
-        className="card-layer-bg pointer-events-none absolute inset-0 h-full w-full object-cover"
+        className="card-layer-bg pointer-events-none absolute inset-0 z-0 h-full w-full object-cover"
       />
+      {card.rarity !== "N" ? (
+        <span
+          aria-hidden
+          className={cn("card-prism pointer-events-none absolute inset-0 z-[1]", `card-prism-${card.rarity.toLowerCase()}`)}
+        />
+      ) : null}
       <p
         className={cn(
-          "card-layer-name pointer-events-none absolute inset-x-[1%] top-[1.5%] z-[1] flex w-[98%] items-center gap-0 leading-none",
+          "card-layer-name pointer-events-none absolute inset-x-[1%] top-[1.5%] z-[2] flex w-[98%] items-center gap-0 leading-none",
           nameChars.length <= 2 ? "justify-center" : "justify-between",
           compact ? "text-[1.1em]" : "text-[1.4em]",
         )}
@@ -214,7 +221,7 @@ export function CardFace({
         ))}
       </p>
       {!src ? (
-        <div className="pointer-events-none absolute inset-0 z-[2]">
+        <div className="pointer-events-none absolute inset-0 z-[3]">
           <Crest card={card} />
         </div>
       ) : (
@@ -222,16 +229,16 @@ export function CardFace({
           src={src}
           alt=""
           onError={onError}
-          className="card-layer-char pointer-events-none absolute inset-x-0 bottom-[16%] top-[16%] z-[2] mx-auto w-full object-contain object-bottom"
+          className="card-layer-char pointer-events-none absolute inset-x-0 bottom-[16%] top-[16%] z-[3] mx-auto w-full object-contain object-bottom"
         />
       )}
-      <div className="card-layer-frame pointer-events-none absolute inset-0 z-[2] rounded-[inherit]" />
+      <div className="card-layer-frame pointer-events-none absolute inset-0 z-[3] rounded-[inherit]" />
       {leader ? (
-        <span className="card-leader pointer-events-none absolute inset-x-1 bottom-[18%] z-[3] py-px text-center text-[8px]">
+        <span className="card-leader pointer-events-none absolute inset-x-1 bottom-[18%] z-[4] py-px text-center text-[8px]">
           LEADER
         </span>
       ) : null}
-      <div className="card-foot pointer-events-none absolute inset-x-0 bottom-0 z-[4] flex items-end justify-between gap-1 px-[2%] pb-[2.5%] pt-4">
+      <div className="card-foot pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex items-end justify-between gap-1 px-[2%] pb-[2.5%] pt-4">
         <span
           className={cn(
             "card-hex card-type-badge inline-flex shrink-0 items-center justify-center font-semibold leading-none",
@@ -261,7 +268,7 @@ export function CardFace({
         </span>
       </div>
       {hp != null && maxHp != null ? (
-        <div className="absolute inset-x-0.5 bottom-0 z-[5]">
+        <div className="absolute inset-x-0.5 bottom-0 z-[6]">
           <HpBar hp={hp} max={maxHp} />
         </div>
       ) : null}
