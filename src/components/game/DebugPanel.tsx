@@ -1,4 +1,4 @@
-import { useMemo, useState, type PointerEvent } from "react";
+import { useMemo, useState, type MouseEvent } from "react";
 import { FACTION_LABEL, HERO_CARDS } from "@/game/data";
 import type { Faction } from "@/game/types";
 import { sfx } from "@/game/audio";
@@ -49,14 +49,14 @@ export function DebugPanel() {
     return byFaction;
   }, []);
 
-  const run = (fn: () => void) => (e: PointerEvent) => {
+  const run = (fn: () => void) => (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     sfx("click");
     fn();
   };
 
-  const switchTab = (next: Tab) => (e: PointerEvent) => {
+  const switchTab = (next: Tab) => (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     sfx("click");
@@ -64,30 +64,34 @@ export function DebugPanel() {
     setPreviewBg(null);
   };
 
+  const captureDisabled = screen !== "scout" || !scoutNodeId;
+
   return (
     <div
       className="absolute inset-0 z-[80] flex items-center justify-center bg-bg/70 p-3"
       onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
     >
       <div
         className={cn(
-          "panel flex max-h-[92%] w-full flex-col rounded-xl p-4",
+          "panel pointer-events-auto flex max-h-[92%] min-h-0 w-full flex-col overflow-hidden rounded-xl p-4",
           tab === "assets" ? "max-w-2xl" : "max-w-md",
         )}
         onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
           <p className="font-display text-sm text-faint">内部</p>
           <button
             type="button"
-            onPointerDown={run(() => setDebugOpen(false))}
-            className="flex h-11 min-w-16 items-center justify-center px-3 text-sm text-muted"
+            onClick={run(() => setDebugOpen(false))}
+            className="debug-hit flex min-h-11 min-w-16 items-center justify-center px-3 text-sm text-muted"
           >
             閉じる
           </button>
         </div>
 
-        <div className="mb-3 flex gap-1 rounded-md bg-raised p-1 hairline">
+        <div className="mb-3 flex shrink-0 gap-1 rounded-md bg-raised p-1 hairline">
           <TabBtn active={tab === "ops"} onClick={switchTab("ops")}>
             操作
           </TabBtn>
@@ -96,107 +100,109 @@ export function DebugPanel() {
           </TabBtn>
         </div>
 
-        {tab === "ops" ? (
-          <>
-            <p className="mb-3 text-xs text-muted tabular">
-              金 {gold}　所持 {Object.keys(owned).length}/{HERO_CARDS.length}　領地 {captured.length}
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <DbgBtn onClick={debugAddGold}>金 +5000</DbgBtn>
-              <DbgBtn onClick={debugGrantAll}>全カード</DbgBtn>
-              <DbgBtn onClick={debugCaptureAll}>全占領</DbgBtn>
-              <DbgBtn onClick={debugMaxLevels}>最大Lv</DbgBtn>
-              <DbgBtn onClick={() => window.dispatchEvent(new Event("bansho-art-trial"))}>
-                イラスト試作
-              </DbgBtn>
-              <DbgBtn
-                onClick={() => {
-                  setDebugOpen(false);
-                  setCatalogOpen(true);
-                }}
-              >
-                マイデータ
-              </DbgBtn>
-              <DbgBtn onClick={startTrial} disabled={!leaderId}>
-                テスト戦闘
-              </DbgBtn>
-              <DbgBtn onClick={debugCaptureNode} disabled={screen !== "scout" || !scoutNodeId}>
-                この地を奪う
-              </DbgBtn>
-              <DbgBtn onClick={() => setTab("assets")}>素材確認</DbgBtn>
-            </div>
-          </>
-        ) : (
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
-            <section>
-              <h3 className="mb-2 font-display text-xs tracking-wider text-faint">陣営背景</h3>
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                {FACTIONS.map((faction) => {
-                  const path = `/factions/${faction}.svg`;
-                  return (
-                    <div key={faction} className="flex flex-col items-center gap-1">
-                      <div className="relative w-full max-w-[88px] overflow-hidden rounded-md aspect-[2/3] ring-1 ring-white/15">
-                        <img src={path} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                      </div>
-                      <p className="text-center text-[10px] text-muted">{FACTION_LABEL[faction]}</p>
-                      <p className="break-all text-center text-[9px] text-faint tabular">{path}</p>
-                    </div>
-                  );
-                })}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+          {tab === "ops" ? (
+            <>
+              <p className="mb-3 text-xs text-muted tabular">
+                金 {gold}　所持 {Object.keys(owned).length}/{HERO_CARDS.length}　領地 {captured.length}
+              </p>
+              <div className="grid grid-cols-2 gap-2 pb-1">
+                <DbgBtn onClick={debugAddGold}>金 +5000</DbgBtn>
+                <DbgBtn onClick={debugGrantAll}>全カード</DbgBtn>
+                <DbgBtn onClick={debugCaptureAll}>全占領</DbgBtn>
+                <DbgBtn onClick={debugMaxLevels}>最大Lv</DbgBtn>
+                <DbgBtn onClick={() => window.dispatchEvent(new Event("bansho-art-trial"))}>
+                  イラスト試作
+                </DbgBtn>
+                <DbgBtn
+                  onClick={() => {
+                    setDebugOpen(false);
+                    setCatalogOpen(true);
+                  }}
+                >
+                  マイデータ
+                </DbgBtn>
+                <DbgBtn onClick={startTrial} disabled={!leaderId} hint="リーダーが必要">
+                  テスト戦闘
+                </DbgBtn>
+                <DbgBtn onClick={debugCaptureNode} disabled={captureDisabled} hint="偵察中の地が必要">
+                  この地を奪う
+                </DbgBtn>
+                <DbgBtn onClick={() => setTab("assets")}>素材確認</DbgBtn>
               </div>
-            </section>
-
-            <section>
-              <h3 className="mb-2 font-display text-xs tracking-wider text-faint">陣営プレビュー</h3>
-              <div className="flex flex-wrap justify-center gap-2">
-                {FACTIONS.map((faction) => {
-                  const card = samples.get(faction);
-                  if (!card) {
+            </>
+          ) : (
+            <div className="space-y-4">
+              <section>
+                <h3 className="mb-2 font-display text-xs tracking-wider text-faint">陣営背景</h3>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                  {FACTIONS.map((faction) => {
+                    const path = `/factions/${faction}.svg`;
                     return (
-                      <div
-                        key={faction}
-                        className="flex w-[120px] aspect-[2/3] items-center justify-center rounded-md bg-raised text-[10px] text-muted hairline"
-                      >
-                        {FACTION_LABEL[faction]}
+                      <div key={faction} className="flex flex-col items-center gap-1">
+                        <div className="relative w-full max-w-[88px] overflow-hidden rounded-md aspect-[2/3] ring-1 ring-white/15">
+                          <img src={path} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                        </div>
+                        <p className="text-center text-[10px] text-muted">{FACTION_LABEL[faction]}</p>
+                        <p className="break-all text-center text-[9px] text-faint tabular">{path}</p>
                       </div>
                     );
-                  }
-                  return <CardFace key={faction} card={card} size="md" />;
-                })}
-              </div>
-            </section>
+                  })}
+                </div>
+              </section>
 
-            <section>
-              <h3 className="mb-2 font-display text-xs tracking-wider text-faint">フィールド背景</h3>
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {FIELD_BGS.map((bg) => (
-                  <button
-                    key={bg.id}
-                    type="button"
-                    onPointerDown={run(() => setPreviewBg(bg.path))}
-                    className="debug-hit flex flex-col gap-1 overflow-hidden rounded-md text-left hairline"
-                  >
-                    <div className="relative aspect-video w-full overflow-hidden bg-raised">
-                      <img src={bg.path} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                    </div>
-                    <p className="px-1 text-[10px] text-muted">{bg.label}</p>
-                    <p className="break-all px-1 pb-1 text-[9px] text-faint tabular">{bg.path}</p>
-                  </button>
-                ))}
-              </div>
-            </section>
-          </div>
-        )}
+              <section>
+                <h3 className="mb-2 font-display text-xs tracking-wider text-faint">陣営プレビュー</h3>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {FACTIONS.map((faction) => {
+                    const card = samples.get(faction);
+                    if (!card) {
+                      return (
+                        <div
+                          key={faction}
+                          className="flex w-[120px] aspect-[2/3] items-center justify-center rounded-md bg-raised text-[10px] text-muted hairline"
+                        >
+                          {FACTION_LABEL[faction]}
+                        </div>
+                      );
+                    }
+                    return <CardFace key={faction} card={card} size="md" />;
+                  })}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="mb-2 font-display text-xs tracking-wider text-faint">フィールド背景</h3>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {FIELD_BGS.map((bg) => (
+                    <button
+                      key={bg.id}
+                      type="button"
+                      onClick={run(() => setPreviewBg(bg.path))}
+                      className="debug-hit flex flex-col gap-1 overflow-hidden rounded-md text-left hairline"
+                    >
+                      <div className="relative aspect-video w-full overflow-hidden bg-raised">
+                        <img src={bg.path} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                      </div>
+                      <p className="px-1 text-[10px] text-muted">{bg.label}</p>
+                      <p className="break-all px-1 pb-1 text-[9px] text-faint tabular">{bg.path}</p>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            </div>
+          )}
+        </div>
       </div>
 
       {previewBg ? (
         <div
           className="absolute inset-0 z-[90] flex items-center justify-center bg-bg/85 p-3"
-          onPointerDown={run(() => setPreviewBg(null))}
+          onClick={run(() => setPreviewBg(null))}
         >
           <div
-            className="relative max-h-full max-w-full overflow-hidden rounded-lg hairline shadow-lg"
-            onPointerDown={(e) => e.stopPropagation()}
+            className="pointer-events-auto relative max-h-full max-w-full overflow-hidden rounded-lg hairline shadow-lg"
+            onClick={(e) => e.stopPropagation()}
           >
             <img src={previewBg} alt="" className="max-h-[85vh] max-w-[92vw] object-contain" />
             <p className="absolute inset-x-0 bottom-0 bg-bg/80 px-3 py-2 text-center text-xs text-muted tabular">
@@ -204,8 +210,8 @@ export function DebugPanel() {
             </p>
             <button
               type="button"
-              onPointerDown={run(() => setPreviewBg(null))}
-              className="absolute right-2 top-2 flex h-10 min-w-14 items-center justify-center rounded-md bg-raised/90 px-3 text-sm text-muted hairline"
+              onClick={run(() => setPreviewBg(null))}
+              className="debug-hit absolute right-2 top-2 flex min-h-11 min-w-14 items-center justify-center rounded-md bg-raised/90 px-3 text-sm text-muted hairline"
             >
               閉じる
             </button>
@@ -223,14 +229,14 @@ function TabBtn({
 }: {
   children: string;
   active: boolean;
-  onClick: (e: PointerEvent) => void;
+  onClick: (e: MouseEvent) => void;
 }) {
   return (
     <button
       type="button"
-      onPointerDown={onClick}
+      onClick={onClick}
       className={cn(
-        "flex h-10 flex-1 items-center justify-center rounded text-sm transition-colors",
+        "debug-hit flex min-h-11 flex-1 items-center justify-center rounded text-sm transition-colors",
         active ? "bg-panel text-brass" : "text-muted",
       )}
     >
@@ -243,25 +249,32 @@ function DbgBtn({
   children,
   onClick,
   disabled,
+  hint,
 }: {
   children: string;
   onClick: () => void;
   disabled?: boolean;
+  hint?: string;
 }) {
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onPointerDown={(e) => {
-        if (disabled) return;
-        e.preventDefault();
-        e.stopPropagation();
-        sfx("click");
-        onClick();
-      }}
-      className="debug-hit flex h-12 items-center justify-center rounded-md bg-raised text-sm hairline disabled:opacity-40"
-    >
-      {children}
-    </button>
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={(e) => {
+          if (disabled) return;
+          e.preventDefault();
+          e.stopPropagation();
+          sfx("click");
+          onClick();
+        }}
+        className="debug-hit flex h-12 min-h-11 w-full items-center justify-center rounded-md bg-raised text-sm hairline disabled:opacity-40"
+      >
+        {children}
+      </button>
+      {disabled && hint ? (
+        <p className="px-0.5 text-center text-[9px] leading-tight text-faint">{hint}</p>
+      ) : null}
+    </div>
   );
 }

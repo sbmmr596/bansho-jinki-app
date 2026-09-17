@@ -509,7 +509,7 @@ export function SideNav({ screen, side = "right" }: { screen: string; side?: "le
   return (
     <nav
       className={cn(
-        "relative z-20 flex w-[4.75rem] shrink-0 flex-col bg-ink/95 py-1",
+        "relative z-20 flex w-[4.75rem] shrink-0 flex-col bg-ink/95 py-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]",
         edgePad,
         side === "left" ? "border-r border-border order-first" : "border-l border-border",
       )}
@@ -531,12 +531,12 @@ export function SideNav({ screen, side = "right" }: { screen: string; side?: "le
       ))}
       <button
         type="button"
-        onPointerDown={(e) => {
+        onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           setDebugOpen(true);
         }}
-        className="debug-hit flex h-10 shrink-0 items-center justify-center whitespace-nowrap text-[11px] leading-none text-faint active:bg-raised/60"
+        className="debug-hit flex min-h-11 w-full shrink-0 items-center justify-center whitespace-nowrap text-[11px] leading-none text-faint active:bg-raised/60"
       >
         内部
       </button>
