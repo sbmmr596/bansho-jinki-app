@@ -441,3 +441,252 @@ body {
     opacity: 0;
   }
 }
+
+/* ——— Summon seal → crack → reveal ——— */
+.summon-seal {
+  background:
+    radial-gradient(ellipse at 50% 40%, rgb(42 36 28 / 0.95) 0%, rgb(22 18 14 / 0.98) 70%),
+    linear-gradient(160deg, #2a241c 0%, #16120e 100%);
+  border: 1px solid color-mix(in oklab, var(--color-brass) 35%, transparent);
+  box-shadow:
+    inset 0 0 24px rgb(0 0 0 / 0.55),
+    0 8px 28px rgb(0 0 0 / 0.45);
+  color: var(--color-brass-dim);
+}
+.summon-seal__ink {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(circle at 30% 20%, rgb(0 0 0 / 0.35) 0%, transparent 45%),
+    radial-gradient(circle at 70% 80%, rgb(0 0 0 / 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgb(184 160 122 / 0.08) 0%, transparent 60%);
+  opacity: 0.85;
+  pointer-events: none;
+}
+.summon-seal__crest {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  pointer-events: none;
+}
+.summon-seal__glyph {
+  position: relative;
+  z-index: 2;
+  font-size: 2.75rem;
+  line-height: 1;
+  color: color-mix(in oklab, var(--color-brass) 75%, var(--color-fg));
+  text-shadow: 0 2px 8px rgb(0 0 0 / 0.65);
+  letter-spacing: 0.05em;
+}
+
+@keyframes summon-seal-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.04);
+    filter: brightness(1.18);
+  }
+}
+@keyframes summon-ink-seep {
+  0% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+.summon-seal--charge {
+  animation: summon-seal-pulse 0.35s ease-in-out infinite;
+}
+.summon-seal--charge .summon-seal__ink {
+  animation: summon-ink-seep 0.4s ease-out forwards;
+}
+
+.summon-seal--crack {
+  animation: none;
+  transform: scale(1.02);
+}
+.summon-crack {
+  position: absolute;
+  z-index: 3;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgb(232 223 208 / 0.85) 40%,
+    rgb(232 223 208 / 0.15) 100%
+  );
+  width: 2px;
+  height: 0;
+  top: 18%;
+  transform-origin: top center;
+  animation: summon-crack-grow 0.45s ease-out forwards;
+  pointer-events: none;
+  box-shadow: 0 0 6px rgb(255 240 200 / 0.35);
+}
+.summon-crack--a {
+  left: 38%;
+  transform: rotate(-18deg);
+}
+.summon-crack--b {
+  left: 52%;
+  top: 22%;
+  transform: rotate(12deg);
+  animation-delay: 0.06s;
+}
+.summon-crack--c {
+  left: 46%;
+  top: 28%;
+  height: 0;
+  transform: rotate(55deg);
+  animation-delay: 0.12s;
+}
+@keyframes summon-crack-grow {
+  to {
+    height: 62%;
+    opacity: 1;
+  }
+}
+.summon-crack__glow {
+  position: absolute;
+  inset: 8%;
+  z-index: 2;
+  border-radius: inherit;
+  opacity: 0;
+  animation: summon-leak 0.5s ease-out forwards;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+@keyframes summon-leak {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.55;
+  }
+}
+
+/* Rarity-tinted light leak */
+.summon-seal--n .summon-crack__glow {
+  background: radial-gradient(circle at 50% 45%, rgb(255 255 255 / 0.35) 0%, transparent 70%);
+}
+.summon-seal--r .summon-crack__glow {
+  background: radial-gradient(circle at 50% 45%, rgb(220 190 120 / 0.55) 0%, rgb(184 160 122 / 0.2) 50%, transparent 72%);
+}
+.summon-seal--r .summon-crack {
+  box-shadow: 0 0 8px rgb(220 180 90 / 0.55);
+}
+.summon-seal--sr .summon-crack__glow {
+  background: radial-gradient(
+    circle at 50% 45%,
+    rgb(255 180 220 / 0.45) 0%,
+    rgb(120 255 220 / 0.35) 35%,
+    rgb(140 160 255 / 0.3) 55%,
+    transparent 75%
+  );
+}
+.summon-seal--sr .summon-crack {
+  box-shadow: 0 0 10px rgb(180 220 255 / 0.65);
+}
+.summon-seal--ur .summon-crack__glow {
+  background: radial-gradient(
+    circle at 50% 40%,
+    rgb(255 255 255 / 0.7) 0%,
+    rgb(255 80 180 / 0.5) 25%,
+    rgb(255 220 80 / 0.45) 45%,
+    rgb(80 255 200 / 0.4) 60%,
+    transparent 78%
+  );
+  filter: saturate(1.3);
+}
+.summon-seal--ur .summon-crack {
+  width: 2.5px;
+  box-shadow: 0 0 14px rgb(255 200 120 / 0.85);
+}
+.summon-seal--ur.summon-seal--crack {
+  box-shadow:
+    inset 0 0 30px rgb(255 200 140 / 0.25),
+    0 0 40px rgb(255 120 180 / 0.35),
+    0 8px 28px rgb(0 0 0 / 0.45);
+}
+
+.summon-blackout {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgb(0 0 0 / 0.72);
+  animation: summon-blackout-in 0.2s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes summon-blackout-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes summon-reveal-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.72) rotateY(-28deg);
+    filter: brightness(1.6);
+  }
+  55% {
+    opacity: 1;
+    filter: brightness(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotateY(0deg);
+    filter: brightness(1);
+  }
+}
+.summon-reveal {
+  perspective: 600px;
+}
+.summon-reveal--in {
+  animation: summon-reveal-in 0.55s cubic-bezier(0.2, 0.85, 0.25, 1) forwards;
+}
+.summon-reveal--shown {
+  opacity: 1;
+  transform: none;
+}
+.summon-reveal--sr.summon-reveal--in {
+  animation-duration: 0.7s;
+}
+.summon-reveal--ur.summon-reveal--in {
+  animation-duration: 0.85s;
+  filter: drop-shadow(0 0 18px rgb(255 160 200 / 0.45));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .summon-seal--charge,
+  .summon-seal--charge .summon-seal__ink,
+  .summon-crack,
+  .summon-crack__glow,
+  .summon-blackout,
+  .summon-reveal--in {
+    animation: none !important;
+  }
+  .summon-reveal--in {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.2s ease;
+  }
+  .summon-crack {
+    height: 55%;
+    opacity: 0.7;
+  }
+}

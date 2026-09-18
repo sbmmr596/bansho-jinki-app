@@ -62,6 +62,7 @@ interface GameStore extends SaveState {
   finishBattle: (endOverride?: Extract<BattleEvent, { kind: "end" }>) => void;
   afterResult: () => void;
   summon: () => void;
+  finishSummon: () => void;
   trainGold: (cardId: string) => void;
   trainFuse: (cardId: string) => void;
   unlockDebug: () => void;
@@ -439,7 +440,14 @@ export const useGame = create<GameStore>((set, get) => ({
       summoning: true,
     });
     get().persist();
-    setTimeout(() => set({ summoning: false }), 700);
+    // Fallback so double-tap cannot race if UI never calls finishSummon
+    setTimeout(() => {
+      if (get().summoning) set({ summoning: false });
+    }, 2300);
+  },
+
+  finishSummon: () => {
+    if (get().summoning) set({ summoning: false });
   },
 
   trainGold: (cardId) => {
