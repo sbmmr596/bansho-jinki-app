@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { CARD_BY_ID } from "@/game/data";
 import { useGame } from "@/game/store";
 import { requestGameDisplay } from "@/lib/display-mode";
@@ -15,6 +15,7 @@ export function TitleScreen() {
   const unlockDebug = useGame((s) => s.unlockDebug);
   const taps = useRef(0);
   const tapTimer = useRef(0);
+  const [displayHint, setDisplayHint] = useState<string | null>(null);
 
   const onMark = () => {
     taps.current += 1;
@@ -31,6 +32,19 @@ export function TitleScreen() {
   const start = (fn: () => void) => () => {
     void requestGameDisplay(document.querySelector(".game-frame") as HTMLElement | null);
     fn();
+  };
+
+  const onFullscreen = async () => {
+    const result = await requestGameDisplay(
+      document.querySelector(".game-frame") as HTMLElement | null,
+    );
+    if (result.mode === "entered") {
+      setDisplayHint("全画面にした");
+    } else if (result.mode === "exited") {
+      setDisplayHint("全画面を解除した");
+    } else {
+      setDisplayHint(result.reason ?? "このブラウザでは制限あり（PWA推奨）");
+    }
   };
 
   return (
@@ -79,6 +93,12 @@ export function TitleScreen() {
               はじめる
             </PrimaryButton>
           )}
+          <GhostButton onClick={() => void onFullscreen()} className="h-11">
+            全画面
+          </GhostButton>
+          {displayHint ? (
+            <p className="px-0.5 text-center text-[10px] leading-tight text-faint">{displayHint}</p>
+          ) : null}
           <button
             type="button"
             onPointerDown={(e) => {
