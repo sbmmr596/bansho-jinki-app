@@ -757,7 +757,7 @@ export const NODES: MapNode[] = [
     enemy: [
       { cardId: "sora", slot: 5, level: 1, leader: true },
       { cardId: "maki", slot: 2, level: 1 },
-      { cardId: "kuro", slot: 8, level: 1 },
+      { cardId: "kuro", slot: 7, level: 1 },
     ],
     reward: { gold: 130, cardId: "maki" },
   },
