@@ -4,6 +4,7 @@ import type { Faction } from "@/game/types";
 import { sfx } from "@/game/audio";
 import { useGame } from "@/game/store";
 import { CardFace } from "./pieces";
+import { requestGameDisplay } from "@/lib/display-mode";
 import { cn } from "@/lib/utils";
 
 type Tab = "ops" | "assets";
@@ -129,6 +130,15 @@ export function DebugPanel() {
                   この地を奪う
                 </DbgBtn>
                 <DbgBtn onClick={() => setTab("assets")}>素材確認</DbgBtn>
+                <DbgBtn
+                  onClick={() => {
+                    void requestGameDisplay(
+                      document.querySelector(".game-frame") as HTMLElement | null,
+                    );
+                  }}
+                >
+                  全画面
+                </DbgBtn>
               </div>
             </>
           ) : (
