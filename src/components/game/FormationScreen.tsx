@@ -44,81 +44,83 @@ export function FormationScreen() {
 
   return (
     <Shell title="編成" extra={<GoldChip gold={gold} />} bg="/bg/palace.jpg" nav="formation" wide>
-      <div className="flex h-full min-h-0 gap-2">
-        <div className="flex w-[36%] min-w-[150px] max-w-[220px] shrink-0 flex-col gap-1.5">
-          <div className="flex items-end justify-between gap-2">
-            <div className="min-w-0">
-              <p className="font-display text-sm leading-tight text-fg">{form.name}</p>
-              <p className="truncate text-[10px] text-muted">{form.desc}</p>
+      <div className="flex h-full min-h-0 justify-center">
+        <div className="flex h-full min-h-0 w-full max-w-5xl gap-2">
+          <div className="flex w-[260px] shrink-0 flex-col gap-1.5 sm:w-[280px]">
+            <div className="flex items-end justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-display text-sm leading-tight text-fg">{form.name}</p>
+                <p className="truncate text-[10px] text-muted">{form.desc}</p>
+              </div>
+              <p className={cn("tabular shrink-0 text-sm", over ? "text-crimson" : "text-brass")}>
+                {cost}/{cap}
+              </p>
             </div>
-            <p className={cn("tabular shrink-0 text-sm", over ? "text-crimson" : "text-brass")}>
-              {cost}/{cap}
-            </p>
+            <FormationMini
+              formationId={form.id}
+              party={party}
+              owned={owned}
+              leaderId={leaderId}
+              selected={selected}
+              onSlot={onSlot}
+            />
+            <PrimaryButton
+              onClick={() => setScreen("map")}
+              className="h-9 shrink-0"
+              disabled={over || !leaderId}
+            >
+              出陣へ
+            </PrimaryButton>
           </div>
-          <FormationMini
-            formationId={form.id}
-            party={party}
-            owned={owned}
-            leaderId={leaderId}
-            selected={selected}
-            onSlot={onSlot}
-          />
-          <PrimaryButton
-            onClick={() => setScreen("map")}
-            className="h-9 shrink-0"
-            disabled={over || !leaderId}
-          >
-            出陣へ
-          </PrimaryButton>
-        </div>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <p className="mb-1 shrink-0 text-[10px] text-muted">
-            カードかマスを選んで置きたいマスへ。同じマスでもう一度で外す。リーダーを外すと全員解除。
-          </p>
-          <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-4 gap-1.5 overflow-y-auto content-start pr-0.5">
-            {tray.map((card) => (
-              <CardFace
-                key={card.id}
-                card={card}
-                level={owned[card.id]?.level}
-                rank={owned[card.id]?.rank}
-                size="sm"
-                selected={selected === card.id}
-                dimmed={inParty.has(card.id) && selected !== card.id}
-                leader={leaderId === card.id}
-                className="w-full"
-                onClick={() => onTray(card.id)}
-              />
-            ))}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <p className="mb-1 shrink-0 text-[10px] text-muted">
+              カードかマスを選んで置きたいマスへ。同じマスでもう一度で外す。リーダーを外すと全員解除。
+            </p>
+            <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-3 gap-1.5 overflow-y-auto content-start pr-0.5 md:grid-cols-4">
+              {tray.map((card) => (
+                <CardFace
+                  key={card.id}
+                  card={card}
+                  level={owned[card.id]?.level}
+                  rank={owned[card.id]?.rank}
+                  size="sm"
+                  selected={selected === card.id}
+                  dimmed={inParty.has(card.id) && selected !== card.id}
+                  leader={leaderId === card.id}
+                  className="w-full"
+                  onClick={() => onTray(card.id)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
 
-        {focus ? (
-          <div className="panel flex w-[168px] shrink-0 flex-col gap-1.5 self-start rounded-lg p-2">
-            <p className="font-display text-sm leading-tight">{focus.name}</p>
-            <p className="text-[10px] leading-tight text-muted">
-              {FACTION_LABEL[focus.faction]}　{focus.title}
-            </p>
-            <StatRow card={focus} level={owned[focus.id]?.level ?? 1} rank={owned[focus.id]?.rank ?? 0} />
-            <p className="text-[11px] leading-snug text-fg">
-              {focus.skill.name}
-              <span className="ml-1 text-muted">{focus.skill.desc}</span>
-            </p>
-            {inParty.has(focus.id) ? (
-              <button
-                type="button"
-                onClick={() => setLeader(focus.id)}
-                className={cn(
-                  "h-7 rounded-sm text-[10px]",
-                  leaderId === focus.id ? "bg-brass text-bg" : "bg-raised text-muted",
-                )}
-              >
-                {leaderId === focus.id ? "LEADER" : "リーダーにする"}
-              </button>
-            ) : null}
-          </div>
-        ) : null}
+          {focus ? (
+            <div className="panel flex w-[168px] shrink-0 flex-col gap-1.5 self-start rounded-lg p-2 sm:w-[176px]">
+              <p className="font-display text-sm leading-tight">{focus.name}</p>
+              <p className="text-[10px] leading-tight text-muted">
+                {FACTION_LABEL[focus.faction]}　{focus.title}
+              </p>
+              <StatRow card={focus} level={owned[focus.id]?.level ?? 1} rank={owned[focus.id]?.rank ?? 0} />
+              <p className="text-[11px] leading-snug text-fg">
+                {focus.skill.name}
+                <span className="ml-1 text-muted">{focus.skill.desc}</span>
+              </p>
+              {inParty.has(focus.id) ? (
+                <button
+                  type="button"
+                  onClick={() => setLeader(focus.id)}
+                  className={cn(
+                    "h-7 rounded-sm text-[10px]",
+                    leaderId === focus.id ? "bg-brass text-bg" : "bg-raised text-muted",
+                  )}
+                >
+                  {leaderId === focus.id ? "LEADER" : "リーダーにする"}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
     </Shell>
   );
@@ -141,7 +143,7 @@ function FormationMini({
 }) {
   const formation = FORMATIONS[formationId];
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-3 grid-rows-3 gap-1">
+    <div className="grid min-h-0 flex-1 grid-cols-3 grid-rows-3 gap-1.5">
       {[0, 1, 2].map((row) =>
         [2, 1, 0].map((col) => {
           const slot = row * 3 + col;
