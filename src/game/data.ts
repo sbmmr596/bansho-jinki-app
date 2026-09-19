@@ -1050,8 +1050,17 @@ function parseHero(raw: unknown): Card | null {
 }
 
 function rebuildCatalog(heroes: Card[]) {
-  const all = [...heroes, ...FODDER_CARDS, ...SPECIAL_FODDER];
-  HERO_CARDS.splice(0, HERO_CARDS.length, ...heroes);
+  // Remote/custom catalogs must not drop bundled heroes (esp. starters).
+  // Missing ids are filled from FALLBACK_HEROES so newGame/defaultSave never
+  // hit CARD_BY_ID[id] === undefined.
+  const byId = new Map<string, Card>();
+  for (const h of heroes) byId.set(h.id, h);
+  for (const fb of FALLBACK_HEROES) {
+    if (!byId.has(fb.id)) byId.set(fb.id, fb);
+  }
+  const merged = [...byId.values()];
+  const all = [...merged, ...FODDER_CARDS, ...SPECIAL_FODDER];
+  HERO_CARDS.splice(0, HERO_CARDS.length, ...merged);
   CARDS.splice(0, CARDS.length, ...all);
   for (const key of Object.keys(CARD_BY_ID)) delete CARD_BY_ID[key];
   for (const card of all) CARD_BY_ID[card.id] = card;

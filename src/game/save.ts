@@ -15,24 +15,32 @@ export const SAVE_KEY = "bansho-jinki-v1";
 export function defaultSave(): SaveState {
   const owned: SaveState["owned"] = {};
   for (const id of STARTER_IDS) {
+    if (!CARD_BY_ID[id]) continue;
     owned[id] = { level: 1, rank: 0, count: 1 };
   }
   const party: (string | null)[] = Array(9).fill(null);
-  const leaderId = "sora";
-  const formation = FORMATIONS[CARD_BY_ID[leaderId].formation];
-  const starters = STARTER_IDS.filter((id) => id !== leaderId);
+  const leaderId =
+    (STARTER_IDS.find((id) => id === "sora" && CARD_BY_ID[id]) ??
+      STARTER_IDS.find((id) => CARD_BY_ID[id]) ??
+      Object.keys(CARD_BY_ID)[0]) as string;
+  const leader = CARD_BY_ID[leaderId];
+  if (!leader) {
+    throw new Error("defaultSave: no cards in catalog");
+  }
+  const formation = FORMATIONS[leader.formation] ?? FORMATIONS.basic;
+  const starters = STARTER_IDS.filter((id) => id !== leaderId && CARD_BY_ID[id]);
   const slots = formation.slots
     .map((ok, i) => (ok ? i : -1))
     .filter((i) => i >= 0);
   party[slots[0] ?? 4] = leaderId;
   const startCap = costCapFor(1);
-  let cost = CARD_BY_ID[leaderId].cost;
+  let cost = leader.cost;
   let si = 1;
   for (const id of starters) {
     while (si < slots.length && party[slots[si]]) si++;
     if (si >= slots.length) break;
     const c = CARD_BY_ID[id];
-    if (cost + c.cost > startCap) continue;
+    if (!c || cost + c.cost > startCap) continue;
     party[slots[si]] = id;
     cost += c.cost;
     si++;
