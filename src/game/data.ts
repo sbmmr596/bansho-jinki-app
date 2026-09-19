@@ -700,9 +700,10 @@ export async function loadChars() {
   }
 }
 
-export const STARTER_IDS = ["ryuji", "bold", "haru", "kuro", "leo", "hito", "rin"];
+export const STARTER_IDS = ["sora", "maki", "kuro", "hito", "rin", "ryuji", "bold"];
 export const SUMMON_COST = 200;
-export const BASE_COST_CAP = 16;
+/** Opening cost cap at shrine-only (capturedCount=1). */
+export const BASE_COST_CAP = 10;
 export const HOME_ID = "shrine";
 export const MAX_LEVEL = 50;
 export const MAX_RANK = 99;
@@ -928,8 +929,12 @@ export const NODE_BY_ID: Record<string, MapNode> = Object.fromEntries(
   NODES.map((n) => [n.id, n]),
 );
 
+/** Frontier-ish cost cap for the 11-node map (home + 10 capturable).
+ * Start 10 (shrine only), +1 per additional capture, max 20 when all 11 held.
+ * Equivalent: min(20, 9 + capturedCount).
+ */
 export function costCapFor(capturedCount: number): number {
-  return Math.min(20, BASE_COST_CAP + Math.floor(Math.max(0, capturedCount - 1) / 2));
+  return Math.min(20, BASE_COST_CAP + Math.max(0, capturedCount - 1));
 }
 
 const TRIAL_SLOTS = [5, 2, 8, 4, 1, 7];

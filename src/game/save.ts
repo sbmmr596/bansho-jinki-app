@@ -5,6 +5,7 @@ import {
   HOME_ID,
   MAX_LEVEL,
   MAX_RANK,
+  costCapFor,
 } from "./data";
 import { SAVE_VERSION, clampBattleSpeed, clampNavSide, type SaveState } from "./types";
 import { clampDifficulty } from "./difficulty";
@@ -17,20 +18,21 @@ export function defaultSave(): SaveState {
     owned[id] = { level: 1, rank: 0, count: 1 };
   }
   const party: (string | null)[] = Array(9).fill(null);
-  const leaderId = "ryuji";
+  const leaderId = "sora";
   const formation = FORMATIONS[CARD_BY_ID[leaderId].formation];
   const starters = STARTER_IDS.filter((id) => id !== leaderId);
   const slots = formation.slots
     .map((ok, i) => (ok ? i : -1))
     .filter((i) => i >= 0);
   party[slots[0] ?? 4] = leaderId;
+  const startCap = costCapFor(1);
   let cost = CARD_BY_ID[leaderId].cost;
   let si = 1;
   for (const id of starters) {
     while (si < slots.length && party[slots[si]]) si++;
     if (si >= slots.length) break;
     const c = CARD_BY_ID[id];
-    if (cost + c.cost > 16) continue;
+    if (cost + c.cost > startCap) continue;
     party[slots[si]] = id;
     cost += c.cost;
     si++;
