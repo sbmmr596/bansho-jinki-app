@@ -1,9 +1,11 @@
 import {
   ARENA_TIERS,
   ARENA_TIER_META,
+  arenaCostHint,
   arenaFee,
   arenaReward,
   partyAverageLevel,
+  partyTotalCost,
   type ArenaTier,
 } from "@/game/arena";
 import { useGame } from "@/game/store";
@@ -23,6 +25,8 @@ export function ArenaScreen() {
 
   const avg = partyAverageLevel(party, owned);
   const partySize = party.filter(Boolean).length;
+  const myCost = partyTotalCost(party);
+  const foeCostHint = arenaCostHint(myCost, tier);
   const fee = arenaFee(tier, avg);
   const reward = arenaReward(tier, fee);
   const canFight = !!leaderId && partySize > 0;
@@ -50,7 +54,7 @@ export function ArenaScreen() {
             報酬は勝利時のみ。試し撃ちとは別の勝負だ。
           </p>
           <p className="text-xs text-faint">
-            パーティ平均 Lv.{avg.toFixed(1)}　人数 {partySize}
+            パーティ平均 Lv.{avg.toFixed(1)}　人数 {partySize}　コスト {myCost}
             {!leaderId ? "　リーダー未設定" : ""}
           </p>
           <div className="grid w-full max-w-lg grid-cols-3 gap-2">
@@ -85,6 +89,7 @@ export function ArenaScreen() {
             <p className="mt-1 text-xs text-muted">{meta.blurb}</p>
             <p className="mt-1 text-[10px] text-faint">
               敵レベル目安 Lv.{Math.max(1, Math.round(avg * meta.levelMul))}　人数は自軍±1（3〜5）
+             　相手目安コスト ~{foeCostHint}
             </p>
           </div>
           {hint ? <p className="text-sm text-crimson">{hint}</p> : null}
