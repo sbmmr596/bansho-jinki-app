@@ -168,6 +168,9 @@ export function SummonReveal({
         {showCard && card ? (
           <>
             <p className="font-display text-lg leading-tight">{card.name}</p>
+            {card.fodder ? (
+              <p className="text-sm text-crimson">素材専用</p>
+            ) : null}
             <p className="text-sm text-brass">{status}</p>
           </>
         ) : (
