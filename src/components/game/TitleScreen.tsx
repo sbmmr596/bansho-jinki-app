@@ -34,18 +34,15 @@ export function TitleScreen() {
     }
   };
 
-  const enterDisplay = () => {
-    void requestGameDisplay(document.querySelector(".game-frame") as HTMLElement | null);
-  };
-
+  // Fullscreen is only via the dedicated 「全画面」 button.
+  // Calling requestGameDisplay (toggle) on start was flipping fullscreen and
+  // could drop local picking state / feel like start did nothing but toggle.
   const openDifficulty = () => {
-    enterDisplay();
     setDifficulty("normal");
     setPicking(true);
   };
 
   const confirmNewGame = () => {
-    enterDisplay();
     newGame(difficulty);
   };
 
@@ -149,13 +146,7 @@ export function TitleScreen() {
           </div>
           <div className="flex w-44 shrink-0 flex-col gap-2">
             {hasExisting ? (
-              <PrimaryButton
-                onClick={() => {
-                  enterDisplay();
-                  continueGame();
-                }}
-                className="h-11"
-              >
+              <PrimaryButton onClick={() => continueGame()} className="h-11">
                 つづきから
               </PrimaryButton>
             ) : null}
