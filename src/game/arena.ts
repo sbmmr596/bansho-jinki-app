@@ -17,7 +17,7 @@ export const ARENA_TIERS: ArenaTier[] = ["even", "strong", "demon"];
 
 /** Target enemy total cost as a multiple of player party cost. */
 export const ARENA_COST_MUL: Record<ArenaTier, { min: number; max: number }> = {
-  even: { min: 0.9, max: 1.05 },
+  even: { min: 1.0, max: 1.0 },
   strong: { min: 1.0, max: 1.2 },
   demon: { min: 1.15, max: 1.4 },
 };
@@ -32,7 +32,7 @@ export const ARENA_TIER_META: Record<
     levelMul: 1.0,
     feeAnchor: 80,
     rewardMul: 1.6,
-    blurb: "同格の挑戦者。賭け金は控えめ。",
+    blurb: "同コスト同格。",
   },
   strong: {
     id: "strong",
@@ -229,7 +229,11 @@ export function buildArenaEncounter(
   const enemyLevel = arenaEnemyLevel(avgLevel, tier);
   const form = pickFormation(rng);
   const open = form.slots.map((ok, i) => (ok ? i : -1)).filter((i) => i >= 0);
-  const desired = Math.max(3, Math.min(5, playerCount + (rng() < 0.5 ? -1 : 1)));
+  // 互角: match player count; other tiers allow ±1 around 3–5.
+  const desired =
+    tier === "even"
+      ? Math.max(1, Math.min(5, playerCount))
+      : Math.max(3, Math.min(5, playerCount + (rng() < 0.5 ? -1 : 1)));
   const count = Math.max(1, Math.min(desired, open.length, heroPool().length || 1));
   const slots = shuffle(open, rng).slice(0, count);
 
