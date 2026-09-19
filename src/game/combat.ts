@@ -150,31 +150,27 @@ export interface PickedActionSkill {
 }
 
 /**
- * Action pick rates for combat turns.
- * No skill2: 基本技 45% / 必殺技1 55%
- * With skill2: 基本技 35% / 必殺技1 40% / 必殺技2 25%
+ * Action pick (two-step):
+ * 1) 基本技 70% / 必殺技 30%
+ * 2) If 必殺 and skill2 exists → 必殺1 or 必殺2 at 50/50
+ * Absolute with skill2: basic 70% / s1 15% / s2 15%
  */
 export const ACTION_RATES = {
-  noSkill2: { basic: 0.45, s1: 0.55 },
-  withSkill2: { basic: 0.35, s1: 0.4, s2: 0.25 },
+  basic: 0.7,
+  special: 0.3,
+  /** Among specials when skill2 is equipped */
+  specialSplit: { s1: 0.5, s2: 0.5 },
 } as const;
 
 /** Pick which skill a unit uses this action (basic / s1 / s2). */
 export function pickActionSkill(actor: Unit): PickedActionSkill {
-  const r = Math.random();
-  if (actor.skill2) {
-    const { basic, s1 } = ACTION_RATES.withSkill2;
-    if (r < basic) {
-      return { skill: BASIC_SKILL, skillLv: 1, slot: "basic" };
-    }
-    if (r < basic + s1) {
-      return { skill: actor.skill, skillLv: actor.skillLv, slot: "s1" };
-    }
-    return { skill: actor.skill2.skill, skillLv: actor.skill2.lv, slot: "s2" };
-  }
-  const { basic } = ACTION_RATES.noSkill2;
-  if (r < basic) {
+  // Step 1: basic vs special
+  if (Math.random() < ACTION_RATES.basic) {
     return { skill: BASIC_SKILL, skillLv: 1, slot: "basic" };
+  }
+  // Step 2: which special
+  if (actor.skill2 && Math.random() >= ACTION_RATES.specialSplit.s1) {
+    return { skill: actor.skill2.skill, skillLv: actor.skill2.lv, slot: "s2" };
   }
   return { skill: actor.skill, skillLv: actor.skillLv, slot: "s1" };
 }
