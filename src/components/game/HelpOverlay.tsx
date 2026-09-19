@@ -19,7 +19,7 @@ export function HelpOverlay() {
             </p>
             <p>リーダーが倒れると敗北。相手リーダーを墜とすのも一つの手。</p>
             <p>
-              <span className="text-fg">育成</span>で金か重複を使い、レベルを上げる。能力が伸びる。
+              <span className="text-fg">合成・育成</span>で金はレベル、同名は必殺技1、異名は必殺技2を強化する。
             </p>
             <p>出陣前に敵の属性を見て組み直せ。戦闘中も下の「相性」から図を出せる。</p>
           </div>

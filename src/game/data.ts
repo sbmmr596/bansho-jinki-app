@@ -1103,7 +1103,9 @@ export const SUMMON_COST = 200;
 export const BASE_COST_CAP = 10;
 export const HOME_ID = "shrine";
 export const MAX_LEVEL = 50;
+/** @deprecated Rank no longer boosts stats; kept for old save migration only. */
 export const MAX_RANK = 99;
+export const MAX_SKILL_LV = 10;
 
 export function trainCost(level: number): number {
   const lv = Math.max(1, level);
@@ -1114,17 +1116,30 @@ export function levelMult(level: number): number {
   return 1 + (Math.max(1, level) - 1) * 0.04;
 }
 
-export function rankMult(rank: number): number {
-  return 1 + Math.max(0, Math.min(MAX_RANK, rank)) * 0.01;
+/** Rank multiplier retired — always 1. Kept so call sites can drop the arg gradually. */
+export function rankMult(_rank = 0): number {
+  return 1;
 }
 
-export function scaledStat(base: number, level: number, rank = 0): number {
-  return Math.round(base * levelMult(level) * rankMult(rank));
+/** Stats scale with gold-train level only (rank ignored). */
+export function scaledStat(base: number, level: number, _rank = 0): number {
+  return Math.round(base * levelMult(level));
 }
 
-/** 合成ランクによるスキル倍率。戦闘適用は後で。 */
-export function skillScale(rank: number): number {
-  return 1 + Math.max(0, Math.min(MAX_RANK, rank)) * 0.005;
+/** 必殺技レベルによる威力倍率。 */
+export function skillPowerScale(skillLv: number): number {
+  const lv = Math.max(1, Math.min(MAX_SKILL_LV, skillLv));
+  return 1 + (lv - 1) * 0.08;
+}
+
+/** Success % when attempting skillLv → skillLv+1 (same-card or skill2 level-up). */
+export function fuseSuccessRate(skillLv: number): number {
+  return Math.max(5, 100 - (Math.max(1, skillLv) - 1) * 10);
+}
+
+/** @deprecated Use skillPowerScale */
+export function skillScale(skillLv: number): number {
+  return skillPowerScale(skillLv);
 }
 
 export const NODES: MapNode[] = [

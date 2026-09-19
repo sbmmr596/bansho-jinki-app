@@ -4,19 +4,56 @@ import {
   STARTER_IDS,
   HOME_ID,
   MAX_LEVEL,
-  MAX_RANK,
+  MAX_SKILL_LV,
   costCapFor,
 } from "./data";
-import { SAVE_VERSION, clampBattleSpeed, clampNavSide, type SaveState } from "./types";
+import {
+  SAVE_VERSION,
+  clampBattleSpeed,
+  clampNavSide,
+  type OwnedCard,
+  type OwnedSkill2,
+  type SaveState,
+} from "./types";
 import { clampDifficulty } from "./difficulty";
 
 export const SAVE_KEY = "bansho-jinki-v1";
+
+export function blankOwned(partial?: Partial<OwnedCard>): OwnedCard {
+  return {
+    level: 1,
+    count: 1,
+    skill1Lv: 1,
+    ...partial,
+  };
+}
+
+/** Migrate legacy owned entries (rank → skill1Lv) and clamp fields. */
+export function migrateOwned(raw: Partial<OwnedCard> & { rank?: number } | null | undefined): OwnedCard {
+  const level = Math.min(MAX_LEVEL, Math.max(1, raw?.level ?? 1));
+  const count = Math.max(0, raw?.count ?? 0);
+  const fromRank =
+    typeof raw?.rank === "number" && Number.isFinite(raw.rank) ? Math.max(0, raw.rank) + 1 : 1;
+  const skill1Lv = Math.min(
+    MAX_SKILL_LV,
+    Math.max(1, typeof raw?.skill1Lv === "number" ? raw.skill1Lv : fromRank),
+  );
+  let skill2: OwnedSkill2 | undefined;
+  const s2 = raw?.skill2;
+  if (s2 && typeof s2.sourceCardId === "string" && s2.sourceCardId) {
+    skill2 = {
+      sourceCardId: s2.sourceCardId,
+      lv: Math.min(MAX_SKILL_LV, Math.max(1, typeof s2.lv === "number" ? s2.lv : 1)),
+    };
+  }
+  return skill2 ? { level, count, skill1Lv, skill2 } : { level, count, skill1Lv };
+}
 
 export function defaultSave(): SaveState {
   const owned: SaveState["owned"] = {};
   for (const id of STARTER_IDS) {
     if (!CARD_BY_ID[id]) continue;
-    owned[id] = { level: 1, rank: 0, count: 1 };
+    owned[id] = blankOwned();
   }
   const party: (string | null)[] = Array(9).fill(null);
   const leaderId =
@@ -68,11 +105,7 @@ export function loadSave(): SaveState {
     const ownedRaw = { ...base.owned, ...(parsed.owned ?? {}) };
     const owned: SaveState["owned"] = {};
     for (const [id, o] of Object.entries(ownedRaw)) {
-      owned[id] = {
-        level: Math.min(MAX_LEVEL, Math.max(1, o?.level ?? 1)),
-        rank: Math.min(MAX_RANK, Math.max(0, o?.rank ?? 0)),
-        count: Math.max(0, o?.count ?? 0),
-      };
+      owned[id] = migrateOwned(o as Partial<OwnedCard> & { rank?: number });
     }
     const party = Array.from({ length: 9 }, (_, i) => parsed.party?.[i] ?? null);
     return {
@@ -94,10 +127,15 @@ export function loadSave(): SaveState {
 export function writeSave(state: SaveState) {
   if (typeof window === "undefined") return;
   try {
+    // Drop legacy `rank` from writes; only persist skill fields.
+    const owned: SaveState["owned"] = {};
+    for (const [id, o] of Object.entries(state.owned)) {
+      owned[id] = migrateOwned(o);
+    }
     const payload: SaveState = {
       version: SAVE_VERSION,
       gold: state.gold,
-      owned: state.owned,
+      owned,
       party: state.party,
       leaderId: state.leaderId,
       captured: state.captured,

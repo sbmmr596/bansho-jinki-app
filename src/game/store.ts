@@ -16,17 +16,18 @@ import {
   CARDS,
   HERO_CARDS,
   MAX_LEVEL,
-  MAX_RANK,
+  MAX_SKILL_LV,
   NODE_BY_ID,
   NODES,
   SUMMON_COST,
   applyCatalog,
   costCapFor,
+  fuseSuccessRate,
   loadChars,
   trainCost,
 } from "./data";
 import { CATALOG_KEY } from "./catalog-api";
-import { clearSave, defaultSave, hasSave, loadSave, writeSave } from "./save";
+import { blankOwned, clearSave, defaultSave, hasSave, loadSave, writeSave } from "./save";
 import type {
   BattleEvent,
   BattleLog,
@@ -34,6 +35,7 @@ import type {
   BattleSpeed,
   Difficulty,
   FieldKind,
+  FuseResult,
   SaveState,
   Screen,
 } from "./types";
@@ -76,7 +78,8 @@ interface GameStore extends SaveState {
   summon: () => void;
   finishSummon: () => void;
   trainGold: (cardId: string) => void;
-  trainFuse: (cardId: string) => void;
+  trainFuse: (cardId: string) => FuseResult | null;
+  trainFuseOther: (baseId: string, materialId: string) => FuseResult | null;
   unlockDebug: () => void;
   setDebugOpen: (v: boolean) => void;
   debugAddGold: () => void;
@@ -109,7 +112,8 @@ function trialParty(s: { party: (string | null)[]; owned: SaveState["owned"]; le
             cardId: id,
             slot,
             level: s.owned[id]?.level ?? 1,
-            rank: s.owned[id]?.rank ?? 0,
+            skill1Lv: s.owned[id]?.skill1Lv ?? 1,
+            skill2: s.owned[id]?.skill2,
             isLeader: id === s.leaderId,
           }
         : null,
@@ -328,7 +332,8 @@ export const useGame = create<GameStore>((set, get) => ({
               cardId: id,
               slot,
               level: s.owned[id]?.level ?? 1,
-              rank: s.owned[id]?.rank ?? 0,
+              skill1Lv: s.owned[id]?.skill1Lv ?? 1,
+              skill2: s.owned[id]?.skill2,
               isLeader: id === s.leaderId,
             }
           : null,
@@ -413,7 +418,7 @@ export const useGame = create<GameStore>((set, get) => ({
         cardGain = node.reward.cardId;
         const prev = owned[cardGain];
         if (!prev) {
-          owned = { ...owned, [cardGain]: { level: 1, rank: 0, count: 1 } };
+          owned = { ...owned, [cardGain]: blankOwned() };
           cardWasNew = true;
         } else {
           owned = {
@@ -474,7 +479,7 @@ export const useGame = create<GameStore>((set, get) => ({
     let owned = s.owned;
     let leveled = false;
     if (!prev) {
-      owned = { ...owned, [cardId]: { level: 1, rank: 0, count: 1 } };
+      owned = { ...owned, [cardId]: blankOwned() };
     } else {
       owned = { ...owned, [cardId]: { ...prev, count: prev.count + 1 } };
     }
@@ -515,16 +520,112 @@ export const useGame = create<GameStore>((set, get) => ({
   trainFuse: (cardId) => {
     const s = get();
     const own = s.owned[cardId];
-    const rank = own?.rank ?? 0;
-    if (!own || own.count < 2 || rank >= MAX_RANK) return;
+    if (!own || own.count < 2 || own.skill1Lv >= MAX_SKILL_LV) return null;
+    const rate = fuseSuccessRate(own.skill1Lv);
+    const success = Math.random() * 100 < rate;
+    const nextLv = success ? own.skill1Lv + 1 : own.skill1Lv;
     sfx("summon");
     set({
       owned: {
         ...s.owned,
-        [cardId]: { ...own, rank: rank + 1, count: own.count - 1 },
+        [cardId]: { ...own, skill1Lv: nextLv, count: own.count - 1 },
       },
     });
     get().persist();
+    const result: FuseResult = {
+      success,
+      kind: "skill1",
+      newLv: nextLv,
+      rate,
+      message: success
+        ? `成功！必殺技1が Lv.${nextLv} になった。`
+        : `失敗…必殺技1は Lv.${nextLv} のまま。素材は消費された。`,
+    };
+    return result;
+  },
+
+  trainFuseOther: (baseId, materialId) => {
+    const s = get();
+    if (baseId === materialId) return null;
+    const base = s.owned[baseId];
+    const mat = s.owned[materialId];
+    if (!base || !mat || mat.count < 1) return null;
+    if (!CARD_BY_ID[materialId]) return null;
+
+    const owned = { ...s.owned };
+    let party = s.party;
+    let leaderId = s.leaderId;
+
+    // Always consume 1 material
+    if (mat.count <= 1) {
+      delete owned[materialId];
+      party = s.party.map((id) => (id === materialId ? null : id));
+      leaderId = s.leaderId === materialId ? null : s.leaderId;
+      if (leaderId && !party.includes(leaderId)) {
+        leaderId = party.find((id) => !!id) ?? null;
+      }
+    } else {
+      owned[materialId] = { ...mat, count: mat.count - 1 };
+    }
+
+    let result: FuseResult;
+    const cur = owned[baseId] ?? base;
+
+    if (!cur.skill2) {
+      owned[baseId] = {
+        ...cur,
+        skill2: { sourceCardId: materialId, lv: 1 },
+      };
+      result = {
+        success: true,
+        kind: "skill2-install",
+        newLv: 1,
+        message: `必殺技2に「${CARD_BY_ID[materialId]?.skill.name ?? "技"}」を装着した！`,
+      };
+    } else if (cur.skill2.sourceCardId === materialId) {
+      if (cur.skill2.lv >= MAX_SKILL_LV) {
+        owned[baseId] = cur;
+        result = {
+          success: false,
+          kind: "skill2-level",
+          newLv: cur.skill2.lv,
+          message: `必殺技2はすでに最大 Lv.${MAX_SKILL_LV}。素材のみ消費された。`,
+        };
+      } else {
+        const rate = fuseSuccessRate(cur.skill2.lv);
+        const success = Math.random() * 100 < rate;
+        const nextLv = success ? cur.skill2.lv + 1 : cur.skill2.lv;
+        owned[baseId] = {
+          ...cur,
+          skill2: { ...cur.skill2, lv: nextLv },
+        };
+        result = {
+          success,
+          kind: "skill2-level",
+          newLv: nextLv,
+          rate,
+          message: success
+            ? `成功！必殺技2が Lv.${nextLv} になった。`
+            : `失敗…必殺技2は Lv.${nextLv} のまま。素材は消費された。`,
+        };
+      }
+    } else {
+      owned[baseId] = {
+        ...cur,
+        skill2: { sourceCardId: materialId, lv: 1 },
+      };
+      result = {
+        success: true,
+        kind: "skill2-replace",
+        newLv: 1,
+        message: `必殺技2を「${CARD_BY_ID[materialId]?.skill.name ?? "技"}」に差し替えた！`,
+      };
+    }
+
+    sfx("summon");
+    set({ owned, party, leaderId });
+    get().persist();
+    return result;
   },
 
   unlockDebug: () => {
@@ -542,8 +643,8 @@ export const useGame = create<GameStore>((set, get) => ({
     const owned = { ...get().owned };
     for (const c of CARDS) {
       if (c.fodder) continue;
-      if (!owned[c.id]) owned[c.id] = { level: 1, rank: 0, count: 1 };
-      else owned[c.id] = { ...owned[c.id], rank: owned[c.id].rank ?? 0, count: Math.max(owned[c.id].count, 1) };
+      if (!owned[c.id]) owned[c.id] = blankOwned();
+      else owned[c.id] = { ...owned[c.id], count: Math.max(owned[c.id].count, 1) };
     }
     set({ owned });
     get().persist();
@@ -572,7 +673,7 @@ export const useGame = create<GameStore>((set, get) => ({
     let owned = s.owned;
     let captured = s.captured.includes(node.id) ? s.captured : [...s.captured, node.id];
     if (node.reward.cardId && !owned[node.reward.cardId]) {
-      owned = { ...owned, [node.reward.cardId]: { level: 1, rank: 0, count: 1 } };
+      owned = { ...owned, [node.reward.cardId]: blankOwned() };
     }
     set({
       gold,

@@ -113,7 +113,7 @@ export function GoldChip({ gold }: { gold: number }) {
 export function CardFace({
   card,
   level,
-  rank = 0,
+  skill1Lv = 1,
   size = "sm",
   selected,
   dimmed,
@@ -127,7 +127,8 @@ export function CardFace({
 }: {
   card: Card;
   level?: number;
-  rank?: number;
+  /** 必殺技1 level — shown as 技Lv.N when > 1 */
+  skill1Lv?: number;
   size?: "mini" | "xs" | "sm" | "md" | "lg";
   selected?: boolean;
   dimmed?: boolean;
@@ -251,10 +252,12 @@ export function CardFace({
         {!compact && level ? (
           <span className="card-text-outline min-w-0 flex-1 truncate text-center text-[0.9em] tabular">
             Lv.{lv}
-            {rank ? <span className="text-brass">+{rank}</span> : null}
+            {skill1Lv > 1 ? <span className="text-brass"> 技{skill1Lv}</span> : null}
           </span>
-        ) : rank ? (
-          <span className="card-text-outline min-w-0 flex-1 truncate text-center text-[0.9em] text-brass tabular">+{rank}</span>
+        ) : skill1Lv > 1 ? (
+          <span className="card-text-outline min-w-0 flex-1 truncate text-center text-[0.9em] text-brass tabular">
+            技Lv.{skill1Lv}
+          </span>
         ) : (
           <span />
         )}
@@ -403,19 +406,19 @@ export function HpBar({ hp, max }: { hp: number; max: number }) {
 export function StatRow({
   card,
   level = 1,
-  rank = 0,
+  skill1Lv = 1,
 }: {
   card: Card;
   level?: number;
-  rank?: number;
+  skill1Lv?: number;
 }) {
   const rows = [
     { k: "Lv", v: level },
-    { k: "＋", v: rank },
-    { k: "HP", v: scaledStat(card.hp, level, rank) },
-    { k: "攻", v: scaledStat(card.atk, level, rank) },
-    { k: "防", v: scaledStat(card.def, level, rank) },
-    { k: "速", v: scaledStat(card.spd, level, rank) },
+    { k: "技", v: skill1Lv },
+    { k: "HP", v: scaledStat(card.hp, level) },
+    { k: "攻", v: scaledStat(card.atk, level) },
+    { k: "防", v: scaledStat(card.def, level) },
+    { k: "速", v: scaledStat(card.spd, level) },
   ];
   return (
     <dl className="flex flex-col gap-0.5 text-[11px]">
