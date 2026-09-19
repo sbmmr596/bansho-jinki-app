@@ -1132,9 +1132,22 @@ export function skillPowerScale(skillLv: number): number {
   return 1 + (lv - 1) * 0.08;
 }
 
-/** Success % when attempting skillLv → skillLv+1 (same-card or skill2 level-up). */
-export function fuseSuccessRate(skillLv: number): number {
-  return Math.max(5, 100 - (Math.max(1, skillLv) - 1) * 10);
+/**
+ * 強化合成 success % for skillLv → skillLv+1.
+ * Rates from Shinra Bansho Frontier wiki:
+ * https://w.atwiki.jp/sinraf/pages/34.html
+ */
+const FUSE_BASE: Record<number, number> = {
+  1: 75, 2: 50, 3: 25, 4: 20, 5: 15, 6: 10, 7: 5, 8: 2.5, 9: 1,
+};
+const FUSE_BONUS_MULT: Record<number, number> = {
+  1: 1.5, 2: 1.0, 3: 0.5, 4: 0.4, 5: 0.3, 6: 0.2, 7: 0.1, 8: 0.05, 9: 0.02,
+};
+export function fuseSuccessRate(skillLv: number, baseCardLv: number, matCardLv: number): number {
+  const lv = Math.max(1, Math.min(9, Math.floor(skillLv)));
+  const base = FUSE_BASE[lv] ?? 1;
+  const bonus = (Math.max(1, baseCardLv) + Math.max(1, matCardLv)) * (FUSE_BONUS_MULT[lv] ?? 0.02);
+  return Math.min(100, Math.round((base + bonus) * 10) / 10); // one decimal (e.g. 2.5)
 }
 
 /** @deprecated Use skillPowerScale */
