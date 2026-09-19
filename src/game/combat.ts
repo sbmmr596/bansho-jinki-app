@@ -1,4 +1,4 @@
-import { CARD_BY_ID, FORMATIONS, scaledStat, skillPowerScale } from "./data";
+import { BASIC_SKILL, CARD_BY_ID, FORMATIONS, scaledStat, skillPowerScale } from "./data";
 import type {
   BattleEvent,
   BattleLog,
@@ -141,12 +141,42 @@ function dealDamage(actor: Unit, target: Unit, skill: Skill, skillLv: number): {
   return { damage, mod };
 }
 
-/** Pick which skill a unit uses this action (70% skill1 / 30% skill2 when present). */
-export function pickActionSkill(actor: Unit): { skill: Skill; skillLv: number } {
-  if (actor.skill2 && Math.random() < 0.3) {
-    return { skill: actor.skill2.skill, skillLv: actor.skill2.lv };
+export type ActionSkillSlot = "basic" | "s1" | "s2";
+
+export interface PickedActionSkill {
+  skill: Skill;
+  skillLv: number;
+  slot: ActionSkillSlot;
+}
+
+/**
+ * Action pick rates for combat turns.
+ * No skill2: 基本技 45% / 必殺技1 55%
+ * With skill2: 基本技 35% / 必殺技1 40% / 必殺技2 25%
+ */
+export const ACTION_RATES = {
+  noSkill2: { basic: 0.45, s1: 0.55 },
+  withSkill2: { basic: 0.35, s1: 0.4, s2: 0.25 },
+} as const;
+
+/** Pick which skill a unit uses this action (basic / s1 / s2). */
+export function pickActionSkill(actor: Unit): PickedActionSkill {
+  const r = Math.random();
+  if (actor.skill2) {
+    const { basic, s1 } = ACTION_RATES.withSkill2;
+    if (r < basic) {
+      return { skill: BASIC_SKILL, skillLv: 1, slot: "basic" };
+    }
+    if (r < basic + s1) {
+      return { skill: actor.skill, skillLv: actor.skillLv, slot: "s1" };
+    }
+    return { skill: actor.skill2.skill, skillLv: actor.skill2.lv, slot: "s2" };
   }
-  return { skill: actor.skill, skillLv: actor.skillLv };
+  const { basic } = ACTION_RATES.noSkill2;
+  if (r < basic) {
+    return { skill: BASIC_SKILL, skillLv: 1, slot: "basic" };
+  }
+  return { skill: actor.skill, skillLv: actor.skillLv, slot: "s1" };
 }
 
 function applyFormation(
