@@ -7,6 +7,7 @@ import type {
   Formation,
   MapNode,
   Rarity,
+  Skill,
   SkillKind,
 } from "./types";
 
@@ -1124,6 +1125,14 @@ export const MAX_LEVEL = 50;
 /** @deprecated Rank no longer boosts stats; kept for old save migration only. */
 export const MAX_RANK = 99;
 export const MAX_SKILL_LV = 10;
+
+/** Shared basic attack used by every unit in combat (not card.skill). */
+export const BASIC_SKILL: Skill = {
+  name: "通常攻撃",
+  kind: "front",
+  power: 1.0,
+  desc: "正面の敵を攻撃する",
+};
 
 export function trainCost(level: number): number {
   const lv = Math.max(1, level);

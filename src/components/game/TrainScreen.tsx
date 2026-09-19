@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import {
+  BASIC_SKILL,
   CARD_BY_ID,
   FORMATIONS,
   MAX_LEVEL,
@@ -229,9 +230,9 @@ export function TrainScreen() {
             <>
               <SkillSlot
                 label="基本技"
-                name={card.skill.name}
-                desc={card.skill.desc}
-                power={card.skill.power}
+                name={BASIC_SKILL.name}
+                desc={BASIC_SKILL.desc}
+                power={BASIC_SKILL.power}
                 tone="basic"
               />
               <SkillSlot

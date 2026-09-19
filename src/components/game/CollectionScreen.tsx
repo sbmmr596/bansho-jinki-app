@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CARDS, CARD_BY_ID, FACTION_LABEL, FORMATIONS, TYPE_LABEL, skillPowerScale } from "@/game/data";
+import { BASIC_SKILL, CARDS, CARD_BY_ID, FACTION_LABEL, FORMATIONS, TYPE_LABEL, skillPowerScale } from "@/game/data";
 import type { Faction } from "@/game/types";
 import { useGame } from "@/game/store";
 import { CardFace, GoldChip, Shell, StatRow, TypeBadge } from "./pieces";
@@ -100,9 +100,9 @@ export function CollectionScreen() {
               <div className="flex min-h-0 flex-1 flex-col gap-1.5">
                 <DetailSkill
                   label="基本技"
-                  name={card.skill.name}
-                  desc={card.skill.desc}
-                  power={card.skill.power}
+                  name={BASIC_SKILL.name}
+                  desc={BASIC_SKILL.desc}
+                  power={BASIC_SKILL.power}
                 />
                 <DetailSkill
                   label="必殺技1"
