@@ -254,7 +254,7 @@ export function buildArenaEncounter(
     cardId: card.id,
     slot: slots[i]!,
     level: enemyLevel,
-    rank: 0,
+    skill1Lv: 1,
     isLeader: i === leaderIdx,
   }));
   const enemyTotalCost = heroes.reduce((s, c) => s + c.cost, 0);

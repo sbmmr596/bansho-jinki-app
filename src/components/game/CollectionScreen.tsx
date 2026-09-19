@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CARDS, FACTION_LABEL, FORMATIONS, TYPE_LABEL } from "@/game/data";
+import { CARDS, CARD_BY_ID, FACTION_LABEL, FORMATIONS, TYPE_LABEL, skillPowerScale } from "@/game/data";
 import type { Faction } from "@/game/types";
 import { useGame } from "@/game/store";
 import { CardFace, GoldChip, Shell, StatRow, TypeBadge } from "./pieces";
@@ -45,7 +45,7 @@ export function CollectionScreen() {
                     size="xs"
                     dimmed={!have}
                     selected={focus === c.id}
-                    rank={have?.rank}
+                    skill1Lv={have?.skill1Lv}
                     onClick={() => setFocus(c.id)}
                   />
                 </div>
@@ -57,7 +57,7 @@ export function CollectionScreen() {
         {card ? (
           <aside className="panel flex w-[320px] shrink-0 flex-col gap-2.5 overflow-y-auto rounded-lg p-3">
             <div className="flex gap-3">
-              <CardFace key={card.id} card={card} level={own?.level} rank={own?.rank} size="md" />
+              <CardFace key={card.id} card={card} level={own?.level} skill1Lv={own?.skill1Lv} size="md" />
               <div className="flex min-w-0 flex-1 flex-col gap-1 text-xs">
                 <p className="font-display text-sm leading-snug text-fg">{card.name}</p>
                 <p className="leading-snug text-muted">{card.title}</p>
@@ -78,7 +78,7 @@ export function CollectionScreen() {
             </div>
 
             <div className="border-t border-fg/10 pt-2">
-              <StatRow card={card} level={own?.level ?? 1} rank={own?.rank ?? 0} />
+              <StatRow card={card} level={own?.level ?? 1} skill1Lv={own?.skill1Lv ?? 1} />
             </div>
 
             {/* Fill remaining panel height like original detail: formation + skill */}
@@ -92,11 +92,38 @@ export function CollectionScreen() {
                 {form ? <FormationPreview slots={form.slots} /> : null}
               </div>
 
-              <div className="flex flex-1 flex-col rounded-md bg-raised/50 p-2 hairline">
-                <p className="text-[10px] tracking-wide text-faint">奥義</p>
-                <p className="font-display text-sm text-fg">{card.skill.name}</p>
-                <p className="mt-1 text-[11px] leading-relaxed text-muted">{card.skill.desc}</p>
-                <p className="mt-auto pt-2 text-[10px] text-brass">
+              <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+                <DetailSkill
+                  label="基本技"
+                  name={card.skill.name}
+                  desc={card.skill.desc}
+                  power={card.skill.power}
+                />
+                <DetailSkill
+                  label="必殺技1"
+                  name={card.skill.name}
+                  desc={card.skill.desc}
+                  power={card.skill.power}
+                  lv={own?.skill1Lv ?? 1}
+                  scaled={Math.round(card.skill.power * skillPowerScale(own?.skill1Lv ?? 1))}
+                />
+                {own?.skill2 && CARD_BY_ID[own.skill2.sourceCardId] ? (
+                  <DetailSkill
+                    label="必殺技2"
+                    name={CARD_BY_ID[own.skill2.sourceCardId]!.skill.name}
+                    desc={CARD_BY_ID[own.skill2.sourceCardId]!.skill.desc}
+                    power={CARD_BY_ID[own.skill2.sourceCardId]!.skill.power}
+                    lv={own.skill2.lv}
+                    scaled={Math.round(
+                      CARD_BY_ID[own.skill2.sourceCardId]!.skill.power *
+                        skillPowerScale(own.skill2.lv),
+                    )}
+                    tone="s2"
+                  />
+                ) : (
+                  <DetailSkill label="必殺技2" name="-" desc="未装着" empty tone="s2" />
+                )}
+                <p className="pt-1 text-[10px] text-brass">
                   属性 {TYPE_LABEL[card.type]}　／　種別 {skillKindLabel(card.skill.kind)}
                 </p>
               </div>
@@ -143,6 +170,56 @@ function skillKindLabel(kind: string) {
     heal: "回復",
   };
   return map[kind] ?? kind;
+}
+
+function DetailSkill({
+  label,
+  name,
+  desc,
+  power,
+  lv,
+  scaled,
+  empty,
+  tone,
+}: {
+  label: string;
+  name: string;
+  desc: string;
+  power?: number;
+  lv?: number;
+  scaled?: number;
+  empty?: boolean;
+  tone?: "s2";
+}) {
+  return (
+    <div
+      className={
+        "rounded-md p-2 hairline " +
+        (tone === "s2"
+          ? empty
+            ? "bg-crimson/20"
+            : "bg-crimson/10"
+          : "bg-raised/50")
+      }
+    >
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-[10px] tracking-wide text-faint">{label}</p>
+        {empty ? (
+          <span className="text-[10px] tabular text-crimson">Lv.-</span>
+        ) : lv != null ? (
+          <span className="text-[10px] tabular text-fg">Lv.{lv}</span>
+        ) : null}
+      </div>
+      <p className={"font-display text-sm " + (empty ? "text-crimson" : "text-fg")}>{name}</p>
+      <p className="mt-0.5 text-[11px] leading-snug text-muted">{desc}</p>
+      {power != null && !empty ? (
+        <p className="mt-0.5 text-[10px] text-brass">
+          威力:{scaled ?? power}
+          {scaled != null && scaled !== power ? `（基礎 ${power}）` : ""}
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
 function FilterChip({

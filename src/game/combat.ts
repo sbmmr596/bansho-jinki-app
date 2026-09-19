@@ -1,4 +1,4 @@
-import { CARD_BY_ID, FORMATIONS, scaledStat } from "./data";
+import { CARD_BY_ID, FORMATIONS, scaledStat, skillPowerScale } from "./data";
 import type {
   BattleEvent,
   BattleLog,
@@ -6,7 +6,9 @@ import type {
   ElementType,
   EnemyUnit,
   Formation,
+  OwnedSkill2,
   Side,
+  Skill,
   Unit,
 } from "./types";
 import { scaleEnemyLevel } from "./difficulty";
@@ -130,12 +132,21 @@ function selectTargets(actor: Unit, units: Unit[]): Unit[] {
   }
 }
 
-function dealDamage(actor: Unit, target: Unit): { damage: number; mod: number } {
+function dealDamage(actor: Unit, target: Unit, skill: Skill, skillLv: number): { damage: number; mod: number } {
   const mod = typeMod(actor.type, target.type);
-  const raw = actor.atk * actor.skill.power;
+  const power = skill.power * skillPowerScale(skillLv);
+  const raw = actor.atk * power;
   const reduced = raw * (90 / (90 + target.def));
   const damage = Math.max(1, Math.floor(reduced * mod));
   return { damage, mod };
+}
+
+/** Pick which skill a unit uses this action (70% skill1 / 30% skill2 when present). */
+export function pickActionSkill(actor: Unit): { skill: Skill; skillLv: number } {
+  if (actor.skill2 && Math.random() < 0.3) {
+    return { skill: actor.skill2.skill, skillLv: actor.skill2.lv };
+  }
+  return { skill: actor.skill, skillLv: actor.skillLv };
 }
 
 function applyFormation(
@@ -159,7 +170,10 @@ export interface PartyMember {
   cardId: string;
   slot: number;
   level: number;
-  rank: number;
+  /** @deprecated ignored for stats */
+  rank?: number;
+  skill1Lv: number;
+  skill2?: OwnedSkill2;
   isLeader: boolean;
 }
 
@@ -172,11 +186,19 @@ export function buildUnits(
   for (const m of members) {
     const card = CARD_BY_ID[m.cardId];
     if (!card) continue;
-    let hp = scaledStat(card.hp, m.level, m.rank);
-    let atk = scaledStat(card.atk, m.level, m.rank);
-    let def = scaledStat(card.def, m.level, m.rank);
-    let spd = scaledStat(card.spd, m.level, m.rank);
+    let hp = scaledStat(card.hp, m.level);
+    let atk = scaledStat(card.atk, m.level);
+    let def = scaledStat(card.def, m.level);
+    let spd = scaledStat(card.spd, m.level);
     ({ hp, atk, def, spd } = applyFormation(hp, atk, def, spd, m.slot, formation));
+    const skill1Lv = Math.max(1, m.skill1Lv ?? 1);
+    let skill2: Unit["skill2"];
+    if (m.skill2?.sourceCardId) {
+      const src = CARD_BY_ID[m.skill2.sourceCardId];
+      if (src) {
+        skill2 = { skill: src.skill, lv: Math.max(1, m.skill2.lv ?? 1) };
+      }
+    }
     units.push({
       uid: `${side}-${m.slot}`,
       cardId: card.id,
@@ -187,6 +209,8 @@ export function buildUnits(
       type: card.type,
       faction: card.faction,
       skill: card.skill,
+      skillLv: skill1Lv,
+      skill2,
       hp,
       maxHp: hp,
       atk,
@@ -206,25 +230,30 @@ export function enemyToMembers(enemy: EnemyUnit[], difficulty: Difficulty = "nor
     cardId: e.cardId,
     slot: e.slot,
     level: scaleEnemyLevel(e.level, difficulty),
-    rank: 0,
+    skill1Lv: 1,
     isLeader: !!e.leader,
   }));
 }
 
 export function performAction(actor: Unit, units: Unit[]): BattleEvent[] {
+  const { skill, skillLv } = pickActionSkill(actor);
+  // Temporarily bind chosen skill so selectTargets reads actor.skill.kind
+  const prev = actor.skill;
+  actor.skill = skill;
   const events: BattleEvent[] = [
-    { kind: "skill", actorUid: actor.uid, skillName: actor.skill.name, side: actor.side },
+    { kind: "skill", actorUid: actor.uid, skillName: skill.name, side: actor.side },
   ];
   let targets = selectTargets(actor, units);
-  if (actor.skill.kind === "heal") {
+  if (skill.kind === "heal") {
     targets = targets.filter((t) => t.side === actor.side);
   } else {
     targets = targets.filter((t) => t.side !== actor.side && t.alive);
   }
-  if (actor.skill.kind === "heal") {
+  if (skill.kind === "heal") {
     const t = targets[0];
     if (t && t.hp < t.maxHp) {
-      const raw = Math.floor(actor.atk * actor.skill.power * 0.3);
+      const power = skill.power * skillPowerScale(skillLv);
+      const raw = Math.floor(actor.atk * power * 0.3);
       const cap = Math.floor(t.maxHp * 0.14);
       const amount = Math.max(1, Math.min(raw, cap, t.maxHp - t.hp));
       t.hp = Math.min(t.maxHp, t.hp + amount);
@@ -236,19 +265,21 @@ export function performAction(actor: Unit, units: Unit[]): BattleEvent[] {
         hpAfter: t.hp,
       });
     }
+    actor.skill = prev;
     return events;
   }
-  if (actor.skill.kind === "haste" || actor.skill.kind === "slow") {
-    const mul = actor.skill.kind === "haste" ? 1.15 : 0.85;
+  if (skill.kind === "haste" || skill.kind === "slow") {
+    const mul = skill.kind === "haste" ? 1.15 : 0.85;
     for (const t of targets) {
       t.haste = Math.max(0.5, Math.min(2, (t.haste ?? 1) * mul));
     }
-    events.push({ kind: "buff", actorUid: actor.uid, mode: actor.skill.kind });
+    events.push({ kind: "buff", actorUid: actor.uid, mode: skill.kind });
+    actor.skill = prev;
     return events;
   }
   for (const t of targets) {
     if (!t.alive) continue;
-    const { damage, mod } = dealDamage(actor, t);
+    const { damage, mod } = dealDamage(actor, t, skill, skillLv);
     t.hp = Math.max(0, t.hp - damage);
     events.push({
       kind: "hit",
@@ -263,6 +294,7 @@ export function performAction(actor: Unit, units: Unit[]): BattleEvent[] {
       events.push({ kind: "ko", uid: t.uid, wasLeader: t.isLeader });
     }
   }
+  actor.skill = prev;
   return events;
 }
 

@@ -62,10 +62,28 @@ export interface Card {
   fodder?: boolean;
 }
 
+export interface OwnedSkill2 {
+  sourceCardId: string;
+  lv: number;
+}
+
 export interface OwnedCard {
   level: number;
-  rank: number;
   count: number;
+  /** 必殺技1 level 1..MAX_SKILL_LV */
+  skill1Lv: number;
+  /** Optional installed 必殺技2 from another card */
+  skill2?: OwnedSkill2;
+}
+
+export type FuseKind = "skill1" | "skill2-install" | "skill2-level" | "skill2-replace";
+
+export interface FuseResult {
+  success: boolean;
+  kind: FuseKind;
+  newLv: number;
+  rate?: number;
+  message: string;
 }
 
 export interface EnemyUnit {
@@ -100,6 +118,8 @@ export interface Unit {
   type: ElementType;
   faction: Faction;
   skill: Skill;
+  skillLv: number;
+  skill2?: { skill: Skill; lv: number };
   hp: number;
   maxHp: number;
   atk: number;

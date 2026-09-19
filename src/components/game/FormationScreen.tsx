@@ -83,7 +83,7 @@ export function FormationScreen() {
                   key={card.id}
                   card={card}
                   level={owned[card.id]?.level}
-                  rank={owned[card.id]?.rank}
+                  skill1Lv={owned[card.id]?.skill1Lv}
                   size="sm"
                   selected={selected === card.id}
                   dimmed={inParty.has(card.id) && selected !== card.id}
@@ -101,7 +101,7 @@ export function FormationScreen() {
               <p className="text-[10px] leading-tight text-muted">
                 {FACTION_LABEL[focus.faction]}　{focus.title}
               </p>
-              <StatRow card={focus} level={owned[focus.id]?.level ?? 1} rank={owned[focus.id]?.rank ?? 0} />
+              <StatRow card={focus} level={owned[focus.id]?.level ?? 1} skill1Lv={owned[focus.id]?.skill1Lv ?? 1} />
               <p className="text-[11px] leading-snug text-fg">
                 {focus.skill.name}
                 <span className="ml-1 text-muted">{focus.skill.desc}</span>
@@ -136,7 +136,7 @@ function FormationMini({
 }: {
   formationId: string;
   party: (string | null)[];
-  owned: Record<string, { level: number; rank?: number }>;
+  owned: Record<string, { level: number; skill1Lv?: number }>;
   leaderId: string | null;
   selected: string | null;
   onSlot: (slot: number) => void;
@@ -165,7 +165,7 @@ function FormationMini({
                 <CardFace
                   card={card}
                   level={owned[card.id]?.level}
-                  rank={owned[card.id]?.rank}
+                  skill1Lv={owned[card.id]?.skill1Lv}
                   size="xs"
                   leader={leaderId === card.id}
                   className="h-full max-h-full w-auto max-w-full"
