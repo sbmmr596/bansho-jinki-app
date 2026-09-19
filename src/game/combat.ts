@@ -2,12 +2,14 @@ import { CARD_BY_ID, FORMATIONS, scaledStat } from "./data";
 import type {
   BattleEvent,
   BattleLog,
+  Difficulty,
   ElementType,
   EnemyUnit,
   Formation,
   Side,
   Unit,
 } from "./types";
+import { scaleEnemyLevel } from "./difficulty";
 
 const CRIT = 1.5;
 const S_CRIT = 1.2;
@@ -199,11 +201,11 @@ export function buildUnits(
   return units;
 }
 
-export function enemyToMembers(enemy: EnemyUnit[]): PartyMember[] {
+export function enemyToMembers(enemy: EnemyUnit[], difficulty: Difficulty = "normal"): PartyMember[] {
   return enemy.map((e) => ({
     cardId: e.cardId,
     slot: e.slot,
-    level: e.level,
+    level: scaleEnemyLevel(e.level, difficulty),
     rank: 0,
     isLeader: !!e.leader,
   }));

@@ -1,4 +1,5 @@
 import { CARD_BY_ID, COUNTER_OF, FORMATIONS, NODE_BY_ID, TYPE_LABEL } from "@/game/data";
+import { scaleEnemyLevel } from "@/game/difficulty";
 import { formationOfLeader, typeMod } from "@/game/combat";
 import { currentCostCap, partyCost, useGame } from "@/game/store";
 import { CardFace, GhostButton, PrimaryButton, Shell, TypeBadge } from "./pieces";
@@ -11,6 +12,7 @@ export function ScoutScreen() {
   const captured = useGame((s) => s.captured);
   const setScreen = useGame((s) => s.setScreen);
   const startBattle = useGame((s) => s.startBattle);
+  const difficulty = useGame((s) => s.difficulty);
   const node = scoutNodeId ? NODE_BY_ID[scoutNodeId] : null;
   if (!node) return null;
 
@@ -59,7 +61,7 @@ export function ScoutScreen() {
                       )}
                     >
                       {occupied ? (
-                        <CardFace card={card} level={eu.level} size="mini" leader={!!eu.leader} />
+                        <CardFace card={card} level={scaleEnemyLevel(eu.level, difficulty)} size="mini" leader={!!eu.leader} />
                       ) : open ? (
                         <span className="text-[10px] text-faint">空</span>
                       ) : null}

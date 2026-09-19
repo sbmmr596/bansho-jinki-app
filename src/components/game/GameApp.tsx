@@ -19,6 +19,7 @@ import { ScoutScreen } from "./ScoutScreen";
 import { SummonScreen } from "./SummonScreen";
 import { TitleScreen } from "./TitleScreen";
 import { TrainScreen } from "./TrainScreen";
+import { ArenaScreen } from "./ArenaScreen";
 import { ArtZoom } from "./pieces";
 
 const ASPECT = 16 / 9;
@@ -224,6 +225,7 @@ export function GameApp() {
         {screen === "result" ? <ResultScreen /> : null}
         {screen === "summon" ? <SummonScreen /> : null}
         {screen === "train" ? <TrainScreen /> : null}
+        {screen === "arena" ? <ArenaScreen /> : null}
         {helpOpen ? <HelpOverlay /> : null}
         {debugOpen ? <DebugPanel /> : null}
         {catalogOpen ? <CatalogPanel onClose={() => setCatalogOpen(false)} /> : null}

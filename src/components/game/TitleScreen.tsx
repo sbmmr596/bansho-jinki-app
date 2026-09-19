@@ -1,7 +1,10 @@
 import { useRef, useState } from "react";
 import { CARD_BY_ID } from "@/game/data";
+import { DIFFICULTIES, DIFFICULTY_META, difficultyLabel } from "@/game/difficulty";
 import { useGame } from "@/game/store";
+import type { Difficulty } from "@/game/types";
 import { requestGameDisplay } from "@/lib/display-mode";
+import { cn } from "@/lib/utils";
 import { CardFace, GhostButton, PrimaryButton } from "./pieces";
 
 const FEATURED = ["kaien", "azuha", "fenrir"] as const;
@@ -16,6 +19,8 @@ export function TitleScreen() {
   const taps = useRef(0);
   const tapTimer = useRef(0);
   const [displayHint, setDisplayHint] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>("normal");
 
   const onMark = () => {
     taps.current += 1;
@@ -29,9 +34,19 @@ export function TitleScreen() {
     }
   };
 
-  const start = (fn: () => void) => () => {
+  const enterDisplay = () => {
     void requestGameDisplay(document.querySelector(".game-frame") as HTMLElement | null);
-    fn();
+  };
+
+  const openDifficulty = () => {
+    enterDisplay();
+    setDifficulty("normal");
+    setPicking(true);
+  };
+
+  const confirmNewGame = () => {
+    enterDisplay();
+    newGame(difficulty);
   };
 
   const onFullscreen = async () => {
@@ -46,6 +61,59 @@ export function TitleScreen() {
       setDisplayHint(result.reason ?? "このブラウザでは制限あり（PWA推奨）");
     }
   };
+
+  if (picking) {
+    return (
+      <div className="relative flex h-full min-h-0 w-full overflow-hidden text-fg">
+        <img
+          src="/bg/title.jpg"
+          alt=""
+          crossOrigin="anonymous"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/80 to-bg/40" />
+        <div className="relative flex h-full w-full items-center justify-center px-6 py-4">
+          <div className="flex w-full max-w-xl flex-col items-center gap-4">
+            <p className="text-[10px] tracking-[0.35em] text-brass">DIFFICULTY</p>
+            <h2 className="font-display text-3xl">難易度を選ぶ</h2>
+            <p className="max-w-md text-center text-sm text-muted">
+              はじめからの難易度。あとから変更はできない（つづきからは保存値を使う）。
+            </p>
+            <div className="grid w-full grid-cols-3 gap-2">
+              {DIFFICULTIES.map((id) => {
+                const m = DIFFICULTY_META[id];
+                const selected = difficulty === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setDifficulty(id)}
+                    className={cn(
+                      "rounded-lg px-2 py-3 text-left hairline transition",
+                      selected ? "bg-brass/25 text-fg" : "bg-surface/80 text-muted",
+                    )}
+                  >
+                    <p className="font-display text-lg text-fg">{m.flavor}</p>
+                    <p className="text-[11px] text-brass">（{m.plain}）</p>
+                    <p className="mt-2 text-[10px] leading-snug text-faint">{m.blurb}</p>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted">選択中：{difficultyLabel(difficulty)}</p>
+            <div className="flex gap-3">
+              <GhostButton onClick={() => setPicking(false)} className="h-11 min-w-28">
+                戻る
+              </GhostButton>
+              <PrimaryButton onClick={confirmNewGame} className="h-11 min-w-36">
+                この難易度ではじめる
+              </PrimaryButton>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex h-full min-h-0 w-full overflow-hidden text-fg">
@@ -81,16 +149,22 @@ export function TitleScreen() {
           </div>
           <div className="flex w-44 shrink-0 flex-col gap-2">
             {hasExisting ? (
-              <PrimaryButton onClick={start(continueGame)} className="h-11">
+              <PrimaryButton
+                onClick={() => {
+                  enterDisplay();
+                  continueGame();
+                }}
+                className="h-11"
+              >
                 つづきから
               </PrimaryButton>
             ) : null}
             {hasExisting ? (
-              <GhostButton onClick={start(newGame)} className="h-11">
+              <GhostButton onClick={openDifficulty} className="h-11">
                 はじめから
               </GhostButton>
             ) : (
-              <PrimaryButton onClick={start(newGame)} className="h-11">
+              <PrimaryButton onClick={openDifficulty} className="h-11">
                 はじめる
               </PrimaryButton>
             )}

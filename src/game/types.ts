@@ -6,6 +6,7 @@ export type Side = "player" | "enemy";
 export type FieldKind = "grass" | "snow" | "magma" | "forest" | "waste";
 export type BattleSpeed = 1 | 2 | 4;
 export type NavSide = "left" | "right";
+export type Difficulty = "easy" | "normal" | "hard";
 export type Screen =
   | "title"
   | "palace"
@@ -16,7 +17,8 @@ export type Screen =
   | "battle"
   | "result"
   | "summon"
-  | "train";
+  | "train"
+  | "arena";
 
 export interface Skill {
   name: string;
@@ -148,6 +150,7 @@ export interface BattleResult {
   leveled: string[];
   nodeName: string;
   trial?: boolean;
+  arena?: boolean;
   waves?: number;
   kills?: number;
 }
@@ -163,6 +166,8 @@ export interface SaveState {
   captured: string[];
   battleSpeed: BattleSpeed;
   navSide: NavSide;
+  /** Set at new game; continue uses saved value. Default normal for old saves. */
+  difficulty: Difficulty;
 }
 
 export function clampBattleSpeed(n: unknown): BattleSpeed {

@@ -2,6 +2,13 @@ import { create } from "zustand";
 import { sfx, unlockAudio } from "./audio";
 import { enemyToMembers, formationOfLeader, simulateBattle } from "./combat";
 import { beginTrial, clearTrial } from "./trial";
+import { clampDifficulty } from "./difficulty";
+import {
+  ARENA_TIER_META,
+  buildArenaEncounter,
+  partyAverageLevel,
+  type ArenaTier,
+} from "./arena";
 import {
   CARD_BY_ID,
   CARDS,
@@ -23,6 +30,7 @@ import type {
   BattleLog,
   BattleResult,
   BattleSpeed,
+  Difficulty,
   FieldKind,
   SaveState,
   Screen,
@@ -43,11 +51,13 @@ interface GameStore extends SaveState {
   debugUnlocked: boolean;
   debugOpen: boolean;
   trial: { kills: number; field: FieldKind } | null;
+  /** Active arena bout metadata (fee already deducted). Separate from endless trial. */
+  arena: { tier: ArenaTier; fee: number; reward: number; seed: number } | null;
   catalogSource: "default" | "custom" | "drive" | "github";
   catalogOpen: boolean;
   zoomCardId: string | null;
   hydrate: () => void;
-  newGame: () => void;
+  newGame: (difficulty?: Difficulty) => void;
   continueGame: () => void;
   setScreen: (s: Screen) => void;
   setHelp: (v: boolean) => void;
@@ -75,6 +85,7 @@ interface GameStore extends SaveState {
   startTrial: () => void;
   endTrial: () => void;
   addTrialKills: (n: number) => void;
+  startArena: (tier: ArenaTier) => { ok: true } | { ok: false; reason: string };
   resetAll: () => void;
   setCatalogSource: (v: "default" | "custom" | "drive" | "github") => void;
   setCatalogOpen: (v: boolean) => void;
@@ -119,6 +130,7 @@ export const useGame = create<GameStore>((set, get) => ({
   debugUnlocked: true,
   debugOpen: false,
   trial: null,
+  arena: null,
   catalogSource: "default",
   catalogOpen: false,
   zoomCardId: null,
@@ -157,11 +169,11 @@ export const useGame = create<GameStore>((set, get) => ({
     });
   },
 
-  newGame: () => {
+  newGame: (difficulty = "normal") => {
     unlockAudio();
     sfx("click");
     clearSave();
-    const fresh = defaultSave();
+    const fresh = { ...defaultSave(), difficulty: clampDifficulty(difficulty) };
     writeSave(fresh);
     set({
       ...fresh,
@@ -173,6 +185,8 @@ export const useGame = create<GameStore>((set, get) => ({
       battle: null,
       result: null,
       lastSummon: null,
+      trial: null,
+      arena: null,
     });
   },
 
@@ -201,6 +215,7 @@ export const useGame = create<GameStore>((set, get) => ({
       captured: s.captured,
       battleSpeed: clampBattleSpeed(s.battleSpeed),
       navSide: clampNavSide(s.navSide),
+      difficulty: clampDifficulty(s.difficulty),
     });
   },
 
@@ -320,12 +335,12 @@ export const useGame = create<GameStore>((set, get) => ({
     const enemyLeader = node.enemy.find((e) => e.leader)?.cardId ?? node.enemy[0]?.cardId;
     const log = simulateBattle(
       player,
-      enemyToMembers(node.enemy),
+      enemyToMembers(node.enemy, clampDifficulty(s.difficulty)),
       formationOfLeader(s.leaderId).id,
       formationOfLeader(enemyLeader ?? null).id,
     );
     unlockAudio();
-    set({ battle: log, screen: "battle", result: null, trial: null });
+    set({ battle: log, screen: "battle", result: null, trial: null, arena: null });
   },
 
   finishBattle: (endOverride) => {
@@ -352,7 +367,31 @@ export const useGame = create<GameStore>((set, get) => ({
       };
       sfx(end.winner === "player" ? "win" : "lose");
       clearTrial();
-      set({ result, screen: "result", battle: null, trial: null });
+      set({ result, screen: "result", battle: null, trial: null, arena: null });
+      return;
+    }
+
+    if (s.arena) {
+      let goldGain = 0;
+      let gold = s.gold;
+      if (end.winner === "player") {
+        goldGain = s.arena.reward;
+        gold += goldGain;
+      }
+      const tierName = ARENA_TIER_META[s.arena.tier].name;
+      const result: BattleResult = {
+        winner: end.winner,
+        reason: end.reason,
+        goldGain,
+        cardGain: null,
+        cardWasNew: false,
+        leveled: [],
+        nodeName: `闘技場・${tierName}`,
+        arena: true,
+      };
+      sfx(end.winner === "player" ? "win" : "lose");
+      set({ gold, result, screen: "result", battle: null, arena: null });
+      get().persist();
       return;
     }
 
@@ -409,12 +448,15 @@ export const useGame = create<GameStore>((set, get) => ({
     sfx("click");
     const s = get();
     const trialDone = !!s.result?.trial;
+    const arenaDone = !!s.result?.arena;
     const wonCapital =
       s.result?.winner === "player" && s.scoutNodeId === "capital";
+    const toPalace = trialDone || wonCapital;
     set({
-      screen: trialDone || wonCapital ? "palace" : "map",
+      screen: arenaDone ? "arena" : toPalace ? "palace" : "map",
       battle: null,
-      scoutNodeId: trialDone || wonCapital ? null : s.scoutNodeId,
+      scoutNodeId: toPalace || arenaDone ? null : s.scoutNodeId,
+      result: null,
     });
   },
 
@@ -539,6 +581,44 @@ export const useGame = create<GameStore>((set, get) => ({
     get().persist();
   },
 
+  startArena: (tier) => {
+    const s = get();
+    const player = trialParty(s);
+    if (!player.length || !s.leaderId) {
+      return { ok: false, reason: "リーダーとパーティが必要です" };
+    }
+    const avg = partyAverageLevel(s.party, s.owned);
+    const encounter = buildArenaEncounter(player.length, avg, tier);
+    if (s.gold < encounter.fee) {
+      return { ok: false, reason: "金が足りない" };
+    }
+    const log = simulateBattle(
+      player,
+      encounter.enemies,
+      formationOfLeader(s.leaderId).id,
+      encounter.formationId,
+    );
+    unlockAudio();
+    sfx("click");
+    set({
+      gold: s.gold - encounter.fee,
+      battle: log,
+      screen: "battle",
+      result: null,
+      trial: null,
+      arena: {
+        tier,
+        fee: encounter.fee,
+        reward: encounter.reward,
+        seed: encounter.seed,
+      },
+      scoutNodeId: null,
+      debugOpen: false,
+    });
+    get().persist();
+    return { ok: true };
+  },
+
   startTrial: () => {
     const s = get();
     const player = trialParty(s);
@@ -549,6 +629,7 @@ export const useGame = create<GameStore>((set, get) => ({
     set({
       battle: { units: live.units.map((u) => ({ ...u })), events: [] },
       trial: { kills: 0, field: live.field },
+      arena: null,
       screen: "battle",
       debugOpen: false,
       result: null,
@@ -598,6 +679,8 @@ export const useGame = create<GameStore>((set, get) => ({
       battle: null,
       result: null,
       lastSummon: null,
+      trial: null,
+      arena: null,
     });
   },
   setCatalogSource: (v) => set({ catalogSource: v }),

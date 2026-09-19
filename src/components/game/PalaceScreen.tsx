@@ -1,4 +1,5 @@
 import { CARD_BY_ID, NODES } from "@/game/data";
+import { difficultyLabel } from "@/game/difficulty";
 import { currentCostCap, partyCost, useGame } from "@/game/store";
 import { CardFace, GoldChip, PrimaryButton, Shell } from "./pieces";
 
@@ -8,6 +9,7 @@ export function PalaceScreen() {
   const party = useGame((s) => s.party);
   const leaderId = useGame((s) => s.leaderId);
   const owned = useGame((s) => s.owned);
+  const difficulty = useGame((s) => s.difficulty);
   const setScreen = useGame((s) => s.setScreen);
   const setHelp = useGame((s) => s.setHelp);
   const setCatalogOpen = useGame((s) => s.setCatalogOpen);
@@ -37,14 +39,18 @@ export function PalaceScreen() {
                 ? "帝都は落ちた。万象は、しばらくあなたの手にある。"
                 : "本拠から地を広げよ。敵の属性を見て、陣を組み直せ。"}
             </p>
-            <div className="grid max-w-md grid-cols-3 gap-2">
+            <div className="grid max-w-md grid-cols-4 gap-2">
               <Stat label="領地" value={`${captured.length}/${NODES.length}`} />
               <Stat label="所持" value={`${Object.keys(owned).length}`} />
               <Stat label="コスト" value={`${partyCost(party)}/${cap}`} />
+              <Stat label="難易度" value={difficultyLabel(difficulty)} compact />
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <PrimaryButton onClick={() => setScreen("map")} className="min-w-36">
                 出陣する
+              </PrimaryButton>
+              <PrimaryButton onClick={() => setScreen("arena")} className="min-w-28">
+                闘技場
               </PrimaryButton>
               <button type="button" onClick={() => setHelp(true)} className="h-11 text-sm text-muted">
                 属性相性
@@ -94,11 +100,13 @@ export function PalaceScreen() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, compact }: { label: string; value: string; compact?: boolean }) {
   return (
     <div className="rounded-lg bg-surface/80 px-3 py-2 hairline">
       <p className="text-[10px] tracking-wide text-faint">{label}</p>
-      <p className="font-display text-lg tabular text-fg">{value}</p>
+      <p className={"font-display tabular text-fg " + (compact ? "text-sm leading-tight" : "text-lg")}>
+        {value}
+      </p>
     </div>
   );
 }
