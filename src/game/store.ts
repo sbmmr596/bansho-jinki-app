@@ -7,6 +7,8 @@ import {
   ARENA_TIER_META,
   buildArenaEncounter,
   partyAverageLevel,
+  partyMaxCost,
+  partyTotalCost,
   type ArenaTier,
 } from "./arena";
 import {
@@ -588,7 +590,10 @@ export const useGame = create<GameStore>((set, get) => ({
       return { ok: false, reason: "リーダーとパーティが必要です" };
     }
     const avg = partyAverageLevel(s.party, s.owned);
-    const encounter = buildArenaEncounter(player.length, avg, tier);
+    const encounter = buildArenaEncounter(player.length, avg, tier, {
+      playerTotalCost: partyTotalCost(s.party),
+      playerMaxCost: partyMaxCost(s.party),
+    });
     if (s.gold < encounter.fee) {
       return { ok: false, reason: "金が足りない" };
     }
