@@ -65,6 +65,11 @@ export function CollectionScreen() {
                   <TypeBadge type={card.type} />
                   <span className="text-muted">{FACTION_LABEL[card.faction]}</span>
                   <span className="text-brass">{card.rarity}</span>
+                  {card.fodder ? (
+                    <span className="rounded-sm bg-crimson/85 px-1.5 py-0.5 text-[10px] font-semibold text-fg">
+                      素材専用
+                    </span>
+                  ) : null}
                 </div>
                 <p className="text-[11px] text-muted">
                   コスト <span className="tabular text-fg">{card.cost}</span>

@@ -14,12 +14,15 @@ import {
 import {
   CARD_BY_ID,
   CARDS,
+  FODDER_CARDS,
   HERO_CARDS,
   MAX_LEVEL,
   MAX_SKILL_LV,
   NODE_BY_ID,
   NODES,
+  SPECIAL_FODDER,
   SUMMON_COST,
+  SUMMON_INCLUDE_FODDER,
   applyCatalog,
   costCapFor,
   fuseSuccessRate,
@@ -27,7 +30,7 @@ import {
   trainCost,
 } from "./data";
 import { CATALOG_KEY } from "./catalog-api";
-import { blankOwned, clearSave, defaultSave, hasSave, loadSave, writeSave } from "./save";
+import { blankOwned, clearSave, defaultSave, hasSave, loadSave, sanitizeParty, writeSave } from "./save";
 import type {
   BattleEvent,
   BattleLog,
@@ -97,7 +100,18 @@ interface GameStore extends SaveState {
   setZoomCard: (id: string | null) => void;
 }
 
+/**
+ * Summon pick rates:
+ * - When SUMMON_INCLUDE_FODDER: ~40% fodder (material-only N), remaining 60% heroes
+ *   with legacy SP/H/S/N weights among heroes only
+ *   (absolute ≈ fodder 40% / N 33% / S 16.8% / H 8.4% / SP 1.8%).
+ * - When off: legacy heroes only — SP 3% / H 14% / S 28% / N 55%.
+ */
 function pickSummonId(): string {
+  if (SUMMON_INCLUDE_FODDER && Math.random() < 0.4) {
+    const pool = [...FODDER_CARDS, ...SPECIAL_FODDER];
+    return pool[Math.floor(Math.random() * pool.length)].id;
+  }
   const roll = Math.random();
   const rarity = roll < 0.03 ? "SP" : roll < 0.17 ? "H" : roll < 0.45 ? "S" : "N";
   const pool = HERO_CARDS.filter((c) => c.rarity === rarity);
@@ -159,7 +173,7 @@ export const useGame = create<GameStore>((set, get) => ({
         /* keep default */
       }
       existing = hasSave();
-      loaded = existing ? loadSave() : defaultSave();
+      loaded = sanitizeParty(existing ? loadSave() : defaultSave());
     } catch {
       /* local load optional — still clear splash */
     } finally {
@@ -200,7 +214,7 @@ export const useGame = create<GameStore>((set, get) => ({
   continueGame: () => {
     unlockAudio();
     sfx("click");
-    const loaded = loadSave();
+    const loaded = sanitizeParty(loadSave());
     set({ ...loaded, screen: "palace", hasExisting: true });
   },
 
@@ -247,6 +261,8 @@ export const useGame = create<GameStore>((set, get) => ({
     const s = get();
     const form = formationOfLeader(s.leaderId);
     if (!form.slots[slot]) return;
+    // Material-only fodder cannot join party / formation
+    if (cardId && CARD_BY_ID[cardId]?.fodder) return;
     let party = s.party.slice();
     let leaderId = s.leaderId;
 
@@ -310,6 +326,7 @@ export const useGame = create<GameStore>((set, get) => ({
 
   setLeader: (cardId) => {
     const s = get();
+    if (CARD_BY_ID[cardId]?.fodder) return;
     if (!s.party.includes(cardId)) return;
     const nextForm = formationOfLeader(cardId);
     const party = s.party.map((id, i) => (nextForm.slots[i] ? id : null));
@@ -502,6 +519,7 @@ export const useGame = create<GameStore>((set, get) => ({
 
   trainGold: (cardId) => {
     const s = get();
+    if (CARD_BY_ID[cardId]?.fodder) return;
     const own = s.owned[cardId];
     if (!own || own.level >= MAX_LEVEL) return;
     const cost = trainCost(own.level);
@@ -519,6 +537,8 @@ export const useGame = create<GameStore>((set, get) => ({
 
   trainFuse: (cardId) => {
     const s = get();
+    // Fodder is material-only — no same-name skill1 fuse as base
+    if (CARD_BY_ID[cardId]?.fodder) return null;
     const own = s.owned[cardId];
     if (!own || own.count < 2 || own.skill1Lv >= MAX_SKILL_LV) return null;
     const rate = fuseSuccessRate(own.skill1Lv, own.level, own.level);
@@ -547,6 +567,8 @@ export const useGame = create<GameStore>((set, get) => ({
   trainFuseOther: (baseId, materialId) => {
     const s = get();
     if (baseId === materialId) return null;
+    // Fodder OK as material for 異名合成; not as base
+    if (CARD_BY_ID[baseId]?.fodder) return null;
     const base = s.owned[baseId];
     const mat = s.owned[materialId];
     if (!base || !mat || mat.count < 1) return null;

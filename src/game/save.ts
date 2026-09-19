@@ -95,6 +95,25 @@ export function defaultSave(): SaveState {
   };
 }
 
+
+/** Strip material-only fodder from party/leader (corrupt or experimental saves). */
+export function sanitizeParty(state: SaveState): SaveState {
+  const party = state.party.map((id) => {
+    if (!id) return null;
+    const c = CARD_BY_ID[id];
+    if (!c || c.fodder) return null;
+    return id;
+  });
+  let leaderId = state.leaderId;
+  if (leaderId) {
+    const leader = CARD_BY_ID[leaderId];
+    if (!leader || leader.fodder || !party.includes(leaderId)) {
+      leaderId = party.find((id) => !!id) ?? null;
+    }
+  }
+  return { ...state, party, leaderId };
+}
+
 export function loadSave(): SaveState {
   const base = defaultSave();
   if (typeof window === "undefined") return base;
@@ -108,7 +127,7 @@ export function loadSave(): SaveState {
       owned[id] = migrateOwned(o as Partial<OwnedCard> & { rank?: number });
     }
     const party = Array.from({ length: 9 }, (_, i) => parsed.party?.[i] ?? null);
-    return {
+    return sanitizeParty({
       version: SAVE_VERSION,
       gold: typeof parsed.gold === "number" ? parsed.gold : base.gold,
       owned,
@@ -118,7 +137,7 @@ export function loadSave(): SaveState {
       battleSpeed: clampBattleSpeed(parsed.battleSpeed),
       navSide: clampNavSide(parsed.navSide),
       difficulty: clampDifficulty(parsed.difficulty),
-    };
+    });
   } catch {
     return base;
   }

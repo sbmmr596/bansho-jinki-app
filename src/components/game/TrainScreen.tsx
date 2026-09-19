@@ -33,7 +33,7 @@ export function TrainScreen() {
 
   const tray = Object.keys(owned)
     .map((id) => CARD_BY_ID[id])
-    .filter(Boolean)
+    .filter((c): c is NonNullable<typeof c> => !!c && !c.fodder)
     .sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name, "ja"));
   const focusId = selected && owned[selected] ? selected : (tray[0]?.id ?? null);
   const card = focusId ? CARD_BY_ID[focusId] : null;
@@ -46,10 +46,11 @@ export function TrainScreen() {
   const lvMax = !!own && own.level >= MAX_LEVEL;
   const skill1Max = skill1Lv >= MAX_SKILL_LV;
   const cost = own ? trainCost(own.level) : 0;
-  const canGold = !!own && !lvMax && gold >= cost;
+  const isFodderBase = !!card?.fodder;
+  const canGold = !!own && !lvMax && !isFodderBase && gold >= cost;
 
   const sameCopies = !!own && own.count >= 2;
-  const canSkill1 = !!own && !skill1Max && sameCopies;
+  const canSkill1 = !!own && !skill1Max && sameCopies && !isFodderBase;
 
   const otherMaterials = useMemo(() => {
     if (!focusId) return [];
@@ -154,6 +155,11 @@ export function TrainScreen() {
                   <div className="flex flex-wrap items-center gap-1">
                     <TypeBadge type={card.type} />
                     <span className="text-[10px] text-brass">{card.rarity}</span>
+                    {card.fodder ? (
+                      <span className="rounded-sm bg-crimson/85 px-1 py-0.5 text-[9px] font-semibold text-fg">
+                        素材専用
+                      </span>
+                    ) : null}
                   </div>
                   <p className="text-[10px] text-muted">
                     所持 <span className="tabular text-fg">{own.count}</span>
@@ -188,7 +194,11 @@ export function TrainScreen() {
                 </div>
               </div>
 
-              {lvMax ? (
+              {isFodderBase ? (
+                <p className="rounded-sm bg-crimson/20 px-1.5 py-1 text-[11px] text-crimson">
+                  素材専用 — 金鍛錬・同名合成不可（異名の素材には使える）
+                </p>
+              ) : lvMax ? (
                 <p className="text-[11px] text-brass">レベルは最大。</p>
               ) : (
                 <PrimaryButton

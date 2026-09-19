@@ -7,6 +7,7 @@ import type {
   Formation,
   MapNode,
   Rarity,
+  SkillKind,
 } from "./types";
 
 export const TYPE_LABEL: Record<ElementType, string> = {
@@ -893,6 +894,9 @@ const FALLBACK_HEROES: Card[] = [
 const ELEMENTS: ElementType[] = ["power", "skill", "magic", "void", "heaven", "earth"];
 const FACTION_IDS: Faction[] = ["koryu", "tekki", "tensho", "metsujin", "reiju", "yukei"];
 
+/** Experimental: include fodder in summon pool as material-only. Easy to flip off. */
+export const SUMMON_INCLUDE_FODDER = true;
+
 const FODDER_JOB: Record<Faction, string> = {
   koryu: "龍",
   tekki: "鉄",
@@ -902,32 +906,46 @@ const FODDER_JOB: Record<Faction, string> = {
   yukei: "契",
 };
 
-const FODDER_ROLE: Record<ElementType, string> = {
-  power: "闘卒",
-  skill: "斥候",
-  magic: "術卒",
-  void: "影卒",
-  heaven: "祝卒",
-  earth: "衛卒",
+/** Role suffix by skill kind so faction×element fodder aren't all “正面殴り” clones. */
+const FODDER_ROLE_BY_KIND: Record<SkillKind, string> = {
+  front: "闘卒",
+  pierce: "槍卒",
+  sweep: "薙卒",
+  random: "乱卒",
+  all: "爆卒",
+  heal: "衛卒",
+  haste: "迅卒",
+  slow: "呪卒",
 };
 
-const FODDER_SKILL: Record<ElementType, Card["skill"]> = {
-  power: { name: "打撃", kind: "front", power: 1.2, desc: "正面を殴る" },
-  skill: { name: "連撃", kind: "random", power: 0.72, hits: 2, desc: "二度、斬る" },
-  magic: { name: "術弾", kind: "front", power: 1.15, desc: "正面に術を放つ" },
-  void: { name: "無撃", kind: "front", power: 1.18, desc: "正面を無で突く" },
-  heaven: { name: "光弾", kind: "front", power: 1.1, desc: "正面を光で打つ" },
-  earth: { name: "地砕", kind: "front", power: 1.22, desc: "正面を踏み砕く" },
-};
+/** Weak material skills covering every SkillKind for 異名合成 sources. */
+const FODDER_SKILL_TEMPLATES: Card["skill"][] = [
+  { name: "打撃", kind: "front", power: 1.2, desc: "正面を殴る" },
+  { name: "貫突", kind: "pierce", power: 0.95, desc: "横一列を貫く" },
+  { name: "薙払", kind: "sweep", power: 1.15, desc: "前列をなぎ払う" },
+  { name: "連斬", kind: "random", power: 0.72, hits: 2, desc: "二度、斬る" },
+  { name: "拡散", kind: "all", power: 0.55, desc: "敵全体を打つ" },
+  { name: "応急", kind: "heal", power: 0.9, desc: "味方を癒す" },
+  { name: "催促", kind: "haste", power: 0, desc: "味方の速度を速める" },
+  { name: "呪遅", kind: "slow", power: 0, desc: "敵の速度を遅らせる" },
+];
+
+function fodderSkillFor(factionIdx: number, elementIdx: number): Card["skill"] {
+  // Spread kinds across 6×6 roster (not all front). ~4–5 of each kind.
+  const skill = FODDER_SKILL_TEMPLATES[(factionIdx * 3 + elementIdx * 5) % FODDER_SKILL_TEMPLATES.length];
+  return { ...skill, hits: skill.hits };
+}
 
 function buildFodder(): Card[] {
   const out: Card[] = [];
-  for (const faction of FACTION_IDS) {
-    for (let i = 0; i < ELEMENTS.length; i++) {
-      const type = ELEMENTS[i];
+  for (let fi = 0; fi < FACTION_IDS.length; fi++) {
+    const faction = FACTION_IDS[fi];
+    for (let ei = 0; ei < ELEMENTS.length; ei++) {
+      const type = ELEMENTS[ei];
+      const skill = fodderSkillFor(fi, ei);
       out.push({
         id: `z_${faction}_${type}`,
-        name: `${FODDER_JOB[faction]}${FODDER_ROLE[type]}`,
+        name: `${FODDER_JOB[faction]}${FODDER_ROLE_BY_KIND[skill.kind]}`,
         title: `${FACTION_LABEL[faction]}の雑兵`,
         faction,
         type,
@@ -938,7 +956,7 @@ function buildFodder(): Card[] {
         def: 2,
         spd: 68,
         formation: "basic",
-        skill: FODDER_SKILL[type],
+        skill,
         portrait: `z_${type}`,
         fodder: true,
       });

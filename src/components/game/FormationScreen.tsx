@@ -23,8 +23,8 @@ export function FormationScreen() {
   const inParty = new Set(party.filter(Boolean) as string[]);
   const tray = Object.keys(owned)
     .map((id) => CARD_BY_ID[id])
-    .filter(Boolean)
-    .sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name, "ja"));
+    .filter((c): c is NonNullable<typeof c> => !!c)
+    .sort((a, b) => Number(!!a.fodder) - Number(!!b.fodder) || b.cost - a.cost || a.name.localeCompare(b.name, "ja"));
 
   const focusId = selected ?? leaderId ?? tray[0]?.id ?? null;
   const focus = focusId ? CARD_BY_ID[focusId] : null;
@@ -32,6 +32,7 @@ export function FormationScreen() {
   const onSlot = (slot: number) => {
     if (!form.slots[slot]) return;
     if (selected) {
+      if (CARD_BY_ID[selected]?.fodder) return;
       placeCard(slot, selected);
       return;
     }
@@ -86,7 +87,7 @@ export function FormationScreen() {
                   skill1Lv={owned[card.id]?.skill1Lv}
                   size="sm"
                   selected={selected === card.id}
-                  dimmed={inParty.has(card.id) && selected !== card.id}
+                  dimmed={(inParty.has(card.id) && selected !== card.id) || !!card.fodder}
                   leader={leaderId === card.id}
                   className="w-full"
                   onClick={() => onTray(card.id)}
@@ -106,7 +107,12 @@ export function FormationScreen() {
                 {focus.skill.name}
                 <span className="ml-1 text-muted">{focus.skill.desc}</span>
               </p>
-              {inParty.has(focus.id) ? (
+              {focus.fodder ? (
+                <p className="rounded-sm bg-crimson/20 px-1.5 py-1 text-[10px] text-crimson">
+                  素材専用 — 編成・出陣不可（異名合成の素材に使える）
+                </p>
+              ) : null}
+              {inParty.has(focus.id) && !focus.fodder ? (
                 <button
                   type="button"
                   onClick={() => setLeader(focus.id)}

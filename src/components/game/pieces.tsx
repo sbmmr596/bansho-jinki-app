@@ -239,6 +239,16 @@ export function CardFace({
           LEADER
         </span>
       ) : null}
+      {card.fodder ? (
+        <span
+          className={cn(
+            "pointer-events-none absolute right-[2%] top-[14%] z-[4] rounded-sm bg-crimson/90 px-1 font-semibold leading-none text-fg",
+            compact ? "py-px text-[7px]" : "py-0.5 text-[8px]",
+          )}
+        >
+          素材
+        </span>
+      ) : null}
       <div className="card-foot pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex items-end justify-between gap-1 px-[2%] pb-[2.5%] pt-4">
         <span
           className={cn(
