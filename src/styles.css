@@ -402,7 +402,7 @@ body {
   will-change: transform, opacity;
   pointer-events: none;
 }
-.card-prism-r::before {
+.card-prism-s::before {
   width: 42%;
   background: linear-gradient(
     105deg,
@@ -415,11 +415,11 @@ body {
   animation-duration: 0.95s;
   opacity: 0.75;
 }
-.card-prism-sr::before {
+.card-prism-h::before {
   width: 58%;
   animation-duration: 1.2s;
 }
-.card-prism-ur::before {
+.card-prism-sp::before {
   width: 68%;
   background: linear-gradient(
     105deg,
@@ -580,13 +580,13 @@ body {
 .summon-seal--n .summon-crack__glow {
   background: radial-gradient(circle at 50% 45%, rgb(255 255 255 / 0.35) 0%, transparent 70%);
 }
-.summon-seal--r .summon-crack__glow {
+.summon-seal--s .summon-crack__glow {
   background: radial-gradient(circle at 50% 45%, rgb(220 190 120 / 0.55) 0%, rgb(184 160 122 / 0.2) 50%, transparent 72%);
 }
-.summon-seal--r .summon-crack {
+.summon-seal--s .summon-crack {
   box-shadow: 0 0 8px rgb(220 180 90 / 0.55);
 }
-.summon-seal--sr .summon-crack__glow {
+.summon-seal--h .summon-crack__glow {
   background: radial-gradient(
     circle at 50% 45%,
     rgb(255 180 220 / 0.45) 0%,
@@ -595,10 +595,10 @@ body {
     transparent 75%
   );
 }
-.summon-seal--sr .summon-crack {
+.summon-seal--h .summon-crack {
   box-shadow: 0 0 10px rgb(180 220 255 / 0.65);
 }
-.summon-seal--ur .summon-crack__glow {
+.summon-seal--sp .summon-crack__glow {
   background: radial-gradient(
     circle at 50% 40%,
     rgb(255 255 255 / 0.7) 0%,
@@ -609,11 +609,11 @@ body {
   );
   filter: saturate(1.3);
 }
-.summon-seal--ur .summon-crack {
+.summon-seal--sp .summon-crack {
   width: 2.5px;
   box-shadow: 0 0 14px rgb(255 200 120 / 0.85);
 }
-.summon-seal--ur.summon-seal--crack {
+.summon-seal--sp.summon-seal--crack {
   box-shadow:
     inset 0 0 30px rgb(255 200 140 / 0.25),
     0 0 40px rgb(255 120 180 / 0.35),
@@ -663,10 +663,10 @@ body {
   opacity: 1;
   transform: none;
 }
-.summon-reveal--sr.summon-reveal--in {
+.summon-reveal--h.summon-reveal--in {
   animation-duration: 0.7s;
 }
-.summon-reveal--ur.summon-reveal--in {
+.summon-reveal--sp.summon-reveal--in {
   animation-duration: 0.85s;
   filter: drop-shadow(0 0 18px rgb(255 160 200 / 0.45));
 }

@@ -34,7 +34,7 @@ export function SummonScreen() {
           <SummonReveal key={pullKey} last={last} active={busy} onComplete={onComplete} />
           <div className="max-w-xs shrink-0">
             <p className="text-sm leading-relaxed text-muted">
-              {SUMMON_COST}金で一枚。重複はレベルになる。URは稀。
+              {SUMMON_COST}金で一枚。重複はレベルになる。SPは稀。
             </p>
             <PrimaryButton onClick={onSummon} disabled={locked} className="mt-4 min-w-40">
               {gold < SUMMON_COST ? "金が足りない" : busy ? "召喚中…" : "召喚する"}

@@ -15,9 +15,9 @@ const TYPE_CLASS: Record<ElementType, string> = {
 
 const RARITY_RING: Record<Rarity, string> = {
   N: "ring-faint",
-  R: "ring-muted",
-  SR: "ring-brass",
-  UR: "ring-crimson",
+  S: "ring-muted",
+  H: "ring-brass",
+  SP: "ring-crimson",
 };
 
 const SPRITES = new Set([

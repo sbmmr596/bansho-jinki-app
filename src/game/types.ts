@@ -1,6 +1,6 @@
 export type ElementType = "power" | "skill" | "magic" | "void" | "heaven" | "earth";
 export type Faction = "koryu" | "tekki" | "tensho" | "metsujin" | "reiju" | "yukei";
-export type Rarity = "N" | "R" | "SR" | "UR";
+export type Rarity = "N" | "S" | "H" | "SP";
 export type SkillKind = "front" | "pierce" | "sweep" | "random" | "all" | "heal" | "haste" | "slow";
 export type Side = "player" | "enemy";
 export type FieldKind = "grass" | "snow" | "magma" | "forest" | "waste";

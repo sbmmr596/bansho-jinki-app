@@ -9,12 +9,12 @@ export type SummonPhase = "idle" | "charge" | "crack" | "blackout" | "reveal";
 
 type LastSummon = { cardId: string; isNew: boolean; leveled: boolean };
 
-/** Rough totals: N ~0.9s, R ~1.2s, SR ~1.6s, UR ~2.2s (incl. settle before unlock) */
+/** Rough totals: N ~0.9s, S ~1.2s, H ~1.6s, SP ~2.2s (incl. settle before unlock) */
 const TIMING: Record<Rarity, { charge: number; crack: number; blackout: number; settle: number }> = {
   N: { charge: 300, crack: 400, blackout: 0, settle: 200 },
-  R: { charge: 350, crack: 500, blackout: 0, settle: 350 },
-  SR: { charge: 380, crack: 580, blackout: 0, settle: 640 },
-  UR: { charge: 400, crack: 600, blackout: 280, settle: 920 },
+  S: { charge: 350, crack: 500, blackout: 0, settle: 350 },
+  H: { charge: 380, crack: 580, blackout: 0, settle: 640 },
+  SP: { charge: 400, crack: 600, blackout: 280, settle: 920 },
 };
 
 function prefersReducedMotion() {
