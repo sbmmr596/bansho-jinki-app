@@ -7,6 +7,7 @@ import {
   MAX_RANK,
 } from "./data";
 import { SAVE_VERSION, clampBattleSpeed, clampNavSide, type SaveState } from "./types";
+import { clampDifficulty } from "./difficulty";
 
 export const SAVE_KEY = "bansho-jinki-v1";
 
@@ -43,6 +44,7 @@ export function defaultSave(): SaveState {
     captured: [HOME_ID],
     battleSpeed: 1,
     navSide: "right",
+    difficulty: "normal",
   };
 }
 
@@ -72,6 +74,7 @@ export function loadSave(): SaveState {
       captured: Array.isArray(parsed.captured) ? parsed.captured : base.captured,
       battleSpeed: clampBattleSpeed(parsed.battleSpeed),
       navSide: clampNavSide(parsed.navSide),
+      difficulty: clampDifficulty(parsed.difficulty),
     };
   } catch {
     return base;
@@ -90,6 +93,7 @@ export function writeSave(state: SaveState) {
       captured: state.captured,
       battleSpeed: clampBattleSpeed(state.battleSpeed),
       navSide: clampNavSide(state.navSide),
+      difficulty: clampDifficulty(state.difficulty),
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
   } catch {
