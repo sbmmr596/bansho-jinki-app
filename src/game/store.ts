@@ -521,7 +521,7 @@ export const useGame = create<GameStore>((set, get) => ({
     const s = get();
     const own = s.owned[cardId];
     if (!own || own.count < 2 || own.skill1Lv >= MAX_SKILL_LV) return null;
-    const rate = fuseSuccessRate(own.skill1Lv);
+    const rate = fuseSuccessRate(own.skill1Lv, own.level, own.level);
     const success = Math.random() * 100 < rate;
     const nextLv = success ? own.skill1Lv + 1 : own.skill1Lv;
     sfx("summon");
@@ -592,7 +592,7 @@ export const useGame = create<GameStore>((set, get) => ({
           message: `必殺技2はすでに最大 Lv.${MAX_SKILL_LV}。素材のみ消費された。`,
         };
       } else {
-        const rate = fuseSuccessRate(cur.skill2.lv);
+        const rate = fuseSuccessRate(cur.skill2.lv, base.level, mat.level);
         const success = Math.random() * 100 < rate;
         const nextLv = success ? cur.skill2.lv + 1 : cur.skill2.lv;
         owned[baseId] = {

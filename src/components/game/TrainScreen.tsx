@@ -67,7 +67,7 @@ export function TrainScreen() {
     if (!own || !card) return null;
     if (mode === "skill1") {
       if (!canSkill1) return null;
-      const rate = fuseSuccessRate(skill1Lv);
+      const rate = fuseSuccessRate(skill1Lv, own.level, own.level);
       return {
         title: "同名合成 — 必殺技1",
         lines: [
@@ -97,7 +97,7 @@ export function TrainScreen() {
           rate: 0,
         };
       }
-      const rate = fuseSuccessRate(skill2.lv);
+      const rate = fuseSuccessRate(skill2.lv, own.level, matOwn?.level ?? 1);
       return {
         title: "異名合成 — 必殺技2強化",
         lines: [
@@ -117,7 +117,7 @@ export function TrainScreen() {
       ],
       rate: 100,
     };
-  }, [own, card, mode, canSkill1, canSkill2, skill1Lv, skill2, matCard, materialId]);
+  }, [own, card, mode, canSkill1, canSkill2, skill1Lv, skill2, matCard, matOwn, materialId]);
 
   const selectBase = (id: string) => {
     setSelected(id);
@@ -265,7 +265,7 @@ export function TrainScreen() {
                   <p className="mt-1 tabular text-fg">
                     現在 Lv.{skill1Lv}/{MAX_SKILL_LV}
                     {!skill1Max ? (
-                      <span className="ml-2 text-brass">成功率 {fuseSuccessRate(skill1Lv)}%</span>
+                      <span className="ml-2 text-brass">成功率 {fuseSuccessRate(skill1Lv, own.level, own.level)}%</span>
                     ) : (
                       <span className="ml-2 text-brass">MAX</span>
                     )}
@@ -280,7 +280,7 @@ export function TrainScreen() {
                     {skill1Max
                       ? "必殺技1は最大"
                       : canSkill1
-                        ? `同名合成（成功率 ${fuseSuccessRate(skill1Lv)}%）`
+                        ? `同名合成（成功率 ${fuseSuccessRate(skill1Lv, own.level, own.level)}%）`
                         : "同名が足りない（2枚以上）"}
                   </button>
                 </div>
@@ -329,7 +329,7 @@ export function TrainScreen() {
                         : skill2.sourceCardId === materialId
                           ? skill2.lv >= MAX_SKILL_LV
                             ? "必殺技2は最大"
-                            : `必殺2強化（成功率 ${fuseSuccessRate(skill2.lv)}%）`
+                            : `必殺2強化（成功率 ${fuseSuccessRate(skill2.lv, own.level, matOwn?.level ?? 1)}%）`
                           : `「${matCard.skill.name}」に差替`}
                   </button>
                 </div>
