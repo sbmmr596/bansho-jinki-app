@@ -96,7 +96,7 @@ interface GameStore extends SaveState {
 
 function pickSummonId(): string {
   const roll = Math.random();
-  const rarity = roll < 0.03 ? "UR" : roll < 0.15 ? "SR" : roll < 0.45 ? "R" : "N";
+  const rarity = roll < 0.03 ? "SP" : roll < 0.17 ? "H" : roll < 0.45 ? "S" : "N";
   const pool = HERO_CARDS.filter((c) => c.rarity === rarity);
   return pool[Math.floor(Math.random() * pool.length)].id;
 }
