@@ -25,7 +25,7 @@ import {
   loadChars,
   trainCost,
 } from "./data";
-import { CATALOG_KEY, loadUserCatalog } from "./catalog-api";
+import { CATALOG_KEY } from "./catalog-api";
 import { clearSave, defaultSave, hasSave, loadSave, writeSave } from "./save";
 import type {
   BattleEvent,
@@ -138,15 +138,13 @@ export const useGame = create<GameStore>((set, get) => ({
   zoomCardId: null,
 
   hydrate: async () => {
-    await loadChars();
+    // Never await remote catalog here — GameApp loads it post-hydrate.
+    // A hung auth/DB request used to leave #boot-splash forever.
     let catalogSource: "default" | "custom" = "default";
+    let existing = false;
+    let loaded = defaultSave();
     try {
-      const remote = await loadUserCatalog();
-      if (remote) {
-        const n = applyCatalog(JSON.parse(remote) as unknown);
-        if (n) catalogSource = "custom";
-      }
-    } catch {
+      await loadChars();
       try {
         const local = localStorage.getItem(CATALOG_KEY);
         if (local) {
@@ -156,19 +154,22 @@ export const useGame = create<GameStore>((set, get) => ({
       } catch {
         /* keep default */
       }
+      existing = hasSave();
+      loaded = existing ? loadSave() : defaultSave();
+    } catch {
+      /* local load optional — still clear splash */
+    } finally {
+      set({
+        ...loaded,
+        hydrated: true,
+        hasExisting: existing,
+        screen: "title",
+        debugUnlocked: true,
+        debugOpen: false,
+        catalogSource,
+        catalogOpen: false,
+      });
     }
-    const existing = hasSave();
-    const loaded = existing ? loadSave() : defaultSave();
-    set({
-      ...loaded,
-      hydrated: true,
-      hasExisting: existing,
-      screen: "title",
-      debugUnlocked: true,
-      debugOpen: false,
-      catalogSource,
-      catalogOpen: false,
-    });
   },
 
   newGame: (difficulty = "normal") => {

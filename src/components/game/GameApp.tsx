@@ -131,6 +131,17 @@ export function GameApp() {
     return () => window.clearTimeout(t);
   }, [hydrated]);
 
+  // Belt-and-suspenders: never leave boot splash stuck if hydrate stalls.
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      const el = document.getElementById("boot-splash");
+      if (!el || el.classList.contains("is-off")) return;
+      el.classList.add("is-off");
+      window.setTimeout(() => el.remove(), 400);
+    }, 3000);
+    return () => window.clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     const open = () => setArtOpen(true);
     window.addEventListener("bansho-art-trial", open);

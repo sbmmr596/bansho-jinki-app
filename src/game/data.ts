@@ -1076,12 +1076,15 @@ export function resetCatalog() {
 
 export async function loadChars() {
   try {
-    const res = await fetch("/data/chars.json", { cache: "no-store" });
+    const res = await fetch("/data/chars.json", {
+      cache: "no-store",
+      signal: AbortSignal.timeout(2000),
+    });
     if (!res.ok) return;
     const data: unknown = await res.json();
     applyCatalog(data);
   } catch {
-    /* keep bundled fallback */
+    /* keep bundled fallback (404, timeout, network) */
   }
 }
 
