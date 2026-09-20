@@ -11,6 +11,7 @@ import {
   skillPowerScale,
   trainCost,
 } from "@/game/data";
+import { commonSkillName, materialSkillLabel } from "@/game/skillNames";
 import type { FuseResult } from "@/game/types";
 import { useGame } from "@/game/store";
 import { CardFace, GoldChip, PrimaryButton, Shell, TypeBadge } from "./pieces";
@@ -85,7 +86,7 @@ export function TrainScreen() {
       return {
         title: "異名合成 — 必殺技2装着",
         lines: [
-          `必殺技2に「${matCard.skill.name}」を装着`,
+          `必殺技2に「${commonSkillName(matCard.skill)}」を装着`,
           "成功率：100%（装着）",
         ],
         rate: 100,
@@ -114,7 +115,7 @@ export function TrainScreen() {
       title: "異名合成 — 必殺技2差替",
       lines: [
         `現在の必殺技2を差し替え`,
-        `新技：「${matCard.skill.name}」 Lv.1`,
+        `新技：「${commonSkillName(matCard.skill)}」 Lv.1`,
         "成功率：100%（差替）",
       ],
       rate: 100,
@@ -246,7 +247,8 @@ export function TrainScreen() {
               />
               <SkillSlot
                 label="必殺技2"
-                name={skill2Card ? skill2Card.skill.name : "-"}
+                name={skill2Card ? commonSkillName(skill2Card.skill) : "-"}
+                subName={skill2Card ? skill2Card.skill.name : undefined}
                 desc={skill2Card ? skill2Card.skill.desc : "異名カードを合成して装着できる。"}
                 power={skill2Card?.skill.power}
                 lv={skill2 ? skill2.lv : undefined}
@@ -320,7 +322,10 @@ export function TrainScreen() {
                             skill1Lv={owned[c.id]?.skill1Lv}
                             size="xs"
                           />
-                          <p className="mt-0.5 text-center text-[9px] tabular text-muted">
+                          <p className="mt-0.5 max-w-[4.5rem] truncate text-center text-[9px] leading-tight text-fg">
+                            {materialSkillLabel(c.skill)}
+                          </p>
+                          <p className="text-center text-[9px] tabular text-muted">
                             ×{owned[c.id]?.count ?? 0}
                           </p>
                         </button>
@@ -336,12 +341,12 @@ export function TrainScreen() {
                     {!matCard
                       ? "素材カードを選ぶ"
                       : !skill2
-                        ? `「${matCard.skill.name}」を必殺2に装着`
+                        ? `「${commonSkillName(matCard.skill)}」を必殺2に装着`
                         : skill2.sourceCardId === materialId
                           ? skill2.lv >= MAX_SKILL_LV
                             ? "必殺技2は最大"
                             : `必殺2強化（成功率 ${fuseSuccessRate(skill2.lv, own.level, matOwn?.level ?? 1)}%）`
-                          : `「${matCard.skill.name}」に差替`}
+                          : `「${commonSkillName(matCard.skill)}」に差替`}
                   </button>
                 </div>
               )}
@@ -465,6 +470,7 @@ function ModeChip({
 function SkillSlot({
   label,
   name,
+  subName,
   desc,
   power,
   lv,
@@ -474,6 +480,8 @@ function SkillSlot({
 }: {
   label: string;
   name: string;
+  /** Optional original card skill name under common name (skill2). */
+  subName?: string;
   desc: string;
   power?: number;
   lv?: number;
@@ -500,6 +508,9 @@ function SkillSlot({
         ) : null}
       </div>
       <p className={cn("font-display text-sm", empty ? "text-crimson" : "text-fg")}>{name}</p>
+      {subName && subName !== name ? (
+        <p className="text-[10px] text-faint">{subName}</p>
+      ) : null}
       <p className="mt-0.5 text-[11px] leading-snug text-muted">{desc}</p>
       {power != null && !empty ? (
         <p className="mt-1 text-[10px] text-brass">

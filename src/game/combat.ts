@@ -1,4 +1,5 @@
 import { BASIC_SKILL, CARD_BY_ID, FORMATIONS, scaledStat, skillPowerScale } from "./data";
+import { commonSkillName } from "./skillNames";
 import type {
   BattleEvent,
   BattleLog,
@@ -292,7 +293,7 @@ export function performAction(actor: Unit, units: Unit[]): BattleEvent[] {
   const prev = actor.skill;
   actor.skill = skill;
   const events: BattleEvent[] = [
-    { kind: "skill", actorUid: actor.uid, skillName: skill.name, side: actor.side, slot },
+    { kind: "skill", actorUid: actor.uid, skillName: slot === "s2" ? commonSkillName(skill) : skill.name, side: actor.side, slot },
   ];
   let targets = selectTargets(actor, units);
   if (skill.kind === "heal") {
