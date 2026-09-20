@@ -78,7 +78,7 @@ export function BattleView() {
   const [flash, setFlash] = useState(false);
   const [log, setLog] = useState<string[]>([]);
   const [showAffinity, setShowAffinity] = useState(false);
-  const [skillBanner, setSkillBanner] = useState<{ name: string; key: number } | null>(null);
+  const [skillBanner, setSkillBanner] = useState<{ name: string; key: number; slot: "s1" | "s2" } | null>(null);
   const bannerTimerRef = useRef<number | null>(null);
   const battleSpeed = useGame((s) => s.battleSpeed) || 1;
   const setBattleSpeed = useGame((s) => s.setBattleSpeed);
@@ -156,12 +156,21 @@ export function BattleView() {
         }
         const u = unitsRef.current.find((x) => x.uid === ev.actorUid);
         setLog((l) => [`${u?.name ?? ""}　${ev.skillName}`, ...l].slice(0, 6));
-        if (bannerTimerRef.current != null) window.clearTimeout(bannerTimerRef.current);
-        setSkillBanner({ name: ev.skillName, key: idxRef.current });
-        bannerTimerRef.current = window.setTimeout(() => {
-          setSkillBanner(null);
+        // Center banner only for specials (必殺技1/2); skip 通常攻撃 / basic
+        const specialSlot = ev.slot === "s1" || ev.slot === "s2" ? ev.slot : null;
+        if (bannerTimerRef.current != null) {
+          window.clearTimeout(bannerTimerRef.current);
           bannerTimerRef.current = null;
-        }, 850);
+        }
+        if (specialSlot) {
+          setSkillBanner({ name: ev.skillName, key: idxRef.current, slot: specialSlot });
+          bannerTimerRef.current = window.setTimeout(() => {
+            setSkillBanner(null);
+            bannerTimerRef.current = null;
+          }, 1100);
+        } else {
+          setSkillBanner(null);
+        }
         if (u) {
           const slots: number[] = [];
           let targetSide: Side =
@@ -406,10 +415,17 @@ export function BattleView() {
           {skillBanner ? (
             <div
               key={skillBanner.key}
-              className="skill-name-banner pointer-events-none absolute inset-0 z-50 flex items-center justify-center"
+              className={cn(
+                "skill-name-banner pointer-events-none absolute inset-0 z-50 flex items-center justify-center",
+                skillBanner.slot === "s1" ? "skill-banner-s1" : "skill-banner-s2",
+              )}
               aria-hidden
             >
-              <span className="font-display text-3xl tracking-[0.12em] text-fg sm:text-4xl">
+              <div className="skill-banner-vignette" />
+              <div className="skill-banner-burst" />
+              <div className="skill-banner-slash skill-banner-slash-a" />
+              <div className="skill-banner-slash skill-banner-slash-b" />
+              <span className="skill-banner-name font-display text-3xl tracking-[0.12em] sm:text-4xl">
                 {skillBanner.name}
               </span>
             </div>

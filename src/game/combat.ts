@@ -287,12 +287,12 @@ export function enemyToMembers(enemy: EnemyUnit[], difficulty: Difficulty = "nor
 }
 
 export function performAction(actor: Unit, units: Unit[]): BattleEvent[] {
-  const { skill, skillLv } = pickActionSkill(actor);
+  const { skill, skillLv, slot } = pickActionSkill(actor);
   // Temporarily bind chosen skill so selectTargets reads actor.skill.kind
   const prev = actor.skill;
   actor.skill = skill;
   const events: BattleEvent[] = [
-    { kind: "skill", actorUid: actor.uid, skillName: skill.name, side: actor.side },
+    { kind: "skill", actorUid: actor.uid, skillName: skill.name, side: actor.side, slot },
   ];
   let targets = selectTargets(actor, units);
   if (skill.kind === "heal") {
