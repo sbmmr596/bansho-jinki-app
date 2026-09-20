@@ -29,6 +29,7 @@ import {
   loadChars,
   trainCost,
 } from "./data";
+import { commonSkillName } from "./skillNames";
 import { CATALOG_KEY } from "./catalog-api";
 import { blankOwned, clearSave, defaultSave, hasSave, loadSave, sanitizeParty, writeSave } from "./save";
 import type {
@@ -602,7 +603,7 @@ export const useGame = create<GameStore>((set, get) => ({
         success: true,
         kind: "skill2-install",
         newLv: 1,
-        message: `必殺技2に「${CARD_BY_ID[materialId]?.skill.name ?? "技"}」を装着した！`,
+        message: `必殺技2に「${CARD_BY_ID[materialId] ? commonSkillName(CARD_BY_ID[materialId].skill) : "技"}」を装着した！`,
       };
     } else if (cur.skill2.sourceCardId === materialId) {
       if (cur.skill2.lv >= MAX_SKILL_LV) {
@@ -640,7 +641,7 @@ export const useGame = create<GameStore>((set, get) => ({
         success: true,
         kind: "skill2-replace",
         newLv: 1,
-        message: `必殺技2を「${CARD_BY_ID[materialId]?.skill.name ?? "技"}」に差し替えた！`,
+        message: `必殺技2を「${CARD_BY_ID[materialId] ? commonSkillName(CARD_BY_ID[materialId].skill) : "技"}」に差し替えた！`,
       };
     }
 

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { BASIC_SKILL, CARDS, CARD_BY_ID, FACTION_LABEL, FORMATIONS, TYPE_LABEL, skillPowerScale } from "@/game/data";
+import { commonSkillName, SKILL_KIND_LABEL } from "@/game/skillNames";
 import type { Faction } from "@/game/types";
 import { useGame } from "@/game/store";
 import { CardFace, GoldChip, Shell, StatRow, TypeBadge } from "./pieces";
@@ -115,7 +116,8 @@ export function CollectionScreen() {
                 {own?.skill2 && CARD_BY_ID[own.skill2.sourceCardId] ? (
                   <DetailSkill
                     label="必殺技2"
-                    name={CARD_BY_ID[own.skill2.sourceCardId]!.skill.name}
+                    name={commonSkillName(CARD_BY_ID[own.skill2.sourceCardId]!.skill)}
+                    subName={CARD_BY_ID[own.skill2.sourceCardId]!.skill.name}
                     desc={CARD_BY_ID[own.skill2.sourceCardId]!.skill.desc}
                     power={CARD_BY_ID[own.skill2.sourceCardId]!.skill.power}
                     lv={own.skill2.lv}
@@ -129,7 +131,7 @@ export function CollectionScreen() {
                   <DetailSkill label="必殺技2" name="-" desc="未装着" empty tone="s2" />
                 )}
                 <p className="pt-1 text-[10px] text-brass">
-                  属性 {TYPE_LABEL[card.type]}　／　種別 {skillKindLabel(card.skill.kind)}
+                  属性 {TYPE_LABEL[card.type]}　／　種別 {SKILL_KIND_LABEL[card.skill.kind]}
                 </p>
               </div>
             </div>
@@ -165,21 +167,10 @@ function FormationPreview({ slots }: { slots: boolean[] }) {
   );
 }
 
-function skillKindLabel(kind: string) {
-  const map: Record<string, string> = {
-    front: "正面",
-    pierce: "貫通",
-    sweep: "薙ぎ",
-    all: "全体",
-    random: "乱撃",
-    heal: "回復",
-  };
-  return map[kind] ?? kind;
-}
-
 function DetailSkill({
   label,
   name,
+  subName,
   desc,
   power,
   lv,
@@ -189,6 +180,7 @@ function DetailSkill({
 }: {
   label: string;
   name: string;
+  subName?: string;
   desc: string;
   power?: number;
   lv?: number;
@@ -216,6 +208,9 @@ function DetailSkill({
         ) : null}
       </div>
       <p className={"font-display text-sm " + (empty ? "text-crimson" : "text-fg")}>{name}</p>
+      {subName && subName !== name ? (
+        <p className="text-[10px] text-faint">{subName}</p>
+      ) : null}
       <p className="mt-0.5 text-[11px] leading-snug text-muted">{desc}</p>
       {power != null && !empty ? (
         <p className="mt-0.5 text-[10px] text-brass">
