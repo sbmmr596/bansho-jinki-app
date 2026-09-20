@@ -78,6 +78,8 @@ export function BattleView() {
   const [flash, setFlash] = useState(false);
   const [log, setLog] = useState<string[]>([]);
   const [showAffinity, setShowAffinity] = useState(false);
+  const [skillBanner, setSkillBanner] = useState<{ name: string; key: number } | null>(null);
+  const bannerTimerRef = useRef<number | null>(null);
   const battleSpeed = useGame((s) => s.battleSpeed) || 1;
   const setBattleSpeed = useGame((s) => s.setBattleSpeed);
   const speedRef = useRef(battleSpeed);
@@ -111,6 +113,11 @@ export function BattleView() {
     setShake(false);
     setFlash(false);
     setLog([]);
+    setSkillBanner(null);
+    if (bannerTimerRef.current != null) {
+      window.clearTimeout(bannerTimerRef.current);
+      bannerTimerRef.current = null;
+    }
     idxRef.current = 0;
     accRef.current = 0;
     lastRef.current = 0;
@@ -149,6 +156,12 @@ export function BattleView() {
         }
         const u = unitsRef.current.find((x) => x.uid === ev.actorUid);
         setLog((l) => [`${u?.name ?? ""}　${ev.skillName}`, ...l].slice(0, 6));
+        if (bannerTimerRef.current != null) window.clearTimeout(bannerTimerRef.current);
+        setSkillBanner({ name: ev.skillName, key: idxRef.current });
+        bannerTimerRef.current = window.setTimeout(() => {
+          setSkillBanner(null);
+          bannerTimerRef.current = null;
+        }, 850);
         if (u) {
           const slots: number[] = [];
           let targetSide: Side =
@@ -332,7 +345,13 @@ export function BattleView() {
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      if (bannerTimerRef.current != null) {
+        window.clearTimeout(bannerTimerRef.current);
+        bannerTimerRef.current = null;
+      }
+    };
   }, [battle, finishBattle]);
 
   if (!battle) return null;
@@ -384,6 +403,17 @@ export function BattleView() {
             />
           ))}
           {fx ? <SkillFx fx={fx} /> : null}
+          {skillBanner ? (
+            <div
+              key={skillBanner.key}
+              className="skill-name-banner pointer-events-none absolute inset-0 z-50 flex items-center justify-center"
+              aria-hidden
+            >
+              <span className="font-display text-3xl tracking-[0.12em] text-fg sm:text-4xl">
+                {skillBanner.name}
+              </span>
+            </div>
+          ) : null}
         </div>
 
         <AtbRail units={[...player, ...enemy]} acting={acting} />

@@ -150,29 +150,54 @@ export interface PickedActionSkill {
 }
 
 /**
- * Action pick (two-step):
- * 1) 基本技 70% / 必殺技 30%
- * 2) If 必殺 and skill2 exists → 必殺1 or 必殺2 at 50/50
- * Absolute with skill2: basic 70% / s1 15% / s2 15%
+ * Action pick (two-step), rates scale with skill levels:
+ * 1) Special chance = clamp(
+ *      0.20 + 0.02*(skill1Lv-1) + (skill2 ? 0.015*(skill2Lv-1) : 0),
+ *      0.18, 0.45)
+ *    Examples: s1Lv1 no s2 → 20%; s1Lv5 → 28%; s1Lv10 → 38%;
+ *              s1Lv10+s2Lv10 → min(45%, 38%+0.135)=45%
+ * 2) If special fires and skill2 exists →
+ *      p(s1) = skill1Lv / (skill1Lv + skill2Lv), else s1 100%
+ * 3) Else basic (通常攻撃 / BASIC_SKILL at skillLv 1, no power scale)
  */
+export function specialRate(skill1Lv: number, skill2Lv?: number): number {
+  const s1 = Math.max(1, skill1Lv);
+  const s2Bonus =
+    skill2Lv != null && skill2Lv > 0 ? 0.015 * (Math.max(1, skill2Lv) - 1) : 0;
+  const raw = 0.2 + 0.02 * (s1 - 1) + s2Bonus;
+  return Math.min(0.45, Math.max(0.18, raw));
+}
+
 export const ACTION_RATES = {
-  basic: 0.7,
-  special: 0.3,
-  /** Among specials when skill2 is equipped */
-  specialSplit: { s1: 0.5, s2: 0.5 },
+  specialBase: 0.2,
+  specialPerSkill1Lv: 0.02,
+  specialPerSkill2Lv: 0.015,
+  specialMin: 0.18,
+  specialMax: 0.45,
+  /** @see specialRate */
+  specialRate,
 } as const;
 
 /** Pick which skill a unit uses this action (basic / s1 / s2). */
 export function pickActionSkill(actor: Unit): PickedActionSkill {
-  // Step 1: basic vs special
-  if (Math.random() < ACTION_RATES.basic) {
+  const s1Lv = Math.max(1, actor.skillLv);
+  const hasS2 = !!actor.skill2;
+  const s2Lv = hasS2 ? Math.max(1, actor.skill2!.lv) : undefined;
+  const rate = specialRate(s1Lv, s2Lv);
+
+  // Step 1: special vs basic
+  if (Math.random() >= rate) {
     return { skill: BASIC_SKILL, skillLv: 1, slot: "basic" };
   }
-  // Step 2: which special
-  if (actor.skill2 && Math.random() >= ACTION_RATES.specialSplit.s1) {
-    return { skill: actor.skill2.skill, skillLv: actor.skill2.lv, slot: "s2" };
+  // Step 2: which special (weight by levels when skill2 equipped)
+  if (hasS2 && s2Lv != null) {
+    const pS1 = s1Lv / (s1Lv + s2Lv);
+    if (Math.random() < pS1) {
+      return { skill: actor.skill, skillLv: s1Lv, slot: "s1" };
+    }
+    return { skill: actor.skill2!.skill, skillLv: s2Lv, slot: "s2" };
   }
-  return { skill: actor.skill, skillLv: actor.skillLv, slot: "s1" };
+  return { skill: actor.skill, skillLv: s1Lv, slot: "s1" };
 }
 
 function applyFormation(

@@ -234,6 +234,40 @@ body {
   background: #fff8;
 }
 
+@keyframes skill-banner-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  18% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+.skill-name-banner > span {
+  animation: 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards skill-banner-pop;
+  text-shadow:
+    0 0 10px rgba(0, 0, 0, 0.85),
+    0 2px 6px rgba(0, 0, 0, 0.9),
+    -1px -1px 0 rgba(0, 0, 0, 0.75),
+    1px -1px 0 rgba(0, 0, 0, 0.75),
+    -1px 1px 0 rgba(0, 0, 0, 0.75),
+    1px 1px 0 rgba(0, 0, 0, 0.75);
+  white-space: nowrap;
+  max-width: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0.35rem 1rem;
+}
+
 .unit-spot {
   transition:
     left 0.34s cubic-bezier(0.22, 1, 0.36, 1),
