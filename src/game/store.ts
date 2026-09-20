@@ -29,7 +29,7 @@ import {
   loadChars,
   trainCost,
 } from "./data";
-import { commonSkillName } from "./skillNames";
+import { commonSkillName, skill2SameIdentity } from "./skillNames";
 import { CATALOG_KEY } from "./catalog-api";
 import { blankOwned, clearSave, defaultSave, hasSave, loadSave, sanitizeParty, writeSave } from "./save";
 import type {
@@ -573,7 +573,9 @@ export const useGame = create<GameStore>((set, get) => ({
     const base = s.owned[baseId];
     const mat = s.owned[materialId];
     if (!base || !mat || mat.count < 1) return null;
-    if (!CARD_BY_ID[materialId]) return null;
+    const matCard = CARD_BY_ID[materialId];
+    if (!matCard) return null;
+    const matLabel = commonSkillName(matCard.skill, matCard.rarity);
 
     const owned = { ...s.owned };
     let party = s.party;
@@ -595,6 +597,7 @@ export const useGame = create<GameStore>((set, get) => ({
     const cur = owned[baseId] ?? base;
 
     if (!cur.skill2) {
+      // Empty skill2 → install material skill at lv1
       owned[baseId] = {
         ...cur,
         skill2: { sourceCardId: materialId, lv: 1 },
@@ -603,46 +606,63 @@ export const useGame = create<GameStore>((set, get) => ({
         success: true,
         kind: "skill2-install",
         newLv: 1,
-        message: `必殺技2に「${CARD_BY_ID[materialId] ? commonSkillName(CARD_BY_ID[materialId].skill) : "技"}」を装着した！`,
+        message: `必殺技2に「${matLabel}」を装着した！`,
       };
-    } else if (cur.skill2.sourceCardId === materialId) {
-      if (cur.skill2.lv >= MAX_SKILL_LV) {
-        owned[baseId] = cur;
-        result = {
-          success: false,
-          kind: "skill2-level",
-          newLv: cur.skill2.lv,
-          message: `必殺技2はすでに最大 Lv.${MAX_SKILL_LV}。素材のみ消費された。`,
-        };
+    } else {
+      const srcCard = CARD_BY_ID[cur.skill2.sourceCardId];
+      const sameIdentity =
+        !!srcCard &&
+        skill2SameIdentity(
+          srcCard.skill.kind,
+          srcCard.rarity,
+          matCard.skill.kind,
+          matCard.rarity,
+        );
+      const curLabel = srcCard
+        ? commonSkillName(srcCard.skill, srcCard.rarity)
+        : "技";
+
+      if (sameIdentity) {
+        // Same kind + same rarity → level-up attempt (identity, not sourceCardId)
+        if (cur.skill2.lv >= MAX_SKILL_LV) {
+          owned[baseId] = cur;
+          result = {
+            success: false,
+            kind: "skill2-level",
+            newLv: cur.skill2.lv,
+            message: `必殺技2「${curLabel}」はすでに最大 Lv.${MAX_SKILL_LV}。素材のみ消費された。`,
+          };
+        } else {
+          const rate = fuseSuccessRate(cur.skill2.lv, base.level, mat.level);
+          const success = Math.random() * 100 < rate;
+          const nextLv = success ? cur.skill2.lv + 1 : cur.skill2.lv;
+          owned[baseId] = {
+            ...cur,
+            skill2: { ...cur.skill2, lv: nextLv },
+          };
+          result = {
+            success,
+            kind: "skill2-level",
+            newLv: nextLv,
+            rate,
+            message: success
+              ? `成功！「${curLabel}」が Lv.${nextLv} になった。`
+              : `失敗…「${curLabel}」は Lv.${nextLv} のまま。素材は消費された。`,
+          };
+        }
       } else {
-        const rate = fuseSuccessRate(cur.skill2.lv, base.level, mat.level);
-        const success = Math.random() * 100 < rate;
-        const nextLv = success ? cur.skill2.lv + 1 : cur.skill2.lv;
+        // Diff rarity or diff kind → overwrite to material at lv1 (always succeeds)
         owned[baseId] = {
           ...cur,
-          skill2: { ...cur.skill2, lv: nextLv },
+          skill2: { sourceCardId: materialId, lv: 1 },
         };
         result = {
-          success,
-          kind: "skill2-level",
-          newLv: nextLv,
-          rate,
-          message: success
-            ? `成功！必殺技2が Lv.${nextLv} になった。`
-            : `失敗…必殺技2は Lv.${nextLv} のまま。素材は消費された。`,
+          success: true,
+          kind: "skill2-replace",
+          newLv: 1,
+          message: `必殺2を上書き：「${matLabel}」 Lv.1`,
         };
       }
-    } else {
-      owned[baseId] = {
-        ...cur,
-        skill2: { sourceCardId: materialId, lv: 1 },
-      };
-      result = {
-        success: true,
-        kind: "skill2-replace",
-        newLv: 1,
-        message: `必殺技2を「${CARD_BY_ID[materialId] ? commonSkillName(CARD_BY_ID[materialId].skill) : "技"}」に差し替えた！`,
-      };
     }
 
     sfx("summon");

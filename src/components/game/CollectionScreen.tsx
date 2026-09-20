@@ -116,7 +116,10 @@ export function CollectionScreen() {
                 {own?.skill2 && CARD_BY_ID[own.skill2.sourceCardId] ? (
                   <DetailSkill
                     label="必殺技2"
-                    name={commonSkillName(CARD_BY_ID[own.skill2.sourceCardId]!.skill)}
+                    name={commonSkillName(
+                      CARD_BY_ID[own.skill2.sourceCardId]!.skill,
+                      CARD_BY_ID[own.skill2.sourceCardId]!.rarity,
+                    )}
                     subName={CARD_BY_ID[own.skill2.sourceCardId]!.skill.name}
                     desc={CARD_BY_ID[own.skill2.sourceCardId]!.skill.desc}
                     power={CARD_BY_ID[own.skill2.sourceCardId]!.skill.power}

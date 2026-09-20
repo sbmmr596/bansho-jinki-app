@@ -11,7 +11,7 @@ import {
   skillPowerScale,
   trainCost,
 } from "@/game/data";
-import { commonSkillName, materialSkillLabel } from "@/game/skillNames";
+import { commonSkillName, materialSkillLabel, skill2SameIdentity } from "@/game/skillNames";
 import type { FuseResult } from "@/game/types";
 import { useGame } from "@/game/store";
 import { CardFace, GoldChip, PrimaryButton, Shell, TypeBadge } from "./pieces";
@@ -66,6 +66,21 @@ export function TrainScreen() {
   const matCard = materialId ? CARD_BY_ID[materialId] : null;
   const canSkill2 = !!own && !!matCard && !!matOwn && matOwn.count >= 1 && materialId !== focusId;
 
+  const skill2Same = !!(
+    skill2Card &&
+    matCard &&
+    skill2SameIdentity(
+      skill2Card.skill.kind,
+      skill2Card.rarity,
+      matCard.skill.kind,
+      matCard.rarity,
+    )
+  );
+  const skill2Label = skill2Card
+    ? commonSkillName(skill2Card.skill, skill2Card.rarity)
+    : null;
+  const matLabel = matCard ? commonSkillName(matCard.skill, matCard.rarity) : null;
+
   const confirmInfo = useMemo(() => {
     if (!own || !card) return null;
     if (mode === "skill1") {
@@ -81,22 +96,25 @@ export function TrainScreen() {
         rate,
       };
     }
-    if (!canSkill2 || !matCard) return null;
+    if (!canSkill2 || !matCard || !matLabel) return null;
     if (!skill2) {
       return {
         title: "異名合成 — 必殺技2装着",
         lines: [
-          `必殺技2に「${commonSkillName(matCard.skill)}」を装着`,
+          `必殺技2に「${matLabel}」を装着`,
           "成功率：100%（装着）",
         ],
         rate: 100,
       };
     }
-    if (skill2.sourceCardId === materialId) {
+    if (skill2Same && skill2Card) {
       if (skill2.lv >= MAX_SKILL_LV) {
         return {
           title: "異名合成 — 必殺技2",
-          lines: [`必殺技2はすでに Lv.${MAX_SKILL_LV}（最大）`, "素材のみ消費されます。"],
+          lines: [
+            `「${skill2Label}」はすでに Lv.${MAX_SKILL_LV}（最大）`,
+            "素材のみ消費されます。",
+          ],
           rate: 0,
         };
       }
@@ -104,7 +122,7 @@ export function TrainScreen() {
       return {
         title: "異名合成 — 必殺技2強化",
         lines: [
-          `必殺技Lv：${skill2.lv} → ${skill2.lv + 1}`,
+          `${skill2Label} Lv${skill2.lv}→${skill2.lv + 1}`,
           `成功率：${rate}%`,
           "失敗しても素材は消費されます。",
         ],
@@ -112,15 +130,28 @@ export function TrainScreen() {
       };
     }
     return {
-      title: "異名合成 — 必殺技2差替",
+      title: "異名合成 — 必殺技2上書き",
       lines: [
-        `現在の必殺技2を差し替え`,
-        `新技：「${commonSkillName(matCard.skill)}」 Lv.1`,
-        "成功率：100%（差替）",
+        `必殺2を上書き：${matLabel} Lv.1`,
+        "成功率：100%（上書き・強化ではない）",
       ],
       rate: 100,
     };
-  }, [own, card, mode, canSkill1, canSkill2, skill1Lv, skill2, matCard, matOwn, materialId]);
+  }, [
+    own,
+    card,
+    mode,
+    canSkill1,
+    canSkill2,
+    skill1Lv,
+    skill2,
+    skill2Card,
+    skill2Same,
+    skill2Label,
+    matCard,
+    matLabel,
+    matOwn,
+  ]);
 
   const selectBase = (id: string) => {
     setSelected(id);
@@ -247,7 +278,7 @@ export function TrainScreen() {
               />
               <SkillSlot
                 label="必殺技2"
-                name={skill2Card ? commonSkillName(skill2Card.skill) : "-"}
+                name={skill2Card ? commonSkillName(skill2Card.skill, skill2Card.rarity) : "-"}
                 subName={skill2Card ? skill2Card.skill.name : undefined}
                 desc={skill2Card ? skill2Card.skill.desc : "異名カードを合成して装着できる。"}
                 power={skill2Card?.skill.power}
@@ -300,7 +331,7 @@ export function TrainScreen() {
               ) : (
                 <div className="rounded-md bg-raised/50 p-2 text-[11px] hairline">
                   <p className="mb-1.5 text-muted">
-                    別カードを素材に必殺技2を装着／強化／差替。同系統強化は成功率あり。
+                    別カードを素材に必殺技2を装着／強化／上書き。同種・同レアで強化（成功率あり）、レア違い・種別違いは上書き。
                   </p>
                   <div className="mb-2 flex max-h-[7.5rem] flex-wrap gap-1.5 overflow-y-auto">
                     {otherMaterials.length === 0 ? (
@@ -323,7 +354,7 @@ export function TrainScreen() {
                             size="xs"
                           />
                           <p className="mt-0.5 max-w-[4.5rem] truncate text-center text-[9px] leading-tight text-fg">
-                            {materialSkillLabel(c.skill)}
+                            {materialSkillLabel(c.skill, c.rarity)}
                           </p>
                           <p className="text-center text-[9px] tabular text-muted">
                             ×{owned[c.id]?.count ?? 0}
@@ -338,15 +369,15 @@ export function TrainScreen() {
                     onClick={() => setConfirmOpen(true)}
                     className="flex h-9 w-full items-center justify-center rounded-lg bg-surface text-xs hairline disabled:opacity-40"
                   >
-                    {!matCard
+                    {!matCard || !matLabel
                       ? "素材カードを選ぶ"
                       : !skill2
-                        ? `「${commonSkillName(matCard.skill)}」を必殺2に装着`
-                        : skill2.sourceCardId === materialId
+                        ? `「${matLabel}」を必殺2に装着`
+                        : skill2Same
                           ? skill2.lv >= MAX_SKILL_LV
                             ? "必殺技2は最大"
                             : `必殺2強化（成功率 ${fuseSuccessRate(skill2.lv, own.level, matOwn?.level ?? 1)}%）`
-                          : `「${commonSkillName(matCard.skill)}」に差替`}
+                          : `必殺2を上書き：${matLabel} Lv.1`}
                   </button>
                 </div>
               )}
