@@ -134,7 +134,7 @@ export interface Unit {
 
 export type BattleEvent =
   | { kind: "round"; n: number }
-  | { kind: "skill"; actorUid: string; skillName: string; side: Side }
+  | { kind: "skill"; actorUid: string; skillName: string; side: Side; slot: "basic" | "s1" | "s2" }
   | {
       kind: "hit";
       actorUid: string;
