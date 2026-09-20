@@ -248,7 +248,11 @@ export function buildUnits(
     if (m.skill2?.sourceCardId) {
       const src = CARD_BY_ID[m.skill2.sourceCardId];
       if (src) {
-        skill2 = { skill: src.skill, lv: Math.max(1, m.skill2.lv ?? 1) };
+        skill2 = {
+          skill: src.skill,
+          lv: Math.max(1, m.skill2.lv ?? 1),
+          rarity: src.rarity,
+        };
       }
     }
     units.push({
@@ -293,7 +297,7 @@ export function performAction(actor: Unit, units: Unit[]): BattleEvent[] {
   const prev = actor.skill;
   actor.skill = skill;
   const events: BattleEvent[] = [
-    { kind: "skill", actorUid: actor.uid, skillName: slot === "s2" ? commonSkillName(skill) : skill.name, side: actor.side, slot },
+    { kind: "skill", actorUid: actor.uid, skillName: slot === "s2" && actor.skill2 ? commonSkillName(skill, actor.skill2.rarity) : skill.name, side: actor.side, slot },
   ];
   let targets = selectTargets(actor, units);
   if (skill.kind === "heal") {

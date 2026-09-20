@@ -1,10 +1,12 @@
-import type { Skill, SkillKind } from "./types";
+import type { Rarity, Skill, SkillKind } from "./types";
 
 /**
  * Common granted skill names for 異名合成 (skill2) by SkillKind.
  * Naming inspired by Shinra Bansho Frontier 付与必殺技:
  * https://w.atwiki.jp/sinraf/pages/453.html
  * Presentation/matching layer only — do not rewrite card.skill.name.
+ *
+ * Display form: base name + rarity suffix (原作風), e.g. 渾身の一撃・序
  */
 export const COMMON_SKILL_NAME: Record<SkillKind, string> = {
   front: "渾身の一撃",
@@ -17,7 +19,15 @@ export const COMMON_SKILL_NAME: Record<SkillKind, string> = {
   slow: "心慌意乱",
 };
 
-/** Short kind labels for material picker / detail (e.g. 渾身の一撃（正面）). */
+/** Rarity → 原作風 suffix (N→序, S→改, H→真, SP→極). */
+export const RARITY_SUFFIX: Record<Rarity, string> = {
+  N: "序",
+  S: "改",
+  H: "真",
+  SP: "極",
+};
+
+/** Short kind labels for material picker / detail (e.g. 渾身の一撃・序（正面）). */
 export const SKILL_KIND_LABEL: Record<SkillKind, string> = {
   front: "正面",
   pierce: "貫通",
@@ -29,17 +39,33 @@ export const SKILL_KIND_LABEL: Record<SkillKind, string> = {
   slow: "減速",
 };
 
-export function commonSkillName(skill: Skill | SkillKind): string {
+/** Common granted name with rarity suffix, e.g. 渾身の一撃・序 */
+export function commonSkillName(skill: Skill | SkillKind, rarity: Rarity): string {
   const kind = typeof skill === "string" ? skill : skill.kind;
-  return COMMON_SKILL_NAME[kind];
+  return `${COMMON_SKILL_NAME[kind]}・${RARITY_SUFFIX[rarity]}`;
 }
 
-/** Display label: unique card name by default; common granted name when opts.common. */
-export function skillLabel(skill: Skill, opts?: { common?: boolean }): string {
-  return opts?.common ? commonSkillName(skill) : skill.name;
+/** Display label: unique card name by default; common granted name when opts.common + rarity. */
+export function skillLabel(
+  skill: Skill,
+  opts?: { common?: boolean; rarity?: Rarity },
+): string {
+  return opts?.common && opts.rarity != null
+    ? commonSkillName(skill, opts.rarity)
+    : skill.name;
 }
 
-/** Material picker line: common name + kind, e.g. 渾身の一撃（正面）. */
-export function materialSkillLabel(skill: Skill): string {
-  return `${commonSkillName(skill)}（${SKILL_KIND_LABEL[skill.kind]}）`;
+/** Material picker line: common name + rarity + kind, e.g. 渾身の一撃・序（正面）. */
+export function materialSkillLabel(skill: Skill, rarity: Rarity): string {
+  return `${commonSkillName(skill, rarity)}（${SKILL_KIND_LABEL[skill.kind]}）`;
+}
+
+/** True when material matches current skill2 identity (same kind + same rarity). */
+export function skill2SameIdentity(
+  skill2Kind: SkillKind,
+  skill2Rarity: Rarity,
+  materialKind: SkillKind,
+  materialRarity: Rarity,
+): boolean {
+  return skill2Kind === materialKind && skill2Rarity === materialRarity;
 }

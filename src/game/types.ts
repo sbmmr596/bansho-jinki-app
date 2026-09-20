@@ -119,7 +119,7 @@ export interface Unit {
   faction: Faction;
   skill: Skill;
   skillLv: number;
-  skill2?: { skill: Skill; lv: number };
+  skill2?: { skill: Skill; lv: number; rarity: Rarity };
   hp: number;
   maxHp: number;
   atk: number;
