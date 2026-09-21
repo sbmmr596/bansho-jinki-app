@@ -360,7 +360,7 @@ export function ArtZoom() {
           className="absolute right-1 top-1 z-10"
         />
 
-        {/* Left: large card + stats + formation (育成 left) */}
+        {/* Left: large card art + 原作フッタ (TYPE | Lv·HP | COST → 攻防速) */}
         <div className="flex min-h-0 flex-col gap-2">
           <div className="flex flex-col items-center gap-1.5">
             <CardFace
@@ -369,53 +369,59 @@ export function ArtZoom() {
               hideTypeCost
               className="w-[min(100%,14rem)]"
             />
-            <div className="w-full space-y-0.5 text-center">
-              <p className="font-display text-sm leading-snug text-fg">{card.name}</p>
-              <p className="text-[10px] text-muted">{card.title}</p>
-              <div className="flex flex-wrap items-center justify-center gap-1">
-                <span className="text-[10px] text-brass">{card.rarity}</span>
-                {card.fodder ? (
-                  <span className="rounded-sm bg-crimson/85 px-1 py-0.5 text-[9px] font-semibold text-fg">
-                    素材専用
-                  </span>
-                ) : null}
-                {own ? (
-                  <span className="text-[10px] text-muted">
-                    所持 <span className="tabular text-fg">{own.count}</span>
-                  </span>
-                ) : (
-                  <span className="text-[10px] text-faint">未所持</span>
-                )}
-              </div>
-            </div>
           </div>
 
-          {/* 原作左ペイン: TYPE/COST/Lv/HP と攻防速はカード外（フッタ帯） */}
+          {/* カード外フッタ帯: TYPE | Lv·HP | COST、その下に攻防速 */}
           <div className="rounded-md bg-raised/60 p-2 hairline">
-            <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[10px]">
-              <span className="flex items-center gap-1">
+            <div className="mb-1.5 grid grid-cols-3 items-center gap-x-2 gap-y-1 text-[10px]">
+              <span className="flex items-center justify-start gap-1">
                 <span className="text-faint">TYPE</span>
                 <TypeBadge type={card.type} />
               </span>
-              <span className="tabular text-brass">
-                <span className="text-faint">COST </span>
-                <span className="font-semibold text-brass">{card.cost}</span>
-              </span>
-              <span className="tabular">
-                <span className="text-faint">Lv </span>
-                <span className="text-fg">
-                  {level}/{MAX_LEVEL}
+              <span className="flex flex-wrap items-center justify-center gap-x-2 tabular">
+                <span>
+                  <span className="text-faint">Lv </span>
+                  <span className="text-fg">
+                    {level}/{MAX_LEVEL}
+                  </span>
+                </span>
+                <span>
+                  <span className="text-faint">HP </span>
+                  <span className="text-fg">{scaledStat(card.hp, level)}</span>
                 </span>
               </span>
-              <span className="tabular">
-                <span className="text-faint">HP </span>
-                <span className="text-fg">{scaledStat(card.hp, level)}</span>
+              <span className="flex items-center justify-end tabular text-brass">
+                <span className="text-faint">COST </span>
+                <span className="font-semibold text-brass">{card.cost}</span>
               </span>
             </div>
             <div className="grid grid-cols-3 gap-1 text-center text-[10px]">
               <ZoomStatChip label="攻" value={scaledStat(card.atk, level)} tone="atk" />
               <ZoomStatChip label="防" value={scaledStat(card.def, level)} tone="def" />
               <ZoomStatChip label="速" value={scaledStat(card.spd, level)} tone="spd" />
+            </div>
+          </div>
+        </div>
+
+        {/* Right: name → formation (desc | 3×3) → skills */}
+        <div className="flex min-h-0 flex-col gap-2 pr-8 sm:pr-10">
+          <div className="space-y-0.5">
+            <p className="font-display text-base leading-snug text-fg sm:text-lg">{card.name}</p>
+            <p className="text-[10px] text-muted">{card.title}</p>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] text-brass">{card.rarity}</span>
+              {card.fodder ? (
+                <span className="rounded-sm bg-crimson/85 px-1 py-0.5 text-[9px] font-semibold text-fg">
+                  素材専用
+                </span>
+              ) : null}
+              {own ? (
+                <span className="text-[10px] text-muted">
+                  所持 <span className="tabular text-fg">{own.count}</span>
+                </span>
+              ) : (
+                <span className="text-[10px] text-faint">未所持</span>
+              )}
             </div>
           </div>
 
@@ -429,10 +435,7 @@ export function ArtZoom() {
               <ZoomFormationPreview slots={form.slots} />
             </div>
           ) : null}
-        </div>
 
-        {/* Center: 3 skill slots (育成 center, no synth CTAs) */}
-        <div className="flex min-h-0 flex-col gap-2 pr-8 sm:pr-10">
           <SkillSlot
             label="基本技"
             name={BASIC_SKILL.name}
