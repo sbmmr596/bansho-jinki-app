@@ -1,7 +1,7 @@
 import { CARD_BY_ID, FACTION_LABEL, FORMATIONS } from "@/game/data";
 import { formationOfLeader } from "@/game/combat";
 import { currentCostCap, partyCost, useGame } from "@/game/store";
-import { CardFace, GoldChip, PrimaryButton, Shell, StatRow } from "./pieces";
+import { CardFace, CostHex, GoldChip, PrimaryButton, Shell, StatRow, TypeHex } from "./pieces";
 import { cn } from "@/lib/utils";
 
 export function FormationScreen() {
@@ -110,6 +110,10 @@ export function FormationScreen() {
               <p className="text-[10px] leading-tight text-muted">
                 {FACTION_LABEL[focus.faction]}　{focus.title}
               </p>
+              <div className="flex items-center gap-1.5">
+                <TypeHex type={focus.type} className="h-6 w-7 text-xs" />
+                <CostHex cost={focus.cost} className="h-6 w-7 text-xs" />
+              </div>
               <StatRow card={focus} level={owned[focus.id]?.level ?? 1} skill1Lv={owned[focus.id]?.skill1Lv ?? 1} />
               <p className="text-[11px] leading-snug text-fg">
                 {focus.skill.name}
