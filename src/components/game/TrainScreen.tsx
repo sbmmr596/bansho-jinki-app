@@ -175,9 +175,11 @@ export function TrainScreen() {
 
   return (
     <Shell title="合成・育成" extra={<GoldChip gold={gold} />} bg="/bg/palace.jpg" nav="train" wide>
-      <div className="flex h-full min-h-0 gap-3">
+      {/* Phone: one scroll column so スキル合成 is not crushed between fixed side panes.
+          md+: 3-col with scrollable center. */}
+      <div className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-y-auto overscroll-contain md:grid-cols-[minmax(200px,260px)_minmax(0,1fr)_minmax(140px,200px)] md:gap-3 md:overflow-hidden">
         {/* Left: base card + stats */}
-        <div className="flex w-[300px] shrink-0 flex-col gap-2 overflow-y-auto">
+        <div className="flex shrink-0 flex-col gap-2 md:min-h-0 md:overflow-y-auto">
           {card && own ? (
             <>
               <div className="flex gap-2">
@@ -257,7 +259,7 @@ export function TrainScreen() {
         </div>
 
         {/* Center: skills + synth controls */}
-        <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-y-auto">
+        <div className="flex min-w-0 flex-col gap-2 md:min-h-0 md:overflow-y-auto">
           {card && own ? (
             <>
               <SkillSlot
@@ -397,9 +399,9 @@ export function TrainScreen() {
         </div>
 
         {/* Right: base card tray */}
-        <div className="flex w-[200px] shrink-0 flex-col sm:w-[220px]">
+        <div className="flex min-h-[9rem] shrink-0 flex-col pb-[max(0.25rem,env(safe-area-inset-bottom,0px))] md:min-h-0 md:pb-0">
           <p className="mb-1 text-[10px] text-muted">ベースカード</p>
-          <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-1.5 overflow-y-auto content-start">
+          <div className="grid max-h-[28vh] auto-rows-min grid-cols-4 gap-1.5 overflow-y-auto content-start sm:grid-cols-5 md:max-h-none md:min-h-0 md:flex-1 md:grid-cols-2">
             {tray.map((c) => (
               <div key={c.id} className="flex flex-col">
                 <CardFace
