@@ -159,6 +159,7 @@ export function CardFace({
   maxHp,
   onClick,
   className,
+  hideTypeCost = false,
 }: {
   card: Card;
   level?: number;
@@ -174,6 +175,8 @@ export function CardFace({
   maxHp?: number;
   onClick?: () => void;
   className?: string;
+  /** ArtZoom / detail: hide on-card TYPE·COST·Lv hexes (shown outside instead). */
+  hideTypeCost?: boolean;
 }) {
   const { src, onError } = useCardImg(card);
   const setZoomCard = useGame((s) => s.setZoomCard);
@@ -265,7 +268,10 @@ export function CardFace({
           src={src}
           alt=""
           onError={onError}
-          className="card-layer-char pointer-events-none absolute inset-x-0 bottom-[16%] top-[16%] z-[3] mx-auto w-full object-contain object-bottom"
+          className={cn(
+            "card-layer-char pointer-events-none absolute inset-x-0 top-[16%] z-[3] mx-auto w-full object-contain object-bottom",
+            hideTypeCost ? "bottom-[4%]" : "bottom-[16%]",
+          )}
         />
       )}
       <div className="card-layer-frame pointer-events-none absolute inset-0 z-[3] rounded-[inherit]" />
@@ -284,37 +290,39 @@ export function CardFace({
           素材
         </span>
       ) : null}
-      <div className="card-foot pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex items-end justify-between gap-1 px-[2%] pb-[2.5%] pt-4">
-        <span
-          className={cn(
-            "card-hex card-type-badge inline-flex shrink-0 items-center justify-center font-semibold leading-none",
-            compact ? "h-[2em] w-[2.2em] text-[1.2em]" : "h-[2.2em] w-[2.45em] text-[1.35em]",
-            TYPE_CLASS[card.type],
-          )}
-        >
-          {TYPE_LABEL[card.type]}
-        </span>
-        {!compact && level ? (
-          <span className="card-text-outline min-w-0 flex-1 truncate text-center text-[0.9em] tabular">
-            Lv.{lv}
-            {skill1Lv > 1 ? <span className="text-brass"> 技{skill1Lv}</span> : null}
+      {!hideTypeCost ? (
+        <div className="card-foot pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex items-end justify-between gap-1 px-[2%] pb-[2.5%] pt-4">
+          <span
+            className={cn(
+              "card-hex card-type-badge inline-flex shrink-0 items-center justify-center font-semibold leading-none",
+              compact ? "h-[2em] w-[2.2em] text-[1.2em]" : "h-[2.2em] w-[2.45em] text-[1.35em]",
+              TYPE_CLASS[card.type],
+            )}
+          >
+            {TYPE_LABEL[card.type]}
           </span>
-        ) : skill1Lv > 1 ? (
-          <span className="card-text-outline min-w-0 flex-1 truncate text-center text-[0.9em] text-brass tabular">
-            技Lv.{skill1Lv}
-          </span>
-        ) : (
-          <span />
-        )}
-        <span
-          className={cn(
-            "card-hex card-cost-num inline-flex shrink-0 items-center justify-center bg-ink/75 font-semibold leading-none tabular",
-            compact ? "h-[2em] w-[2.2em] text-[1.2em]" : "h-[2.2em] w-[2.45em] text-[1.35em]",
+          {!compact && level ? (
+            <span className="card-text-outline min-w-0 flex-1 truncate text-center text-[0.9em] tabular">
+              Lv.{lv}
+              {skill1Lv > 1 ? <span className="text-brass"> 技{skill1Lv}</span> : null}
+            </span>
+          ) : skill1Lv > 1 ? (
+            <span className="card-text-outline min-w-0 flex-1 truncate text-center text-[0.9em] text-brass tabular">
+              技Lv.{skill1Lv}
+            </span>
+          ) : (
+            <span />
           )}
-        >
-          {card.cost}
-        </span>
-      </div>
+          <span
+            className={cn(
+              "card-hex card-cost-num inline-flex shrink-0 items-center justify-center bg-ink/75 font-semibold leading-none tabular",
+              compact ? "h-[2em] w-[2.2em] text-[1.2em]" : "h-[2.2em] w-[2.45em] text-[1.35em]",
+            )}
+          >
+            {card.cost}
+          </span>
+        </div>
+      ) : null}
       {hp != null && maxHp != null ? (
         <div className="absolute inset-x-0.5 bottom-0 z-[6]">
           <HpBar hp={hp} max={maxHp} />
@@ -357,16 +365,14 @@ export function ArtZoom() {
           <div className="flex flex-col items-center gap-1.5">
             <CardFace
               card={card}
-              level={level}
-              skill1Lv={skill1Lv}
               size="lg"
+              hideTypeCost
               className="w-[min(100%,14rem)]"
             />
             <div className="w-full space-y-0.5 text-center">
               <p className="font-display text-sm leading-snug text-fg">{card.name}</p>
               <p className="text-[10px] text-muted">{card.title}</p>
               <div className="flex flex-wrap items-center justify-center gap-1">
-                <TypeBadge type={card.type} />
                 <span className="text-[10px] text-brass">{card.rarity}</span>
                 {card.fodder ? (
                   <span className="rounded-sm bg-crimson/85 px-1 py-0.5 text-[9px] font-semibold text-fg">
@@ -384,11 +390,16 @@ export function ArtZoom() {
             </div>
           </div>
 
+          {/* 原作左ペイン: TYPE/COST/Lv/HP と攻防速はカード外（フッタ帯） */}
           <div className="rounded-md bg-raised/60 p-2 hairline">
             <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[10px]">
               <span className="flex items-center gap-1">
                 <span className="text-faint">TYPE</span>
-                <span className="font-semibold text-fg">{TYPE_LABEL[card.type]}</span>
+                <TypeBadge type={card.type} />
+              </span>
+              <span className="tabular text-brass">
+                <span className="text-faint">COST </span>
+                <span className="font-semibold text-brass">{card.cost}</span>
               </span>
               <span className="tabular">
                 <span className="text-faint">Lv </span>
@@ -400,7 +411,6 @@ export function ArtZoom() {
                 <span className="text-faint">HP </span>
                 <span className="text-fg">{scaledStat(card.hp, level)}</span>
               </span>
-              <span className="tabular text-brass">COST {card.cost}</span>
             </div>
             <div className="grid grid-cols-3 gap-1 text-center text-[10px]">
               <ZoomStatChip label="攻" value={scaledStat(card.atk, level)} tone="atk" />
