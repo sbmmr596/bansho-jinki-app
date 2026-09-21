@@ -175,19 +175,19 @@ export function TrainScreen() {
 
   return (
     <Shell title="合成・育成" extra={<GoldChip gold={gold} />} bg="/bg/palace.jpg" nav="train" wide>
-      {/* Phone: one scroll column so スキル合成 is not crushed between fixed side panes.
-          md+: 3-col with scrollable center. */}
-      <div className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-y-auto overscroll-contain md:grid-cols-[minmax(180px,240px)_minmax(0,28%)_minmax(240px,1fr)] md:gap-3 md:overflow-hidden">
-        {/* Left: base card + stats */}
+      {/* Phone: one scroll column so スキル合成 stays reachable.
+          md+: equal 3-col (大カード / 技 / トレイ). */}
+      <div className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-y-auto overscroll-contain md:grid-cols-3 md:gap-3 md:overflow-hidden">
+        {/* Left: large focus card + stats (原作風・縦積み) */}
         <div className="flex shrink-0 flex-col gap-2 md:min-h-0 md:overflow-y-auto">
           {card && own ? (
             <>
-              <div className="flex gap-2">
-                <CardFace card={card} level={own.level} skill1Lv={skill1Lv} size="md" />
-                <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex flex-col items-center gap-1.5">
+                <CardFace card={card} level={own.level} skill1Lv={skill1Lv} size="lg" className="w-[min(100%,14rem)]" />
+                <div className="w-full space-y-0.5 text-center">
                   <p className="font-display text-sm leading-snug text-fg">{card.name}</p>
                   <p className="text-[10px] text-muted">{card.title}</p>
-                  <div className="flex flex-wrap items-center gap-1">
+                  <div className="flex flex-wrap items-center justify-center gap-1">
                     <TypeBadge type={card.type} />
                     <span className="text-[10px] text-brass">{card.rarity}</span>
                     {card.fodder ? (
@@ -195,15 +195,15 @@ export function TrainScreen() {
                         素材専用
                       </span>
                     ) : null}
+                    <span className="text-[10px] text-muted">
+                      所持 <span className="tabular text-fg">{own.count}</span>
+                    </span>
                   </div>
-                  <p className="text-[10px] text-muted">
-                    所持 <span className="tabular text-fg">{own.count}</span>
-                  </p>
                 </div>
               </div>
 
               <div className="rounded-md bg-raised/60 p-2 hairline">
-                <div className="mb-1.5 flex items-center justify-between gap-2 text-[10px]">
+                <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[10px]">
                   <span className="flex items-center gap-1">
                     <span className="text-faint">TYPE</span>
                     <span className="font-semibold text-fg">{TYPE_LABEL[card.type]}</span>
@@ -218,9 +218,7 @@ export function TrainScreen() {
                     <span className="text-faint">HP </span>
                     <span className="text-fg">{scaledStat(card.hp, own.level)}</span>
                   </span>
-                  <span className="tabular text-brass">
-                    COST {card.cost}
-                  </span>
+                  <span className="tabular text-brass">COST {card.cost}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-1 text-center text-[10px]">
                   <StatChip label="攻" value={scaledStat(card.atk, own.level)} tone="atk" />
@@ -258,7 +256,7 @@ export function TrainScreen() {
           )}
         </div>
 
-        {/* Center: skills + synth controls */}
+        {/* Center: skills + mode + confirm (素材グリッドは右列へ) */}
         <div className="flex min-w-0 flex-col gap-2 md:min-h-0 md:overflow-y-auto">
           {card && own ? (
             <>
@@ -332,44 +330,25 @@ export function TrainScreen() {
                 </div>
               ) : (
                 <div className="rounded-md bg-raised/50 p-2 text-[11px] hairline">
-                  <p className="mb-1 text-muted">
+                  <p className="text-muted">
                     別カードを素材に必殺技2を装着／強化／上書き。同種・同レアで強化（成功率あり）、レア違い・種別違いは上書き。
                   </p>
-                  <div className="mb-2 flex max-h-[7.5rem] flex-wrap gap-1.5 overflow-y-auto">
-                    {otherMaterials.length === 0 ? (
-                      <p className="text-faint">他に所持カードがない。</p>
-                    ) : (
-                      otherMaterials.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => setMaterialId(c.id)}
-                          className={cn(
-                            "rounded-md p-0.5",
-                            materialId === c.id ? "ring-2 ring-brass" : "opacity-80 hover:opacity-100",
-                          )}
-                        >
-                          <CardFace
-                            card={c}
-                            level={owned[c.id]?.level}
-                            skill1Lv={owned[c.id]?.skill1Lv}
-                            size="xs"
-                          />
-                          <p className="mt-0.5 max-w-[4.5rem] truncate text-center text-[9px] leading-tight text-fg">
-                            {materialSkillLabel(c.skill, c.rarity)}
-                          </p>
-                          <p className="text-center text-[9px] tabular text-muted">
-                            ×{owned[c.id]?.count ?? 0}
-                          </p>
-                        </button>
-                      ))
-                    )}
-                  </div>
+                  <p className="mt-1 text-[10px] text-faint">
+                    ベースは左のカード。変更は同名タブでトレイから。
+                  </p>
+                  {matCard && matLabel ? (
+                    <p className="mt-1 tabular text-fg">
+                      素材 <span className="text-brass">{matLabel}</span>
+                      <span className="ml-2 text-muted">×{matOwn?.count ?? 0}</span>
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-faint">右の素材カードを選ぶ</p>
+                  )}
                   <button
                     type="button"
                     disabled={!canSkill2}
                     onClick={() => setConfirmOpen(true)}
-                    className="flex h-11 w-full items-center justify-center rounded-lg bg-surface text-xs hairline disabled:opacity-40"
+                    className="mt-2 flex h-11 w-full items-center justify-center rounded-lg bg-surface text-xs hairline disabled:opacity-40"
                   >
                     {!matCard || !matLabel
                       ? "素材カードを選ぶ"
@@ -398,35 +377,72 @@ export function TrainScreen() {
           ) : null}
         </div>
 
-        {/* Right: base card tray */}
+        {/* Right: base tray (同名) or material picker (異名) — thumbnails, no stretch */}
         <div className="flex min-h-[9rem] shrink-0 flex-col pb-[max(0.25rem,env(safe-area-inset-bottom,0px))] md:min-h-0 md:pb-0">
-          <p className="mb-1 text-[10px] text-muted">ベースカード</p>
-          <div className="grid max-h-[28vh] auto-rows-min grid-cols-4 gap-1.5 overflow-y-auto content-start sm:grid-cols-5 md:max-h-none md:min-h-0 md:flex-1 md:grid-cols-3">
-            {tray.map((c) => (
-              <div key={c.id} className="flex flex-col">
-                <CardFace
-                  card={c}
-                  level={owned[c.id]?.level}
-                  skill1Lv={owned[c.id]?.skill1Lv}
-                  size="xs"
-                  selected={focusId === c.id}
-                  onClick={() => selectBase(c.id)}
-                  className="w-full"
-                />
-                <p
-                  className={cn(
-                    "mt-0.5 text-center text-[9px] tabular",
-                    (owned[c.id]?.level ?? 1) >= MAX_LEVEL ? "text-brass" : "text-muted",
-                  )}
-                >
-                  ×{owned[c.id]?.count ?? 0}
-                  {(owned[c.id]?.skill1Lv ?? 1) > 1
-                    ? ` 技${owned[c.id]!.skill1Lv}`
-                    : ""}
-                </p>
+          {mode === "skill2" ? (
+            <>
+              <p className="mb-1 text-[10px] text-muted">素材カード</p>
+              <div className="grid max-h-[28vh] auto-rows-min grid-cols-4 justify-items-center gap-1.5 overflow-y-auto content-start sm:grid-cols-5 md:max-h-none md:min-h-0 md:flex-1 md:grid-cols-4 lg:grid-cols-5">
+                {otherMaterials.length === 0 ? (
+                  <p className="col-span-full text-[11px] text-faint">他に所持カードがない。</p>
+                ) : (
+                  otherMaterials.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setMaterialId(c.id)}
+                      className={cn(
+                        "flex flex-col items-center rounded-md p-0.5",
+                        materialId === c.id ? "ring-2 ring-brass" : "opacity-80 hover:opacity-100",
+                      )}
+                    >
+                      <CardFace
+                        card={c}
+                        level={owned[c.id]?.level}
+                        skill1Lv={owned[c.id]?.skill1Lv}
+                        size="xs"
+                      />
+                      <p className="mt-0.5 max-w-[4.75rem] truncate text-center text-[9px] leading-tight text-fg">
+                        {materialSkillLabel(c.skill, c.rarity)}
+                      </p>
+                      <p className="text-center text-[9px] tabular text-muted">
+                        ×{owned[c.id]?.count ?? 0}
+                      </p>
+                    </button>
+                  ))
+                )}
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <>
+              <p className="mb-1 text-[10px] text-muted">ベースカード</p>
+              <div className="grid max-h-[28vh] auto-rows-min grid-cols-4 justify-items-center gap-1.5 overflow-y-auto content-start sm:grid-cols-5 md:max-h-none md:min-h-0 md:flex-1 md:grid-cols-4 lg:grid-cols-5">
+                {tray.map((c) => (
+                  <div key={c.id} className="flex flex-col items-center">
+                    <CardFace
+                      card={c}
+                      level={owned[c.id]?.level}
+                      skill1Lv={owned[c.id]?.skill1Lv}
+                      size="xs"
+                      selected={focusId === c.id}
+                      onClick={() => selectBase(c.id)}
+                    />
+                    <p
+                      className={cn(
+                        "mt-0.5 text-center text-[9px] tabular",
+                        (owned[c.id]?.level ?? 1) >= MAX_LEVEL ? "text-brass" : "text-muted",
+                      )}
+                    >
+                      ×{owned[c.id]?.count ?? 0}
+                      {(owned[c.id]?.skill1Lv ?? 1) > 1
+                        ? ` 技${owned[c.id]!.skill1Lv}`
+                        : ""}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
