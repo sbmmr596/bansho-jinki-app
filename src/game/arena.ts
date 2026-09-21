@@ -6,8 +6,10 @@ import type { Card, Formation } from "./types";
  * Fire-Emblem-style arena (separate from debug endless trial).
  *
  * Entry costs 闘気 (spirit): 互角1 / 剛腕2 / 鬼神3. Cap 5; +1 per minute.
- * Gold "fee" table still scales rewards with party average level
+ * Gold "fee" table still scales win rewards with party average level
  * (anchors at avg Lv5 ≈ 80 / 150 / 280 × rewardMul). No gold deducted on entry.
+ * rewardMul is net-equivalent win payout: arenaReward = fee × mul
+ * (0.6 / 1.2 / 2.0 ≈ former fee×1.6/2.2/3.0 − fee when entry cost gold).
  * Enemy levels = round(avgLevel × levelMul), clamped 1..MAX_LEVEL.
  * Enemy heroes are cost-matched to the player party (main fairness lever).
  */
@@ -31,7 +33,7 @@ export const ARENA_TIER_META: Record<
     name: "互角",
     levelMul: 1.0,
     feeAnchor: 80,
-    rewardMul: 1.6,
+    rewardMul: 0.6,
     blurb: "同コスト同格。",
   },
   strong: {
@@ -39,7 +41,7 @@ export const ARENA_TIER_META: Record<
     name: "剛腕",
     levelMul: 1.15,
     feeAnchor: 150,
-    rewardMul: 2.2,
+    rewardMul: 1.2,
     blurb: "一回り強い相手。見返りも厚い。",
   },
   demon: {
@@ -47,7 +49,7 @@ export const ARENA_TIER_META: Record<
     name: "鬼神",
     levelMul: 1.35,
     feeAnchor: 280,
-    rewardMul: 3.0,
+    rewardMul: 2.0,
     blurb: "鬼神級。闘気を多く消費し、報酬も厚い。",
   },
 };
