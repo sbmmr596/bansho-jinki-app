@@ -355,6 +355,11 @@ export function CharSprite({
         dimmed && "opacity-35 grayscale",
       )}
     >
+      {hp != null && maxHp != null ? (
+        <div className="absolute left-1/2 top-0 z-[3] w-[72%] -translate-x-1/2">
+          <HpBar hp={hp} max={maxHp} />
+        </div>
+      ) : null}
       <span
         className={cn(
           "unit-foot-shadow pointer-events-none absolute bottom-[1%] left-1/2 z-0 -translate-x-1/2 rounded-[50%]",
@@ -362,39 +367,30 @@ export function CharSprite({
         )}
         aria-hidden
       />
-      {/* Sprite stack: HP bar rides the image box top (not the tall unit-spot top),
-          so full-body and chibi stay attached despite mixed art sizes. */}
-      <div className="relative z-[1] flex h-[86%] w-full max-w-full flex-col items-center justify-end">
-        {hp != null && maxHp != null ? (
-          <div className="absolute bottom-full left-1/2 z-[3] mb-0.5 w-[72%] -translate-x-1/2">
-            <HpBar hp={hp} max={maxHp} />
-          </div>
-        ) : null}
-        {src ? (
-          <img
-            src={src}
-            alt={card.name}
-            onError={onError}
-            className={cn(
-              "h-full w-auto max-w-full object-contain object-bottom",
-              flip && "-scale-x-100",
-            )}
-          />
-        ) : (
-          <Crest card={card} />
-        )}
-        {float ? (
-          <span
-            key={float.key}
-            className={cn(
-              "anim-float pointer-events-none absolute left-1/2 bottom-[88%] z-10 -translate-x-1/2 font-display text-sm tabular",
-              float.crit ? "text-brass" : float.text.startsWith("+") ? "text-ok" : "text-fg",
-            )}
-          >
-            {float.text}
-          </span>
-        ) : null}
-      </div>
+      {src ? (
+        <img
+          src={src}
+          alt={card.name}
+          onError={onError}
+          className={cn(
+            "relative z-[1] h-[86%] w-auto max-w-full object-contain",
+            flip && "-scale-x-100",
+          )}
+        />
+      ) : (
+        <Crest card={card} />
+      )}
+      {float ? (
+        <span
+          key={float.key}
+          className={cn(
+            "anim-float pointer-events-none absolute left-1/2 top-1 z-10 -translate-x-1/2 font-display text-sm tabular",
+            float.crit ? "text-brass" : float.text.startsWith("+") ? "text-ok" : "text-fg",
+          )}
+        >
+          {float.text}
+        </span>
+      ) : null}
     </div>
   );
 }

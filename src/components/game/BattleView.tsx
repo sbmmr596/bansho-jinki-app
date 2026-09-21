@@ -515,8 +515,7 @@ function visOf(slot: number, side: Side) {
   const row = Math.floor(slot / 3);
   const col = slot % 3;
   const x = side === "player" ? 90 - col * 13 : 10 + col * 13;
-  // Back/front ranks: keep depth but avoid the huge empty mid-band on 1280×720.
-  const y = 44 + row * 16;
+  const y = 22 + row * 28;
   return { x, y, row, col };
 }
 
