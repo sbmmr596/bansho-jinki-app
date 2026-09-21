@@ -515,7 +515,8 @@ function visOf(slot: number, side: Side) {
   const row = Math.floor(slot / 3);
   const col = slot % 3;
   const x = side === "player" ? 90 - col * 13 : 10 + col * 13;
-  const y = 22 + row * 28;
+  // Back/front ranks: keep depth but avoid the huge empty mid-band on 1280×720.
+  const y = 44 + row * 16;
   return { x, y, row, col };
 }
 
@@ -579,23 +580,73 @@ function UnitSpot({
   );
 }
 
+/** Min center-to-center gap (% of rail) so ~6 portraits stay distinguishable. */
+const ATB_MIN_GAP = 3.6;
+
+function layoutAtb(units: Unit[]) {
+  const raw = units
+    .filter((u) => u.alive)
+    .map((u) => {
+      const p = Math.max(0, Math.min(1, (u.gauge ?? 0) / GAUGE_MAX));
+      return { uid: u.uid, unit: u, p, left: 6 + (1 - p) * 88 };
+    })
+    .sort((a, b) => a.left - b.left || a.uid.localeCompare(b.uid));
+
+  const lefts = raw.map((e) => e.left);
+  for (let i = 1; i < lefts.length; i++) {
+    if (lefts[i] < lefts[i - 1] + ATB_MIN_GAP) lefts[i] = lefts[i - 1] + ATB_MIN_GAP;
+  }
+  if (lefts.length && lefts[lefts.length - 1] > 94) {
+    lefts[lefts.length - 1] = 94;
+    for (let i = lefts.length - 2; i >= 0; i--) {
+      if (lefts[i] > lefts[i + 1] - ATB_MIN_GAP) lefts[i] = lefts[i + 1] - ATB_MIN_GAP;
+    }
+  }
+  if (lefts.length && lefts[0] < 6) {
+    lefts[0] = 6;
+    for (let i = 1; i < lefts.length; i++) {
+      if (lefts[i] < lefts[i - 1] + ATB_MIN_GAP) lefts[i] = lefts[i - 1] + ATB_MIN_GAP;
+    }
+  }
+
+  // Vertical lane among still-near neighbors (thin rail: ±7px).
+  const lanes: number[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    const used = new Set<number>();
+    for (let j = 0; j < i; j++) {
+      if (Math.abs(lefts[i] - lefts[j]) < ATB_MIN_GAP) used.add(lanes[j]);
+    }
+    let lane = 0;
+    while (used.has(lane)) lane += 1;
+    lanes[i] = lane;
+  }
+
+  return raw.map((e, i) => {
+    const lane = lanes[i];
+    const yOff = lane === 0 ? 0 : lane % 2 === 1 ? -7 * Math.ceil(lane / 2) : 7 * Math.ceil(lane / 2);
+    return { ...e, left: lefts[i], lane, yOff };
+  });
+}
+
 function AtbRail({ units, acting }: { units: Unit[]; acting: string | null }) {
-  const alive = units.filter((u) => u.alive);
+  const tokens = layoutAtb(units);
   return (
     <div className="atb-rail shrink-0">
       <span className="atb-goal" />
-      {alive.map((u) => {
+      {tokens.map(({ unit: u, p, left, lane, yOff }) => {
         const card = CARD_BY_ID[u.cardId];
         if (!card) return null;
         const src = !card.fodder ? `/cards/${card.id}.jpg` : charSrc(card);
-        const p = Math.max(0, Math.min(1, (u.gauge ?? 0) / GAUGE_MAX));
-        const left = 6 + (1 - p) * 88;
         const isAct = acting === u.uid;
         return (
           <span
             key={u.uid}
             className={cn("atb-token", u.side, isAct && "is-act")}
-            style={{ left: `${left}%`, zIndex: isAct ? 8 : 2 + Math.floor(p * 5) }}
+            style={{
+              left: `${left}%`,
+              top: `calc(50% + ${yOff}px)`,
+              zIndex: isAct ? 8 : 2 + Math.floor(p * 5) + lane,
+            }}
             title={u.name}
           >
             <img src={src} alt="" crossOrigin="anonymous" />
