@@ -35,7 +35,7 @@ export function CollectionScreen() {
               </FilterChip>
             ))}
           </div>
-          <div className="grid auto-rows-min grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-5">
+          <div className="grid auto-rows-min grid-cols-5 gap-2 overflow-y-auto">
             {list.map((c) => {
               const have = owned[c.id];
               return (
@@ -56,10 +56,10 @@ export function CollectionScreen() {
         </div>
 
         {card ? (
-          <aside className="panel flex w-[320px] shrink-0 flex-col gap-2.5 overflow-y-auto rounded-lg p-3">
-            <div className="flex gap-3">
+          <aside className="panel flex w-[320px] shrink-0 flex-col gap-1.5 overflow-y-auto rounded-lg p-2.5">
+            <div className="flex gap-2.5">
               <CardFace key={card.id} card={card} level={own?.level} skill1Lv={own?.skill1Lv} size="md" />
-              <div className="flex min-w-0 flex-1 flex-col gap-1 text-xs">
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-xs">
                 <p className="font-display text-sm leading-snug text-fg">{card.name}</p>
                 <p className="leading-snug text-muted">{card.title}</p>
                 <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
@@ -83,13 +83,13 @@ export function CollectionScreen() {
               </div>
             </div>
 
-            <div className="border-t border-fg/10 pt-2">
+            <div className="border-t border-fg/10 pt-1.5">
               <StatRow card={card} level={own?.level ?? 1} skill1Lv={own?.skill1Lv ?? 1} />
             </div>
 
             {/* Fill remaining panel height like original detail: formation + skill */}
-            <div className="flex min-h-0 flex-1 flex-col gap-2 border-t border-fg/10 pt-2">
-              <div className="flex items-start gap-2.5 rounded-md bg-raised/50 p-2 hairline">
+            <div className="flex min-h-0 flex-1 flex-col gap-1.5 border-t border-fg/10 pt-1.5">
+              <div className="flex items-start gap-2 rounded-md bg-raised/50 p-1.5 hairline">
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] tracking-wide text-faint">リーダー陣形</p>
                   <p className="font-display text-sm leading-snug text-fg">{form?.name ?? "—"}</p>
@@ -98,13 +98,15 @@ export function CollectionScreen() {
                 {form ? <FormationPreview slots={form.slots} /> : null}
               </div>
 
-              <div className="flex min-h-0 flex-1 flex-col gap-1.5">
-                <DetailSkill
-                  label="基本技"
-                  name={BASIC_SKILL.name}
-                  desc={BASIC_SKILL.desc}
-                  power={BASIC_SKILL.power}
-                />
+              <div className="flex min-h-0 flex-1 flex-col gap-1">
+                {/* 基本技は折りたたみ1行表示 — 必殺技2が初期ビューに収まるように */}
+                <div className="flex items-baseline justify-between gap-2 rounded-md bg-raised/50 px-2 py-1 hairline">
+                  <p className="min-w-0 truncate text-[11px] text-muted">
+                    <span className="text-[10px] tracking-wide text-faint">基本技</span>{" "}
+                    <span className="text-fg">{BASIC_SKILL.name}</span>
+                  </p>
+                  <span className="shrink-0 text-[10px] text-brass">威力:{BASIC_SKILL.power}</span>
+                </div>
                 <DetailSkill
                   label="必殺技1"
                   name={card.skill.name}
@@ -133,7 +135,7 @@ export function CollectionScreen() {
                 ) : (
                   <DetailSkill label="必殺技2" name="-" desc="未装着" empty tone="s2" />
                 )}
-                <p className="pt-1 text-[10px] text-brass">
+                <p className="pt-0.5 text-[10px] text-brass">
                   属性 {TYPE_LABEL[card.type]}　／　種別 {SKILL_KIND_LABEL[card.skill.kind]}
                 </p>
               </div>
@@ -148,7 +150,7 @@ export function CollectionScreen() {
 function FormationPreview({ slots }: { slots: boolean[] }) {
   return (
     <div
-      className="grid h-[4.5rem] w-[4.5rem] shrink-0 grid-cols-3 grid-rows-3 gap-0.5"
+      className="grid h-16 w-16 shrink-0 grid-cols-3 grid-rows-3 gap-0.5"
       aria-hidden
     >
       {[0, 1, 2].map((row) =>
@@ -194,7 +196,7 @@ function DetailSkill({
   return (
     <div
       className={
-        "rounded-md p-2 hairline " +
+        "rounded-md px-2 py-1.5 hairline " +
         (tone === "s2"
           ? empty
             ? "bg-crimson/20"
@@ -239,7 +241,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       className={
-        "h-8 shrink-0 rounded-full px-3 text-xs " +
+        "inline-flex min-h-[var(--touch-min)] min-w-[var(--touch-min)] shrink-0 items-center justify-center rounded-full px-3 text-xs " +
         (active ? "bg-brass text-bg" : "bg-surface text-muted hairline")
       }
     >
