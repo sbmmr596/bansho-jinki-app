@@ -4,10 +4,14 @@ import {
   SPIRIT_MAX,
   arenaCostHint,
   arenaFee,
-  arenaReward,
+  arenaLevelSumHint,
+  arenaRewardEstimate,
   arenaSpiritCost,
   partyAverageLevel,
+  partyLevels,
+  partySkill1Lvs,
   partyTotalCost,
+  partyTotalLevel,
   type ArenaTier,
 } from "@/game/arena";
 import { useGame } from "@/game/store";
@@ -37,13 +41,19 @@ export function ArenaScreen() {
   const avg = partyAverageLevel(party, owned);
   const partySize = party.filter(Boolean).length;
   const myCost = partyTotalCost(party);
+  const myLevelSum = partyTotalLevel(party, owned);
+  const levels = partyLevels(party, owned);
+  const skill1Lvs = partySkill1Lvs(party, owned);
   const foeCostHint = arenaCostHint(myCost, tier);
+  const foeLevelHint = arenaLevelSumHint(myLevelSum, tier);
   const fee = arenaFee(tier, avg);
-  const reward = arenaReward(tier, fee);
+  const reward = arenaRewardEstimate(tier, avg, myCost, levels, skill1Lvs);
   const cost = arenaSpiritCost(tier);
   const canFight = !!leaderId && partySize > 0;
   const canPay = spirit >= cost;
   const meta = ARENA_TIER_META[tier];
+  const countHint =
+    tier === "even" ? "人数は自軍と同じ" : "人数は自軍準拠（3〜5）";
 
   const onConfirm = () => {
     const res = startArena(tier);
@@ -70,10 +80,10 @@ export function ArenaScreen() {
           <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-2 py-1 sm:gap-3">
             <p className="max-w-md text-center text-xs leading-relaxed text-muted sm:text-sm">
               闘気を消費してランダムな英雄隊と戦う。敗北しても闘気は戻らない。
-              報酬の金は勝利時のみ。1分で互角1回分が回復する。
+              報酬の金は勝利時のみ（相手の強さに応じて変動）。1分で互角1回分が回復する。
             </p>
             <p className="text-[10px] text-faint sm:text-xs">
-              パーティ平均 Lv.{avg.toFixed(1)}　人数 {partySize}　コスト {myCost}
+              パーティ平均 Lv.{avg.toFixed(1)}　合計Lv {myLevelSum}　人数 {partySize}　コスト {myCost}
               {!leaderId ? "　リーダー未設定" : ""}
             </p>
             <div className="grid w-full max-w-lg grid-cols-3 gap-2">
@@ -97,7 +107,7 @@ export function ArenaScreen() {
                     )}
                   >
                     <p className="font-display text-sm text-fg sm:text-base">{m.name}</p>
-                    <p className="mt-0.5 text-[10px] text-faint">敵 ×{m.levelMul.toFixed(1)}</p>
+                    <p className="mt-0.5 text-[10px] text-faint">合計Lv ×{m.levelMul.toFixed(2)}</p>
                     <p className={cn("mt-1 text-xs tabular", locked ? "text-crimson" : "text-brass")}>
                       闘気 {c}
                     </p>
@@ -107,13 +117,15 @@ export function ArenaScreen() {
             </div>
             <div className="w-full max-w-lg rounded-lg bg-surface/80 px-3 py-2 hairline sm:px-4 sm:py-3">
               <p className="text-sm text-fg">
-                {meta.name}　消費 闘気{cost}　→　勝利報酬 {reward}金
+                {meta.name}　消費 闘気{cost}　→　勝利報酬 約{reward}金
               </p>
               <p className="mt-1 text-xs text-muted">{meta.blurb}</p>
               <p className="mt-1 text-[10px] text-faint">
-                敵レベル目安 Lv.{Math.max(1, Math.round(avg * meta.levelMul))}　人数は自軍±1（3〜5）
+                相手目安 合計Lv ~{foeLevelHint}　{countHint}
                 　相手目安コスト ~{foeCostHint}
+                {tier === "even" ? "　スキルLv1" : tier === "strong" ? "　スキルLv1〜2" : "　スキルLv2〜3"}
               </p>
+              <p className="mt-0.5 text-[10px] text-faint">基準報酬 {Math.round(fee * meta.rewardMul)}金 × 戦力比</p>
             </div>
             {hint ? <p className="text-sm text-crimson">{hint}</p> : null}
             {!canPay && canFight ? (
