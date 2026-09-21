@@ -132,6 +132,7 @@ export function BattleView() {
         setFx(null);
         setStruck(null);
         setLunge(null);
+        actingRef.current = null;
         setActing(null);
       } else if (ev.kind === "skill") {
         const prevAct = actingRef.current;
@@ -326,31 +327,49 @@ export function BattleView() {
         finishBattle(lastEndRef.current ?? undefined);
         return;
       }
-      // Pre-simulated (arena/map) playback: keep ATB flowing every frame by spd,
-      // not only during infrequent "round" banners (~every 6 actions).
+      // Pre-simulated (arena/map) playback: ATB flows every frame by spd while idle.
+      // While an action is presenting (skill/hit/heal/…), freeze other tokens.
       if (!liveNow) {
+        // Action finished → next skill/round/end wait: release actor so gauges resume.
+        if (
+          actingRef.current &&
+          (ev.kind === "skill" || ev.kind === "round" || ev.kind === "end")
+        ) {
+          const doneId = actingRef.current;
+          actingRef.current = null;
+          setActing(null);
+          setUnits((prev) => prev.map((u) => (u.uid === doneId ? { ...u, gauge: 0 } : u)));
+        }
+        const actingId = actingRef.current;
         gaugeTickRef.current += dtScaled;
         if (gaugeTickRef.current >= 0.05) {
           const step = gaugeTickRef.current;
           gaugeTickRef.current = 0;
-          const actingId = actingRef.current;
-          setUnits((prev) => {
-            let changed = false;
-            const next = prev.map((u) => {
-              if (!u.alive) return u;
-              // Acting unit stays pinned at left (GAUGE_MAX) until action ends.
-              if (actingId && u.uid === actingId) {
+          if (actingId) {
+            // Freeze everyone else; keep actor pinned at left until action ends.
+            setUnits((prev) => {
+              let changed = false;
+              const next = prev.map((u) => {
+                if (u.uid !== actingId) return u;
                 if (u.gauge === GAUGE_MAX) return u;
                 changed = true;
                 return { ...u, gauge: GAUGE_MAX };
-              }
-              const g = Math.min(GAUGE_MAX, (u.gauge ?? 0) + atbRate(u) * ATB_PER_SEC * step);
-              if (g === u.gauge) return u;
-              changed = true;
-              return { ...u, gauge: g };
+              });
+              return changed ? next : prev;
             });
-            return changed ? next : prev;
-          });
+          } else {
+            setUnits((prev) => {
+              let changed = false;
+              const next = prev.map((u) => {
+                if (!u.alive) return u;
+                const g = Math.min(GAUGE_MAX, (u.gauge ?? 0) + atbRate(u) * ATB_PER_SEC * step);
+                if (g === u.gauge) return u;
+                changed = true;
+                return { ...u, gauge: g };
+              });
+              return changed ? next : prev;
+            });
+          }
         }
       }
       accRef.current += dtScaled;
