@@ -177,7 +177,7 @@ export function TrainScreen() {
     <Shell title="合成・育成" extra={<GoldChip gold={gold} />} bg="/bg/palace.jpg" nav="train" wide>
       {/* Phone: one scroll column so スキル合成 is not crushed between fixed side panes.
           md+: 3-col with scrollable center. */}
-      <div className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-y-auto overscroll-contain md:grid-cols-[minmax(200px,260px)_minmax(0,42%)_minmax(160px,1fr)] md:gap-3 md:overflow-hidden">
+      <div className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-y-auto overscroll-contain md:grid-cols-[minmax(180px,240px)_minmax(0,28%)_minmax(240px,1fr)] md:gap-3 md:overflow-hidden">
         {/* Left: base card + stats */}
         <div className="flex shrink-0 flex-col gap-2 md:min-h-0 md:overflow-y-auto">
           {card && own ? (
@@ -294,7 +294,7 @@ export function TrainScreen() {
                 tone="s2"
               />
 
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-1 gap-1">
                 <ModeChip active={mode === "skill1"} onClick={() => { setMode("skill1"); setMaterialId(null); setLastResult(null); }}>
                   同名合成（必殺1）
                 </ModeChip>
@@ -401,7 +401,7 @@ export function TrainScreen() {
         {/* Right: base card tray */}
         <div className="flex min-h-[9rem] shrink-0 flex-col pb-[max(0.25rem,env(safe-area-inset-bottom,0px))] md:min-h-0 md:pb-0">
           <p className="mb-1 text-[10px] text-muted">ベースカード</p>
-          <div className="grid max-h-[28vh] auto-rows-min grid-cols-4 gap-1.5 overflow-y-auto content-start sm:grid-cols-5 md:max-h-none md:min-h-0 md:flex-1 md:grid-cols-2">
+          <div className="grid max-h-[28vh] auto-rows-min grid-cols-4 gap-1.5 overflow-y-auto content-start sm:grid-cols-5 md:max-h-none md:min-h-0 md:flex-1 md:grid-cols-3">
             {tray.map((c) => (
               <div key={c.id} className="flex flex-col">
                 <CardFace
