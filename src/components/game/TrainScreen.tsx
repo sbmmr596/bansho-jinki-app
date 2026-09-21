@@ -294,7 +294,7 @@ export function TrainScreen() {
                 tone="s2"
               />
 
-              <div className="flex gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
                 <ModeChip active={mode === "skill1"} onClick={() => { setMode("skill1"); setMaterialId(null); setLastResult(null); }}>
                   同名合成（必殺1）
                 </ModeChip>
@@ -491,7 +491,7 @@ function ModeChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "h-8 flex-1 rounded-full px-2 text-[11px]",
+        "h-9 w-full rounded-md px-2 text-[11px]",
         active ? "bg-brass text-bg" : "bg-surface text-muted hairline",
       )}
     >
