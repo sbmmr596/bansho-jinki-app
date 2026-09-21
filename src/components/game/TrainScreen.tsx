@@ -259,7 +259,7 @@ export function TrainScreen() {
         </div>
 
         {/* Center: skills + synth controls */}
-        <div className="flex min-w-0 flex-col gap-1.5 md:min-h-0 md:overflow-y-auto">
+        <div className="flex min-w-0 flex-col gap-1 md:min-h-0 md:overflow-y-auto">
           {card && own ? (
             <>
               <SkillSlot
@@ -304,7 +304,7 @@ export function TrainScreen() {
               </div>
 
               {mode === "skill1" ? (
-                <div className="rounded-md bg-raised/50 p-1.5 text-[10px] hairline">
+                <div className="rounded-md bg-raised/50 p-1 text-[10px] leading-snug hairline">
                   <p className="text-muted">
                     同じカードを素材にして必殺技1を強化。成功率はレベルが高いほど下がる。
                   </p>
@@ -321,7 +321,7 @@ export function TrainScreen() {
                     type="button"
                     disabled={!canSkill1}
                     onClick={() => setConfirmOpen(true)}
-                    className="mt-2 flex h-9 w-full items-center justify-center rounded-lg bg-surface text-xs hairline disabled:opacity-40"
+                    className="mt-1 flex h-7 w-full items-center justify-center rounded-md bg-surface text-[10px] hairline disabled:opacity-40"
                   >
                     {skill1Max
                       ? "必殺技1は最大"
@@ -331,11 +331,11 @@ export function TrainScreen() {
                   </button>
                 </div>
               ) : (
-                <div className="rounded-md bg-raised/50 p-1.5 text-[10px] hairline">
+                <div className="rounded-md bg-raised/50 p-1 text-[10px] leading-snug hairline">
                   <p className="mb-1 text-muted">
                     別カードを素材に必殺技2を装着／強化／上書き。同種・同レアで強化（成功率あり）、レア違い・種別違いは上書き。
                   </p>
-                  <div className="mb-2 flex max-h-[7.5rem] flex-wrap gap-1.5 overflow-y-auto">
+                  <div className="mb-1 flex max-h-[5.5rem] flex-wrap gap-1 overflow-y-auto">
                     {otherMaterials.length === 0 ? (
                       <p className="text-faint">他に所持カードがない。</p>
                     ) : (
@@ -369,7 +369,7 @@ export function TrainScreen() {
                     type="button"
                     disabled={!canSkill2}
                     onClick={() => setConfirmOpen(true)}
-                    className="flex h-9 w-full items-center justify-center rounded-lg bg-surface text-xs hairline disabled:opacity-40"
+                    className="flex h-7 w-full items-center justify-center rounded-md bg-surface text-[10px] hairline disabled:opacity-40"
                   >
                     {!matCard || !matLabel
                       ? "素材カードを選ぶ"
@@ -491,7 +491,7 @@ function ModeChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "h-7 flex-1 rounded-full px-2 text-[10px]",
+        "h-6 flex-1 rounded-full px-2 text-[10px] leading-none",
         active ? "bg-brass text-bg" : "bg-surface text-muted hairline",
       )}
     >
@@ -525,36 +525,30 @@ function SkillSlot({
   const bar =
     tone === "s2"
       ? empty
-        ? "bg-crimson/25 border-crimson/40"
-        : "bg-crimson/15 border-crimson/30"
+        ? "bg-crimson/20 border-crimson/35"
+        : "bg-crimson/10 border-crimson/25"
       : tone === "s1"
-        ? "bg-sky-500/10 border-sky-400/25"
-        : "bg-raised/50 border-fg/10";
+        ? "bg-sky-500/10 border-sky-400/20"
+        : "bg-raised/40 border-fg/10";
+  const tip = [subName && subName !== name ? subName : null, desc].filter(Boolean).join(" — ");
   return (
-    <div className={cn("rounded-md border px-2 py-1", bar)}>
-      <div className="flex min-w-0 items-baseline gap-1.5">
-        <p className="shrink-0 text-[9px] tracking-wide text-faint">{label}</p>
-        <p className={cn("min-w-0 truncate font-display text-xs", empty ? "text-crimson" : "text-fg")}>
+    <div className={cn("rounded border px-1.5 py-0.5", bar)} title={tip || undefined}>
+      <div className="flex min-w-0 items-center gap-1">
+        <span className="w-10 shrink-0 text-[9px] text-faint">{label}</span>
+        <span className={cn("min-w-0 flex-1 truncate text-[11px] font-medium", empty ? "text-crimson" : "text-fg")}>
           {name}
-        </p>
-        {subName && subName !== name ? (
-          <p className="hidden min-w-0 truncate text-[9px] text-faint sm:block">({subName})</p>
-        ) : null}
-        <span className="ml-auto shrink-0 text-[10px] tabular text-muted">
+        </span>
+        <span className="shrink-0 text-[10px] tabular text-muted">
           {empty ? (
-            <span className="text-crimson">Lv.-</span>
+            <span className="text-crimson">-</span>
           ) : lv != null ? (
-            <span className="text-fg">Lv.{lv}</span>
+            <span>Lv.{lv}</span>
           ) : null}
           {power != null && !empty ? (
-            <span className="ml-1.5 text-brass">
-              威{scaledPower ?? power}
-              {scaledPower != null && scaledPower !== power ? `/${power}` : ""}
-            </span>
+            <span className="ml-1 text-brass">{scaledPower ?? power}</span>
           ) : null}
         </span>
       </div>
-      <p className="mt-0.5 line-clamp-1 text-[10px] leading-tight text-muted">{desc}</p>
     </div>
   );
 }
