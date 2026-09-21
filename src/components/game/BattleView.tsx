@@ -6,7 +6,7 @@ import { activeTrial, pumpTrial } from "@/game/trial";
 import { useGame } from "@/game/store";
 import type { BattleEvent, ElementType, FieldKind, Side, SkillKind, Unit } from "@/game/types";
 import { nextBattleSpeed } from "@/game/types";
-import { CharSprite, charSrc } from "./pieces";
+import { CharSprite, charSrc, CloseButton } from "./pieces";
 import { AffinityDiagram } from "./AffinityDiagram";
 import { cn } from "@/lib/utils";
 
@@ -490,13 +490,7 @@ export function BattleView() {
           <div className="absolute inset-x-2 bottom-10 z-30 max-h-[70%] overflow-y-auto rounded-lg bg-bg/95 p-3 hairline shadow-lg">
             <div className="mb-1 flex items-center justify-between gap-2">
               <p className="font-display text-sm text-fg">属性相性</p>
-              <button
-                type="button"
-                onClick={() => setShowAffinity(false)}
-                className="h-7 px-2 text-xs text-muted"
-              >
-                閉じる
-              </button>
+              <CloseButton onClick={() => setShowAffinity(false)} />
             </div>
             <AffinityDiagram compact />
           </div>

@@ -77,7 +77,7 @@ export function ArenaScreen() {
       {/* Short landscape: scroll body, pin actions so 挑戦 stays visible */}
       <div className="flex h-full min-h-0 w-full flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-2 py-1 sm:gap-3">
+          <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col items-center justify-center gap-2 py-1 sm:gap-3">
             <p className="max-w-md text-center text-xs leading-relaxed text-muted sm:text-sm">
               闘気を消費してランダムな英雄隊と戦う。敗北しても闘気は戻らない。
               報酬の金は勝利時のみ（相手の強さに応じて変動）。1分で互角1回分が回復する。
