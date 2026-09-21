@@ -64,71 +64,74 @@ export function ArenaScreen() {
       onBack={() => setScreen("palace")}
       wide
     >
-      <div className="flex h-full min-h-0 items-center justify-center">
-        <div className="flex w-full max-w-2xl flex-col items-center gap-4">
-          <p className="max-w-md text-center text-sm leading-relaxed text-muted">
-            闘気を消費してランダムな英雄隊と戦う。敗北しても闘気は戻らない。
-            報酬の金は勝利時のみ。試し撃ちとは別の勝負だ。1分で互角1回分が回復する。
-          </p>
-          <p className="text-xs text-faint">
-            パーティ平均 Lv.{avg.toFixed(1)}　人数 {partySize}　コスト {myCost}
-            {!leaderId ? "　リーダー未設定" : ""}
-          </p>
-          <div className="grid w-full max-w-lg grid-cols-3 gap-2">
-            {ARENA_TIERS.map((id) => {
-              const m = ARENA_TIER_META[id];
-              const c = arenaSpiritCost(id);
-              const selected = tier === id;
-              const locked = spirit < c;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => {
-                    setTier(id);
-                    setHint(null);
-                  }}
-                  className={cn(
-                    "rounded-lg px-2 py-3 text-left hairline transition",
-                    selected ? "bg-brass/25 text-fg" : "bg-surface/80 text-muted",
-                    locked && "opacity-60",
-                  )}
-                >
-                  <p className="font-display text-base text-fg">{m.name}</p>
-                  <p className="mt-0.5 text-[10px] text-faint">敵 ×{m.levelMul.toFixed(1)}</p>
-                  <p className={cn("mt-1 text-xs tabular", locked ? "text-crimson" : "text-brass")}>
-                    闘気 {c}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-          <div className="w-full max-w-lg rounded-lg bg-surface/80 px-4 py-3 hairline">
-            <p className="text-sm text-fg">
-              {meta.name}　消費 闘気{cost}　→　勝利報酬 {reward}金
+      {/* Short landscape: scroll body, pin actions so 挑戦 stays visible */}
+      <div className="flex h-full min-h-0 w-full flex-col">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-2 py-1 sm:gap-3">
+            <p className="max-w-md text-center text-xs leading-relaxed text-muted sm:text-sm">
+              闘気を消費してランダムな英雄隊と戦う。敗北しても闘気は戻らない。
+              報酬の金は勝利時のみ。1分で互角1回分が回復する。
             </p>
-            <p className="mt-1 text-xs text-muted">{meta.blurb}</p>
-            <p className="mt-1 text-[10px] text-faint">
-              敵レベル目安 Lv.{Math.max(1, Math.round(avg * meta.levelMul))}　人数は自軍±1（3〜5）
-              　相手目安コスト ~{foeCostHint}
+            <p className="text-[10px] text-faint sm:text-xs">
+              パーティ平均 Lv.{avg.toFixed(1)}　人数 {partySize}　コスト {myCost}
+              {!leaderId ? "　リーダー未設定" : ""}
             </p>
+            <div className="grid w-full max-w-lg grid-cols-3 gap-2">
+              {ARENA_TIERS.map((id) => {
+                const m = ARENA_TIER_META[id];
+                const c = arenaSpiritCost(id);
+                const selected = tier === id;
+                const locked = spirit < c;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => {
+                      setTier(id);
+                      setHint(null);
+                    }}
+                    className={cn(
+                      "rounded-lg px-2 py-2 text-left hairline transition sm:py-3",
+                      selected ? "bg-brass/25 text-fg" : "bg-surface/80 text-muted",
+                      locked && "opacity-60",
+                    )}
+                  >
+                    <p className="font-display text-sm text-fg sm:text-base">{m.name}</p>
+                    <p className="mt-0.5 text-[10px] text-faint">敵 ×{m.levelMul.toFixed(1)}</p>
+                    <p className={cn("mt-1 text-xs tabular", locked ? "text-crimson" : "text-brass")}>
+                      闘気 {c}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="w-full max-w-lg rounded-lg bg-surface/80 px-3 py-2 hairline sm:px-4 sm:py-3">
+              <p className="text-sm text-fg">
+                {meta.name}　消費 闘気{cost}　→　勝利報酬 {reward}金
+              </p>
+              <p className="mt-1 text-xs text-muted">{meta.blurb}</p>
+              <p className="mt-1 text-[10px] text-faint">
+                敵レベル目安 Lv.{Math.max(1, Math.round(avg * meta.levelMul))}　人数は自軍±1（3〜5）
+                　相手目安コスト ~{foeCostHint}
+              </p>
+            </div>
+            {hint ? <p className="text-sm text-crimson">{hint}</p> : null}
+            {!canPay && canFight ? (
+              <p className="text-sm text-crimson">闘気が足りない（必要 {cost}／現在 {spirit}）</p>
+            ) : null}
           </div>
-          {hint ? <p className="text-sm text-crimson">{hint}</p> : null}
-          {!canPay && canFight ? (
-            <p className="text-sm text-crimson">闘気が足りない（必要 {cost}／現在 {spirit}）</p>
-          ) : null}
-          <div className="flex gap-3">
-            <GhostButton onClick={() => setScreen("palace")} className="h-11 min-w-28">
-              本拠へ
-            </GhostButton>
-            <PrimaryButton
-              onClick={onConfirm}
-              disabled={!canFight || !canPay}
-              className="h-11 min-w-36"
-            >
-              {canFight ? (canPay ? `闘気${cost}で挑戦` : "闘気が足りない") : "編成が必要"}
-            </PrimaryButton>
-          </div>
+        </div>
+        <div className="mx-auto flex w-full max-w-2xl shrink-0 justify-center gap-3 border-t border-white/10 bg-ink/80 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] backdrop-blur-sm">
+          <GhostButton onClick={() => setScreen("palace")} className="h-11 min-w-28">
+            本拠へ
+          </GhostButton>
+          <PrimaryButton
+            onClick={onConfirm}
+            disabled={!canFight || !canPay}
+            className="h-11 min-w-36"
+          >
+            {canFight ? (canPay ? `闘気${cost}で挑戦` : "闘気が足りない") : "編成が必要"}
+          </PrimaryButton>
         </div>
       </div>
     </Shell>
