@@ -154,11 +154,11 @@ export function CardFace({
   const hold = useRef(0);
   const held = useRef(false);
   const sizes = {
-    mini: "w-12 aspect-[2/3] text-[8px]",
-    xs: "w-[76px] aspect-[2/3] text-[9px]",
-    sm: "w-[100px] aspect-[2/3] text-[10px]",
-    md: "w-[120px] aspect-[2/3] text-[11px]",
-    lg: "w-[160px] aspect-[2/3] text-sm",
+    mini: "w-[var(--card-w-mini)] aspect-[2/3] text-[8px]",
+    xs: "w-[var(--card-w-xs)] aspect-[2/3] text-[9px]",
+    sm: "w-[var(--card-w-sm)] aspect-[2/3] text-[10px]",
+    md: "w-[var(--card-w-md)] aspect-[2/3] text-[11px]",
+    lg: "w-[var(--card-w-lg)] aspect-[2/3] text-sm",
   };
   const Tag = onClick ? "button" : "div";
   const shortName = card.name.replace(/^.+の/, "").replace(/^煌龍帝|^鉄騎将軍|^天翔姫|^紅蓮の|^滅刃王|^霊獣王|^征嵐|^金鱗姫/, "");

@@ -5,6 +5,33 @@
   --sar: env(safe-area-inset-right, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
+
+  /* Design baseline — keep in sync with src/game/design.ts / docs/design-baseline.md */
+  --design-w: 1280px;
+  --design-h: 720px;
+  --content-safe-inset: 24px;
+  --content-safe-w: 1232px;
+  --content-safe-h: 672px;
+  --card-aspect: 2 / 3;
+  --card-master-w: 1152px;
+  --card-master-h: 1728px;
+  --card-w-mini: 48px;
+  --card-w-xs: 76px;
+  --card-w-sm: 100px;
+  --card-w-md: 120px;
+  --card-w-lg: 160px;
+  --font-caption: 10px;
+  --font-body: 12px;
+  --font-ui: 14px;
+  --font-title: 22px;
+  --font-display-min: 36px;
+  --font-display-max: 44px;
+  --touch-min: 44px;
+  --grid: 8px;
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
 }
 
 @theme {
@@ -108,8 +135,8 @@ body {
   position: absolute;
   top: 0;
   left: 0;
-  width: 1280px;
-  height: 720px;
+  width: var(--design-w);
+  height: var(--design-h);
   overflow: hidden;
   background: var(--color-bg);
   transform-origin: top left;
@@ -132,7 +159,7 @@ body {
 }
 
 .debug-hit {
-  min-height: 44px;
+  min-height: var(--touch-min);
 }
 
 @media (prefers-reduced-motion: reduce) {
