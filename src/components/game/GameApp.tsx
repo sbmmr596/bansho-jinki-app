@@ -21,9 +21,8 @@ import { TitleScreen } from "./TitleScreen";
 import { TrainScreen } from "./TrainScreen";
 import { ArenaScreen } from "./ArenaScreen";
 import { ArtZoom } from "./pieces";
+import { DESIGN_H, DESIGN_W } from "@/game/design";
 
-const DESIGN_W = 1280;
-const DESIGN_H = 720;
 /** Show portrait tip when contain-scale is this small (phone portrait). */
 const PORTRAIT_TIP_SCALE = 0.55;
 
