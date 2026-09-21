@@ -14,7 +14,7 @@ import {
 import { commonSkillName, materialSkillLabel, skill2SameIdentity } from "@/game/skillNames";
 import type { FuseResult } from "@/game/types";
 import { useGame } from "@/game/store";
-import { CardFace, GoldChip, PrimaryButton, Shell, TypeBadge } from "./pieces";
+import { CardFace, GoldChip, PrimaryButton, Shell, SkillSlot, TypeBadge } from "./pieces";
 import { cn } from "@/lib/utils";
 
 type SynthMode = "skill1" | "skill2";
@@ -516,57 +516,3 @@ function ModeChip({
   );
 }
 
-function SkillSlot({
-  label,
-  name,
-  subName,
-  desc,
-  power,
-  lv,
-  scaledPower,
-  empty,
-  tone,
-}: {
-  label: string;
-  name: string;
-  /** Optional original card skill name under common name (skill2). */
-  subName?: string;
-  desc: string;
-  power?: number;
-  lv?: number;
-  scaledPower?: number;
-  empty?: boolean;
-  tone: "basic" | "s1" | "s2";
-}) {
-  const bar =
-    tone === "s2"
-      ? empty
-        ? "bg-crimson/25 border-crimson/40"
-        : "bg-crimson/15 border-crimson/30"
-      : tone === "s1"
-        ? "bg-sky-500/10 border-sky-400/25"
-        : "bg-raised/50 border-fg/10";
-  return (
-    <div className={cn("rounded-md border p-2", bar)}>
-      <div className="flex items-baseline justify-between gap-2">
-        <p className="text-[10px] tracking-wide text-faint">{label}</p>
-        {empty ? (
-          <span className="text-[11px] tabular text-crimson">Lv.-</span>
-        ) : lv != null ? (
-          <span className="text-[11px] tabular text-fg">Lv.{lv}</span>
-        ) : null}
-      </div>
-      <p className={cn("font-display text-sm", empty ? "text-crimson" : "text-fg")}>{name}</p>
-      {subName && subName !== name ? (
-        <p className="text-[10px] text-faint">{subName}</p>
-      ) : null}
-      <p className="mt-0.5 text-[11px] leading-snug text-muted">{desc}</p>
-      {power != null && !empty ? (
-        <p className="mt-1 text-[10px] text-brass">
-          威力:{scaledPower ?? power}
-          {scaledPower != null && scaledPower !== power ? `（基礎 ${power}）` : ""}
-        </p>
-      ) : null}
-    </div>
-  );
-}

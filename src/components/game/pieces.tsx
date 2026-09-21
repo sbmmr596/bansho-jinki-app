@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
-import { CARD_BY_ID, TYPE_LABEL, scaledStat } from "@/game/data";
+import {
+  BASIC_SKILL,
+  CARD_BY_ID,
+  FORMATIONS,
+  MAX_LEVEL,
+  TYPE_LABEL,
+  scaledStat,
+  skillPowerScale,
+} from "@/game/data";
+import { commonSkillName } from "@/game/skillNames";
 import { useGame } from "@/game/store";
 import type { Card, ElementType, Rarity, Screen } from "@/game/types";
 import { cn } from "@/lib/utils";
@@ -318,25 +327,232 @@ export function CardFace({
 export function ArtZoom() {
   const id = useGame((s) => s.zoomCardId);
   const setZoomCard = useGame((s) => s.setZoomCard);
+  const owned = useGame((s) => s.owned);
   const card = id ? CARD_BY_ID[id] : null;
   if (!card) return null;
-  const src = charSrc(card);
+
+  const own = owned[card.id];
+  const level = own?.level ?? 1;
+  const skill1Lv = own?.skill1Lv ?? 1;
+  const skill2 = own?.skill2;
+  const skill2Card = skill2 ? CARD_BY_ID[skill2.sourceCardId] : null;
+  const form = FORMATIONS[card.formation];
+
   return (
     <div
       className="absolute inset-0 z-[90] flex items-center justify-center bg-bg/80 p-3"
       onPointerDown={() => setZoomCard(null)}
     >
       <div
-        className="flex h-[94%] max-w-[42%] flex-col items-center"
+        className="panel relative grid h-[94%] w-full max-w-3xl grid-cols-2 gap-3 overflow-y-auto overscroll-contain rounded-xl p-3 sm:p-4"
         onPointerDown={(e) => e.stopPropagation()}
       >
-        {src ? (
-          <img src={src} alt={card.name} className="min-h-0 w-auto flex-1 object-contain" />
-        ) : (
-          <Crest card={card} />
-        )}
-        <p className="mt-1 shrink-0 font-display text-sm text-fg">{card.name}</p>
+        <CloseButton
+          onClick={() => setZoomCard(null)}
+          className="absolute right-1 top-1 z-10"
+        />
+
+        {/* Left: large card + stats + formation (育成 left) */}
+        <div className="flex min-h-0 flex-col gap-2">
+          <div className="flex flex-col items-center gap-1.5">
+            <CardFace
+              card={card}
+              level={level}
+              skill1Lv={skill1Lv}
+              size="lg"
+              className="w-[min(100%,14rem)]"
+            />
+            <div className="w-full space-y-0.5 text-center">
+              <p className="font-display text-sm leading-snug text-fg">{card.name}</p>
+              <p className="text-[10px] text-muted">{card.title}</p>
+              <div className="flex flex-wrap items-center justify-center gap-1">
+                <TypeBadge type={card.type} />
+                <span className="text-[10px] text-brass">{card.rarity}</span>
+                {card.fodder ? (
+                  <span className="rounded-sm bg-crimson/85 px-1 py-0.5 text-[9px] font-semibold text-fg">
+                    素材専用
+                  </span>
+                ) : null}
+                {own ? (
+                  <span className="text-[10px] text-muted">
+                    所持 <span className="tabular text-fg">{own.count}</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-faint">未所持</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-md bg-raised/60 p-2 hairline">
+            <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[10px]">
+              <span className="flex items-center gap-1">
+                <span className="text-faint">TYPE</span>
+                <span className="font-semibold text-fg">{TYPE_LABEL[card.type]}</span>
+              </span>
+              <span className="tabular">
+                <span className="text-faint">Lv </span>
+                <span className="text-fg">
+                  {level}/{MAX_LEVEL}
+                </span>
+              </span>
+              <span className="tabular">
+                <span className="text-faint">HP </span>
+                <span className="text-fg">{scaledStat(card.hp, level)}</span>
+              </span>
+              <span className="tabular text-brass">COST {card.cost}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1 text-center text-[10px]">
+              <ZoomStatChip label="攻" value={scaledStat(card.atk, level)} tone="atk" />
+              <ZoomStatChip label="防" value={scaledStat(card.def, level)} tone="def" />
+              <ZoomStatChip label="速" value={scaledStat(card.spd, level)} tone="spd" />
+            </div>
+          </div>
+
+          {form ? (
+            <div className="flex items-start gap-2 rounded-md bg-raised/40 p-2 text-[10px] hairline">
+              <div className="min-w-0 flex-1">
+                <p className="text-faint">リーダー陣形</p>
+                <p className="font-display text-xs text-fg">{form.name}</p>
+                <p className="text-muted">{form.desc}</p>
+              </div>
+              <ZoomFormationPreview slots={form.slots} />
+            </div>
+          ) : null}
+        </div>
+
+        {/* Center: 3 skill slots (育成 center, no synth CTAs) */}
+        <div className="flex min-h-0 flex-col gap-2 pr-8 sm:pr-10">
+          <SkillSlot
+            label="基本技"
+            name={BASIC_SKILL.name}
+            desc={BASIC_SKILL.desc}
+            power={BASIC_SKILL.power}
+            tone="basic"
+          />
+          <SkillSlot
+            label="必殺技1"
+            name={card.skill.name}
+            desc={card.skill.desc}
+            power={card.skill.power}
+            lv={skill1Lv}
+            scaledPower={Math.round(card.skill.power * skillPowerScale(skill1Lv))}
+            tone="s1"
+          />
+          <SkillSlot
+            label="必殺技2"
+            name={skill2Card ? commonSkillName(skill2Card.skill, skill2Card.rarity) : "-"}
+            subName={skill2Card ? skill2Card.skill.name : undefined}
+            desc={skill2Card ? skill2Card.skill.desc : "未装着"}
+            power={skill2Card?.skill.power}
+            lv={skill2 ? skill2.lv : undefined}
+            empty={!skill2}
+            scaledPower={
+              skill2Card && skill2
+                ? Math.round(skill2Card.skill.power * skillPowerScale(skill2.lv))
+                : undefined
+            }
+            tone="s2"
+          />
+        </div>
       </div>
+    </div>
+  );
+}
+
+function ZoomStatChip({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: "atk" | "def" | "spd";
+}) {
+  const toneClass =
+    tone === "atk" ? "text-crimson" : tone === "def" ? "text-sky-300" : "text-emerald-300";
+  return (
+    <div className="rounded bg-bg/50 py-1">
+      <div className={cn("text-faint", toneClass)}>{label}</div>
+      <div className="tabular text-fg">{value}</div>
+    </div>
+  );
+}
+
+function ZoomFormationPreview({ slots }: { slots: boolean[] }) {
+  return (
+    <div className="grid h-14 w-14 shrink-0 grid-cols-3 grid-rows-3 gap-0.5" aria-hidden>
+      {[0, 1, 2].map((row) =>
+        [2, 1, 0].map((col) => {
+          const slot = row * 3 + col;
+          const open = slots[slot];
+          return (
+            <div
+              key={slot}
+              className={cn(
+                "rounded-[2px]",
+                open ? "bg-brass/80" : "bg-bg/70 ring-1 ring-fg/10",
+              )}
+            />
+          );
+        }),
+      )}
+    </div>
+  );
+}
+
+/** Shared skill panel used by 育成 and ArtZoom long-press. */
+export function SkillSlot({
+  label,
+  name,
+  subName,
+  desc,
+  power,
+  lv,
+  scaledPower,
+  empty,
+  tone,
+}: {
+  label: string;
+  name: string;
+  /** Optional original card skill name under common name (skill2). */
+  subName?: string;
+  desc: string;
+  power?: number;
+  lv?: number;
+  scaledPower?: number;
+  empty?: boolean;
+  tone: "basic" | "s1" | "s2";
+}) {
+  const bar =
+    tone === "s2"
+      ? empty
+        ? "bg-crimson/25 border-crimson/40"
+        : "bg-crimson/15 border-crimson/30"
+      : tone === "s1"
+        ? "bg-sky-500/10 border-sky-400/25"
+        : "bg-raised/50 border-fg/10";
+  return (
+    <div className={cn("rounded-md border p-2", bar)}>
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-[10px] tracking-wide text-faint">{label}</p>
+        {empty ? (
+          <span className="text-[11px] tabular text-crimson">Lv.-</span>
+        ) : lv != null ? (
+          <span className="text-[11px] tabular text-fg">Lv.{lv}</span>
+        ) : null}
+      </div>
+      <p className={cn("font-display text-sm", empty ? "text-crimson" : "text-fg")}>{name}</p>
+      {subName && subName !== name ? (
+        <p className="text-[10px] text-faint">{subName}</p>
+      ) : null}
+      <p className="mt-0.5 text-[11px] leading-snug text-muted">{desc}</p>
+      {power != null && !empty ? (
+        <p className="mt-1 text-[10px] text-brass">
+          威力:{scaledPower ?? power}
+          {scaledPower != null && scaledPower !== power ? `（基礎 ${power}）` : ""}
+        </p>
+      ) : null}
     </div>
   );
 }
