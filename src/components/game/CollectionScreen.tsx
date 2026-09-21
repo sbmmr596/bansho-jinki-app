@@ -35,21 +35,21 @@ export function CollectionScreen() {
               </FilterChip>
             ))}
           </div>
-          <div className="grid auto-rows-min grid-cols-5 gap-2 overflow-y-auto">
+          <div className="grid auto-rows-min grid-cols-5 gap-1.5 overflow-y-auto">
             {list.map((c) => {
               const have = owned[c.id];
               return (
-                <div key={c.id} className="flex justify-center">
-                  <CardFace
-                    card={c}
-                    level={have?.level}
-                    size="xs"
-                    dimmed={!have}
-                    selected={focus === c.id}
-                    skill1Lv={have?.skill1Lv}
-                    onClick={() => setFocus(c.id)}
-                  />
-                </div>
+                <CardFace
+                  key={c.id}
+                  card={c}
+                  level={have?.level}
+                  size="sm"
+                  className="w-full"
+                  dimmed={!have}
+                  selected={focus === c.id}
+                  skill1Lv={have?.skill1Lv}
+                  onClick={() => setFocus(c.id)}
+                />
               );
             })}
           </div>
