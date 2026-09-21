@@ -3,7 +3,7 @@ import { BASIC_SKILL, CARDS, CARD_BY_ID, FACTION_LABEL, FORMATIONS, TYPE_LABEL, 
 import { commonSkillName, SKILL_KIND_LABEL } from "@/game/skillNames";
 import type { Faction } from "@/game/types";
 import { useGame } from "@/game/store";
-import { CardFace, GoldChip, Shell, StatRow, TypeBadge } from "./pieces";
+import { CardFace, CostHex, GoldChip, Shell, StatRow, TypeHex } from "./pieces";
 import { cn } from "@/lib/utils";
 
 const FACTIONS: Faction[] = ["koryu", "tekki", "tensho", "metsujin", "reiju", "yukei"];
@@ -63,7 +63,8 @@ export function CollectionScreen() {
                 <p className="font-display text-sm leading-snug text-fg">{card.name}</p>
                 <p className="leading-snug text-muted">{card.title}</p>
                 <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                  <TypeBadge type={card.type} />
+                  <TypeHex type={card.type} className="h-6 w-7 text-xs" />
+                  <CostHex cost={card.cost} className="h-6 w-7 text-xs" />
                   <span className="text-muted">{FACTION_LABEL[card.faction]}</span>
                   <span className="text-brass">{card.rarity}</span>
                   {card.fodder ? (
@@ -72,9 +73,6 @@ export function CollectionScreen() {
                     </span>
                   ) : null}
                 </div>
-                <p className="text-[11px] text-muted">
-                  コスト <span className="tabular text-fg">{card.cost}</span>
-                </p>
                 {own ? (
                   <p className="mt-auto text-muted">所持 {own.count}</p>
                 ) : (

@@ -5,7 +5,6 @@ import {
   FORMATIONS,
   MAX_LEVEL,
   MAX_SKILL_LV,
-  TYPE_LABEL,
   fuseSuccessRate,
   scaledStat,
   skillPowerScale,
@@ -14,7 +13,7 @@ import {
 import { commonSkillName, materialSkillLabel, skill2SameIdentity } from "@/game/skillNames";
 import type { FuseResult } from "@/game/types";
 import { useGame } from "@/game/store";
-import { CardFace, GoldChip, PrimaryButton, Shell, SkillSlot, TypeBadge } from "./pieces";
+import { CardFace, CostHex, GoldChip, PrimaryButton, Shell, SkillSlot, TypeHex } from "./pieces";
 import { cn } from "@/lib/utils";
 
 type SynthMode = "skill1" | "skill2";
@@ -187,8 +186,9 @@ export function TrainScreen() {
                 <div className="w-full space-y-0.5 text-center">
                   <p className="font-display text-sm leading-snug text-fg">{card.name}</p>
                   <p className="text-[10px] text-muted">{card.title}</p>
-                  <div className="flex flex-wrap items-center justify-center gap-1">
-                    <TypeBadge type={card.type} />
+                  <div className="flex flex-wrap items-center justify-center gap-1.5">
+                    <TypeHex type={card.type} className="h-6 w-7 text-xs" />
+                    <CostHex cost={card.cost} className="h-6 w-7 text-xs" />
                     <span className="text-[10px] text-brass">{card.rarity}</span>
                     {card.fodder ? (
                       <span className="rounded-sm bg-crimson/85 px-1 py-0.5 text-[9px] font-semibold text-fg">
@@ -203,22 +203,27 @@ export function TrainScreen() {
               </div>
 
               <div className="rounded-md bg-raised/60 p-2 hairline">
-                <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[10px]">
-                  <span className="flex items-center gap-1">
+                <div className="mb-1.5 grid grid-cols-3 items-center gap-x-2 gap-y-1 text-[10px]">
+                  <span className="flex items-center justify-start gap-1">
                     <span className="text-faint">TYPE</span>
-                    <span className="font-semibold text-fg">{TYPE_LABEL[card.type]}</span>
+                    <TypeHex type={card.type} className="h-6 w-7 text-xs" />
                   </span>
-                  <span className="tabular">
-                    <span className="text-faint">Lv </span>
-                    <span className="text-fg">
-                      {own.level}/{MAX_LEVEL}
+                  <span className="flex flex-wrap items-center justify-center gap-x-2 tabular">
+                    <span>
+                      <span className="text-faint">Lv </span>
+                      <span className="text-fg">
+                        {own.level}/{MAX_LEVEL}
+                      </span>
+                    </span>
+                    <span>
+                      <span className="text-faint">HP </span>
+                      <span className="text-fg">{scaledStat(card.hp, own.level)}</span>
                     </span>
                   </span>
-                  <span className="tabular">
-                    <span className="text-faint">HP </span>
-                    <span className="text-fg">{scaledStat(card.hp, own.level)}</span>
+                  <span className="flex items-center justify-end gap-1 tabular">
+                    <span className="text-faint">COST</span>
+                    <CostHex cost={card.cost} className="h-6 w-7 text-xs" />
                   </span>
-                  <span className="tabular text-brass">COST {card.cost}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-1 text-center text-[10px]">
                   <StatChip label="攻" value={scaledStat(card.atk, own.level)} tone="atk" />

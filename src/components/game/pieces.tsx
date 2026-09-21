@@ -110,6 +110,35 @@ export function TypeBadge({ type, className }: { type: ElementType; className?: 
   );
 }
 
+/** Hexagonal TYPE chip matching on-card `.card-hex` styling (for off-card UIs). */
+export function TypeHex({ type, className }: { type: ElementType; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "card-hex card-type-badge inline-flex h-[2.2em] w-[2.45em] shrink-0 items-center justify-center text-[1.35em] font-semibold leading-none",
+        TYPE_CLASS[type],
+        className,
+      )}
+    >
+      {TYPE_LABEL[type]}
+    </span>
+  );
+}
+
+/** Hexagonal COST chip matching on-card `.card-hex` styling (for off-card UIs). */
+export function CostHex({ cost, className }: { cost: number; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "card-hex card-cost-num inline-flex h-[2.2em] w-[2.45em] shrink-0 items-center justify-center bg-ink/75 text-[1.35em] font-semibold leading-none tabular",
+        className,
+      )}
+    >
+      {cost}
+    </span>
+  );
+}
+
 export function GoldChip({ gold }: { gold: number }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-raised px-2.5 py-1 text-xs text-brass hairline tabular">
@@ -159,7 +188,6 @@ export function CardFace({
   maxHp,
   onClick,
   className,
-  hideTypeCost = false,
 }: {
   card: Card;
   level?: number;
@@ -175,8 +203,6 @@ export function CardFace({
   maxHp?: number;
   onClick?: () => void;
   className?: string;
-  /** ArtZoom / detail: hide on-card TYPE·COST·Lv hexes (shown outside instead). */
-  hideTypeCost?: boolean;
 }) {
   const { src, onError } = useCardImg(card);
   const setZoomCard = useGame((s) => s.setZoomCard);
@@ -233,7 +259,7 @@ export function CardFace({
         className,
       )}
     >
-      {/* Layer order bottom→top: bg → prism → name → char → foot (type/cost/Lv) */}
+      {/* Layer order bottom→top: bg → prism → name → char → foot (Lv only; type/cost off-card) */}
       <img
         src={factionBg(card)}
         alt=""
@@ -268,10 +294,7 @@ export function CardFace({
           src={src}
           alt=""
           onError={onError}
-          className={cn(
-            "card-layer-char pointer-events-none absolute inset-x-0 top-[16%] z-[3] mx-auto w-full object-contain object-bottom",
-            hideTypeCost ? "bottom-[4%]" : "bottom-[16%]",
-          )}
+          className="card-layer-char pointer-events-none absolute inset-x-0 bottom-[4%] top-[16%] z-[3] mx-auto w-full object-contain object-bottom"
         />
       )}
       <div className="card-layer-frame pointer-events-none absolute inset-0 z-[3] rounded-[inherit]" />
@@ -290,37 +313,17 @@ export function CardFace({
           素材
         </span>
       ) : null}
-      {!hideTypeCost ? (
-        <div className="card-foot pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex items-end justify-between gap-1 px-[2%] pb-[2.5%] pt-4">
-          <span
-            className={cn(
-              "card-hex card-type-badge inline-flex shrink-0 items-center justify-center font-semibold leading-none",
-              compact ? "h-[2em] w-[2.2em] text-[1.2em]" : "h-[2.2em] w-[2.45em] text-[1.35em]",
-              TYPE_CLASS[card.type],
-            )}
-          >
-            {TYPE_LABEL[card.type]}
+      {/* TYPE/COST are always off-card (TypeHex/CostHex); keep Lv/技Lv on-face only. */}
+      {!compact && level ? (
+        <div className="card-foot pointer-events-none absolute inset-x-0 bottom-0 z-[5] px-[2%] pb-[2%] pt-3 text-center">
+          <span className="card-text-outline text-[0.9em] tabular">
+            Lv.{lv}
+            {skill1Lv > 1 ? <span className="text-brass"> 技{skill1Lv}</span> : null}
           </span>
-          {!compact && level ? (
-            <span className="card-text-outline min-w-0 flex-1 truncate text-center text-[0.9em] tabular">
-              Lv.{lv}
-              {skill1Lv > 1 ? <span className="text-brass"> 技{skill1Lv}</span> : null}
-            </span>
-          ) : skill1Lv > 1 ? (
-            <span className="card-text-outline min-w-0 flex-1 truncate text-center text-[0.9em] text-brass tabular">
-              技Lv.{skill1Lv}
-            </span>
-          ) : (
-            <span />
-          )}
-          <span
-            className={cn(
-              "card-hex card-cost-num inline-flex shrink-0 items-center justify-center bg-ink/75 font-semibold leading-none tabular",
-              compact ? "h-[2em] w-[2.2em] text-[1.2em]" : "h-[2.2em] w-[2.45em] text-[1.35em]",
-            )}
-          >
-            {card.cost}
-          </span>
+        </div>
+      ) : skill1Lv > 1 ? (
+        <div className="card-foot pointer-events-none absolute inset-x-0 bottom-0 z-[5] px-[2%] pb-[2%] pt-3 text-center">
+          <span className="card-text-outline text-[0.9em] text-brass tabular">技Lv.{skill1Lv}</span>
         </div>
       ) : null}
       {hp != null && maxHp != null ? (
@@ -348,11 +351,11 @@ export function ArtZoom() {
 
   return (
     <div
-      className="absolute inset-0 z-[90] flex items-center justify-center bg-bg/80 p-3"
+      className="absolute inset-0 z-[90] flex items-center justify-center bg-bg/80 p-1.5 sm:p-2"
       onPointerDown={() => setZoomCard(null)}
     >
       <div
-        className="panel relative grid h-[94%] w-full max-w-3xl grid-cols-2 gap-3 overflow-y-auto overscroll-contain rounded-xl p-3 sm:p-4"
+        className="panel relative grid h-full max-h-full w-full max-w-4xl grid-cols-2 gap-2 overflow-hidden rounded-xl p-2 sm:gap-3 sm:p-3"
         onPointerDown={(e) => e.stopPropagation()}
       >
         <CloseButton
@@ -360,23 +363,22 @@ export function ArtZoom() {
           className="absolute right-1 top-1 z-10"
         />
 
-        {/* Left: large card art + 原作フッタ (TYPE | Lv·HP | COST → 攻防速) */}
+        {/* Left: large card art fills column; TYPE|Lv·HP|COST + 攻防速 stuck under */}
         <div className="flex min-h-0 flex-col gap-2">
-          <div className="flex flex-col items-center gap-1.5">
+          <div className="flex min-h-0 flex-1 items-center justify-center">
             <CardFace
               card={card}
               size="lg"
-              hideTypeCost
-              className="w-[min(100%,14rem)]"
+              className="!h-full !w-auto max-h-full max-w-full"
             />
           </div>
 
-          {/* カード外フッタ帯: TYPE | Lv·HP | COST、その下に攻防速 */}
-          <div className="rounded-md bg-raised/60 p-2 hairline">
+          {/* カード外フッタ帯: TypeHex | Lv·HP | CostHex、その下に攻防速 */}
+          <div className="shrink-0 rounded-md bg-raised/60 p-2 hairline">
             <div className="mb-1.5 grid grid-cols-3 items-center gap-x-2 gap-y-1 text-[10px]">
               <span className="flex items-center justify-start gap-1">
                 <span className="text-faint">TYPE</span>
-                <TypeBadge type={card.type} />
+                <TypeHex type={card.type} className="h-7 w-8 text-sm" />
               </span>
               <span className="flex flex-wrap items-center justify-center gap-x-2 tabular">
                 <span>
@@ -390,9 +392,9 @@ export function ArtZoom() {
                   <span className="text-fg">{scaledStat(card.hp, level)}</span>
                 </span>
               </span>
-              <span className="flex items-center justify-end tabular text-brass">
-                <span className="text-faint">COST </span>
-                <span className="font-semibold text-brass">{card.cost}</span>
+              <span className="flex items-center justify-end gap-1 tabular">
+                <span className="text-faint">COST</span>
+                <CostHex cost={card.cost} className="h-7 w-8 text-sm" />
               </span>
             </div>
             <div className="grid grid-cols-3 gap-1 text-center text-[10px]">
@@ -403,9 +405,9 @@ export function ArtZoom() {
           </div>
         </div>
 
-        {/* Right: name → formation (desc | 3×3) → skills */}
+        {/* Right: name → formation → skills fill remaining height */}
         <div className="flex min-h-0 flex-col gap-2 pr-8 sm:pr-10">
-          <div className="space-y-0.5">
+          <div className="shrink-0 space-y-0.5">
             <p className="font-display text-base leading-snug text-fg sm:text-lg">{card.name}</p>
             <p className="text-[10px] text-muted">{card.title}</p>
             <div className="flex flex-wrap items-center gap-1.5">
@@ -426,7 +428,7 @@ export function ArtZoom() {
           </div>
 
           {form ? (
-            <div className="flex items-start gap-2 rounded-md bg-raised/40 p-2 text-[10px] hairline">
+            <div className="flex shrink-0 items-start gap-2 rounded-md bg-raised/40 p-2 text-[10px] hairline">
               <div className="min-w-0 flex-1">
                 <p className="text-faint">リーダー陣形</p>
                 <p className="font-display text-xs text-fg">{form.name}</p>
@@ -436,37 +438,42 @@ export function ArtZoom() {
             </div>
           ) : null}
 
-          <SkillSlot
-            label="基本技"
-            name={BASIC_SKILL.name}
-            desc={BASIC_SKILL.desc}
-            power={BASIC_SKILL.power}
-            tone="basic"
-          />
-          <SkillSlot
-            label="必殺技1"
-            name={card.skill.name}
-            desc={card.skill.desc}
-            power={card.skill.power}
-            lv={skill1Lv}
-            scaledPower={Math.round(card.skill.power * skillPowerScale(skill1Lv))}
-            tone="s1"
-          />
-          <SkillSlot
-            label="必殺技2"
-            name={skill2Card ? commonSkillName(skill2Card.skill, skill2Card.rarity) : "-"}
-            subName={skill2Card ? skill2Card.skill.name : undefined}
-            desc={skill2Card ? skill2Card.skill.desc : "未装着"}
-            power={skill2Card?.skill.power}
-            lv={skill2 ? skill2.lv : undefined}
-            empty={!skill2}
-            scaledPower={
-              skill2Card && skill2
-                ? Math.round(skill2Card.skill.power * skillPowerScale(skill2.lv))
-                : undefined
-            }
-            tone="s2"
-          />
+          <div className="flex min-h-0 flex-1 flex-col gap-2">
+            <SkillSlot
+              label="基本技"
+              name={BASIC_SKILL.name}
+              desc={BASIC_SKILL.desc}
+              power={BASIC_SKILL.power}
+              tone="basic"
+              className="flex-1"
+            />
+            <SkillSlot
+              label="必殺技1"
+              name={card.skill.name}
+              desc={card.skill.desc}
+              power={card.skill.power}
+              lv={skill1Lv}
+              scaledPower={Math.round(card.skill.power * skillPowerScale(skill1Lv))}
+              tone="s1"
+              className="flex-1"
+            />
+            <SkillSlot
+              label="必殺技2"
+              name={skill2Card ? commonSkillName(skill2Card.skill, skill2Card.rarity) : "-"}
+              subName={skill2Card ? skill2Card.skill.name : undefined}
+              desc={skill2Card ? skill2Card.skill.desc : "未装着"}
+              power={skill2Card?.skill.power}
+              lv={skill2 ? skill2.lv : undefined}
+              empty={!skill2}
+              scaledPower={
+                skill2Card && skill2
+                  ? Math.round(skill2Card.skill.power * skillPowerScale(skill2.lv))
+                  : undefined
+              }
+              tone="s2"
+              className="flex-1"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -525,6 +532,7 @@ export function SkillSlot({
   scaledPower,
   empty,
   tone,
+  className,
 }: {
   label: string;
   name: string;
@@ -536,6 +544,7 @@ export function SkillSlot({
   scaledPower?: number;
   empty?: boolean;
   tone: "basic" | "s1" | "s2";
+  className?: string;
 }) {
   const bar =
     tone === "s2"
@@ -546,7 +555,7 @@ export function SkillSlot({
         ? "bg-sky-500/10 border-sky-400/25"
         : "bg-raised/50 border-fg/10";
   return (
-    <div className={cn("rounded-md border p-2", bar)}>
+    <div className={cn("rounded-md border p-2", bar, className)}>
       <div className="flex items-baseline justify-between gap-2">
         <p className="text-[10px] tracking-wide text-faint">{label}</p>
         {empty ? (
