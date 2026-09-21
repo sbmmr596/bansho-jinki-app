@@ -527,7 +527,10 @@ body {
   border-radius: 999px;
   background: #1a140e;
   transform: translateY(-50%);
-  transition: left 0.08s linear;
+  transition: left 0.05s linear;
+}
+.atb-rail.is-frozen .atb-token {
+  transition: none;
 }
 .atb-token.enemy {
   border-color: #d06060;

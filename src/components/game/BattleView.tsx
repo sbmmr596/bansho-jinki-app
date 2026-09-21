@@ -96,6 +96,8 @@ export function BattleView() {
   const lastEndRef = useRef<Extract<BattleEvent, { kind: "end" }> | null>(null);
   const gaugeTickRef = useRef(0);
   const actingRef = useRef<string | null>(null);
+  /** Index of event already stepEvent'd at start of its DUR (skill early-present). */
+  const presentedIdxRef = useRef(-1);
   const unitsRef = useRef(units);
 
   useEffect(() => {
@@ -124,6 +126,7 @@ export function BattleView() {
     skipRef.current = false;
     lastEndRef.current = null;
     gaugeTickRef.current = 0;
+    presentedIdxRef.current = -1;
     eventsRef.current = battle.events.slice();
     let raf = 0;
     const stepEvent = (ev: BattleEvent) => {
@@ -303,15 +306,26 @@ export function BattleView() {
           setUnits((prev) => prev.map((u) => (u.uid === id ? { ...u, gauge: 0 } : u)));
         }
         if (liveNow && !lastEndRef.current) {
-          advanceGauges(liveNow.units, dtScaled);
+          // Idle between actions only — never advance while an action is presenting.
+          if (!actingRef.current) {
+            advanceGauges(liveNow.units, dtScaled);
+          }
           const more = pumpTrial(liveNow, 0);
           if (more.length) eventsRef.current.push(...more);
           ev = eventsRef.current[idxRef.current];
           gaugeTickRef.current += dtScaled;
           if (gaugeTickRef.current >= 0.04) {
             gaugeTickRef.current = 0;
+            const actingId = actingRef.current;
             setUnits((prev) =>
               prev.map((u) => {
+                if (actingId) {
+                  // Freeze others; pin actor at max during any residual presentation.
+                  if (u.uid === actingId) {
+                    return u.gauge === GAUGE_MAX ? u : { ...u, gauge: GAUGE_MAX };
+                  }
+                  return u;
+                }
                 const lu = liveNow.units.find((x) => x.uid === u.uid);
                 return lu ? { ...u, gauge: lu.gauge, haste: lu.haste } : u;
               }),
@@ -329,13 +343,18 @@ export function BattleView() {
       }
       // Pre-simulated (arena/map) playback: ATB flows every frame by spd while idle.
       // While an action is presenting (skill/hit/heal/…), freeze other tokens.
+      // Skill is stepEvent'd at the START of its DUR so actingRef is set during windup
+      // (otherwise gauges advance while waiting DUR[skill] with acting still null).
       if (!liveNow) {
         const boundary =
           ev.kind === "skill" || ev.kind === "round" || ev.kind === "end";
+        const skillAlreadyOut =
+          ev.kind === "skill" && presentedIdxRef.current === idxRef.current;
         // Action finished → next skill/round/end: end presentation, then resume gauges.
         // If a skill banner is still up, keep freezing (and pause event time) until it ends
         // so tokens never move under an active banner/FX.
-        if (actingRef.current && boundary) {
+        // Do not clear when this skill was already early-presented (same idx).
+        if (actingRef.current && boundary && !skillAlreadyOut) {
           if (bannerTimerRef.current != null) {
             gaugeTickRef.current += dtScaled;
             if (gaugeTickRef.current >= 0.05) {
@@ -363,6 +382,11 @@ export function BattleView() {
           setStruck(null);
           setSkillBanner(null);
           setUnits((prev) => prev.map((u) => (u.uid === doneId ? { ...u, gauge: 0 } : u)));
+        }
+        // Early-present skill: pin actor + banner/FX immediately, then wait DUR with freeze.
+        if (ev.kind === "skill" && presentedIdxRef.current !== idxRef.current) {
+          stepEvent(ev);
+          presentedIdxRef.current = idxRef.current;
         }
         const actingId = actingRef.current;
         gaugeTickRef.current += dtScaled;
@@ -395,12 +419,19 @@ export function BattleView() {
             });
           }
         }
+      } else if (ev.kind === "skill" && presentedIdxRef.current !== idxRef.current) {
+        // Live trial: same early-present so freeze covers the skill windup.
+        stepEvent(ev);
+        presentedIdxRef.current = idxRef.current;
       }
       accRef.current += dtScaled;
       const need = (DUR[ev.kind] ?? 500) / 1000;
       if (accRef.current >= need) {
         accRef.current = 0;
-        stepEvent(ev);
+        if (presentedIdxRef.current !== idxRef.current) {
+          stepEvent(ev);
+          presentedIdxRef.current = idxRef.current;
+        }
         idxRef.current += 1;
       }
       raf = requestAnimationFrame(tick);
@@ -628,7 +659,7 @@ function UnitSpot({
 function AtbRail({ units, acting }: { units: Unit[]; acting: string | null }) {
   const alive = units.filter((u) => u.alive);
   return (
-    <div className="atb-rail shrink-0">
+    <div className={cn("atb-rail shrink-0", acting && "is-frozen")}>
       <span className="atb-goal" />
       {alive.map((u) => {
         const card = CARD_BY_ID[u.cardId];
