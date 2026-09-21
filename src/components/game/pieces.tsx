@@ -110,6 +110,15 @@ export function GoldChip({ gold }: { gold: number }) {
   );
 }
 
+export function SpiritChip({ spirit, max }: { spirit: number; max: number }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-raised px-2.5 py-1 text-xs text-crimson hairline tabular">
+      <span className="font-display tracking-wider">闘気</span>
+      {spirit}/{max}
+    </span>
+  );
+}
+
 export function CardFace({
   card,
   level,

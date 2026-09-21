@@ -16,6 +16,7 @@ import {
   type SaveState,
 } from "./types";
 import { clampDifficulty } from "./difficulty";
+import { SPIRIT_MAX, applySpiritRegen, clampSpirit } from "./arena";
 
 export const SAVE_KEY = "bansho-jinki-v1";
 
@@ -82,9 +83,12 @@ export function defaultSave(): SaveState {
     cost += c.cost;
     si++;
   }
+  const now = Date.now();
   return {
     version: SAVE_VERSION,
     gold: 220,
+    spirit: SPIRIT_MAX,
+    spiritAt: now,
     owned,
     party,
     leaderId,
@@ -127,9 +131,24 @@ export function loadSave(): SaveState {
       owned[id] = migrateOwned(o as Partial<OwnedCard> & { rank?: number });
     }
     const party = Array.from({ length: 9 }, (_, i) => parsed.party?.[i] ?? null);
+    const now = Date.now();
+    const hasSpirit = typeof (parsed as { spirit?: unknown }).spirit === "number";
+    const rawSpirit = hasSpirit ? (parsed as { spirit: number }).spirit : SPIRIT_MAX;
+    const rawAt =
+      typeof (parsed as { spiritAt?: unknown }).spiritAt === "number"
+        ? (parsed as { spiritAt: number }).spiritAt
+        : now;
+    // Old saves missing spirit → fill to max at now; then apply accrued regen.
+    const hydrated = applySpiritRegen(
+      hasSpirit ? clampSpirit(rawSpirit) : SPIRIT_MAX,
+      hasSpirit ? rawAt : now,
+      now,
+    );
     return sanitizeParty({
       version: SAVE_VERSION,
       gold: typeof parsed.gold === "number" ? parsed.gold : base.gold,
+      spirit: hydrated.spirit,
+      spiritAt: hydrated.spiritAt,
       owned,
       party,
       leaderId: parsed.leaderId ?? base.leaderId,
@@ -151,9 +170,15 @@ export function writeSave(state: SaveState) {
     for (const [id, o] of Object.entries(state.owned)) {
       owned[id] = migrateOwned(o);
     }
+    const hydrated = applySpiritRegen(
+      clampSpirit(state.spirit ?? SPIRIT_MAX),
+      typeof state.spiritAt === "number" ? state.spiritAt : Date.now(),
+    );
     const payload: SaveState = {
       version: SAVE_VERSION,
       gold: state.gold,
+      spirit: hydrated.spirit,
+      spiritAt: hydrated.spiritAt,
       owned,
       party: state.party,
       leaderId: state.leaderId,

@@ -3,11 +3,11 @@ import type { PartyMember } from "./combat";
 import type { Card, Formation } from "./types";
 
 /**
- * Fire-Emblem-style paid arena (separate from debug endless trial).
+ * Fire-Emblem-style arena (separate from debug endless trial).
  *
- * Fee table scales with party average level so early/late game both work.
- * Anchors at avg Lv5 ≈ 80 / 150 / 280 gold for 互角 / 剛腕 / 鬼神.
- * Rewards are fee × 1.6 / 2.2 / 3.0 (entry already paid; no refund on loss).
+ * Entry costs 闘気 (spirit): 互角1 / 剛腕2 / 鬼神3. Cap 5; +1 per minute.
+ * Gold "fee" table still scales rewards with party average level
+ * (anchors at avg Lv5 ≈ 80 / 150 / 280 × rewardMul). No gold deducted on entry.
  * Enemy levels = round(avgLevel × levelMul), clamped 1..MAX_LEVEL.
  * Enemy heroes are cost-matched to the player party (main fairness lever).
  */
@@ -48,7 +48,7 @@ export const ARENA_TIER_META: Record<
     levelMul: 1.35,
     feeAnchor: 280,
     rewardMul: 3.0,
-    blurb: "鬼神級。高額の入場料と報酬。",
+    blurb: "鬼神級。闘気を多く消費し、報酬も厚い。",
   },
 };
 
@@ -94,6 +94,51 @@ export function arenaFee(tier: ArenaTier, avgLevel: number): number {
 
 export function arenaReward(tier: ArenaTier, fee: number): number {
   return Math.max(1, Math.round(fee * ARENA_TIER_META[tier].rewardMul));
+}
+
+/** 闘技場入場に使う闘気（スタミナ）。互角1・剛腕2・鬼神3。 */
+export const SPIRIT_MAX = 5;
+/** 1分で互角1回分（+1）回復。 */
+export const SPIRIT_REGEN_MS = 60_000;
+
+export const ARENA_SPIRIT_COST: Record<ArenaTier, number> = {
+  even: 1,
+  strong: 2,
+  demon: 3,
+};
+
+export function arenaSpiritCost(tier: ArenaTier): number {
+  return ARENA_SPIRIT_COST[tier];
+}
+
+export function clampSpirit(n: number): number {
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(SPIRIT_MAX, Math.floor(n)));
+}
+
+/**
+ * Apply accrued regen from spiritAt → now (floor minutes), clamp to max.
+ * Preserves partial-minute progress by advancing spiritAt by whole ticks.
+ * When at max, spiritAt snaps to now so future undershoot starts clean.
+ */
+export function applySpiritRegen(
+  spirit: number,
+  spiritAt: number,
+  now = Date.now(),
+): { spirit: number; spiritAt: number } {
+  let cur = clampSpirit(spirit);
+  let at = typeof spiritAt === "number" && Number.isFinite(spiritAt) ? spiritAt : now;
+  if (cur >= SPIRIT_MAX) {
+    return { spirit: SPIRIT_MAX, spiritAt: now };
+  }
+  const elapsed = Math.max(0, now - at);
+  const gained = Math.floor(elapsed / SPIRIT_REGEN_MS);
+  if (gained <= 0) {
+    return { spirit: cur, spiritAt: at };
+  }
+  const next = Math.min(SPIRIT_MAX, cur + gained);
+  const nextAt = next >= SPIRIT_MAX ? now : at + gained * SPIRIT_REGEN_MS;
+  return { spirit: next, spiritAt: nextAt };
 }
 
 export function arenaEnemyLevel(avgLevel: number, tier: ArenaTier): number {

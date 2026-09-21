@@ -180,6 +180,10 @@ export const SAVE_VERSION = 1;
 export interface SaveState {
   version: number;
   gold: number;
+  /** 闘技場入場用の闘気（0..SPIRIT_MAX）。 */
+  spirit: number;
+  /** Epoch ms when spirit was last reconciled (regen clock). */
+  spiritAt: number;
   owned: Record<string, OwnedCard>;
   party: (string | null)[];
   leaderId: string | null;
