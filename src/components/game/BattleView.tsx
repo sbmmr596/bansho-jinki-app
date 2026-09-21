@@ -326,15 +326,24 @@ export function BattleView() {
         finishBattle(lastEndRef.current ?? undefined);
         return;
       }
-      if (!liveNow && ev.kind === "round") {
+      // Pre-simulated (arena/map) playback: keep ATB flowing every frame by spd,
+      // not only during infrequent "round" banners (~every 6 actions).
+      if (!liveNow) {
         gaugeTickRef.current += dtScaled;
         if (gaugeTickRef.current >= 0.05) {
           const step = gaugeTickRef.current;
           gaugeTickRef.current = 0;
+          const actingId = actingRef.current;
           setUnits((prev) => {
             let changed = false;
             const next = prev.map((u) => {
               if (!u.alive) return u;
+              // Acting unit stays pinned at left (GAUGE_MAX) until action ends.
+              if (actingId && u.uid === actingId) {
+                if (u.gauge === GAUGE_MAX) return u;
+                changed = true;
+                return { ...u, gauge: GAUGE_MAX };
+              }
               const g = Math.min(GAUGE_MAX, (u.gauge ?? 0) + atbRate(u) * ATB_PER_SEC * step);
               if (g === u.gauge) return u;
               changed = true;
