@@ -22,7 +22,10 @@ import { TrainScreen } from "./TrainScreen";
 import { ArenaScreen } from "./ArenaScreen";
 import { ArtZoom } from "./pieces";
 
-const ASPECT = 16 / 9;
+const DESIGN_W = 1280;
+const DESIGN_H = 720;
+/** Show portrait tip when contain-scale is this small (phone portrait). */
+const PORTRAIT_TIP_SCALE = 0.55;
 
 export function GameApp() {
   const hydrate = useGame((s) => s.hydrate);
@@ -38,6 +41,7 @@ export function GameApp() {
   const [artOpen, setArtOpen] = useState(false);
   const [driveTried, setDriveTried] = useState(false);
   const [githubTried, setGithubTried] = useState(false);
+  const [showLandscapeHint, setShowLandscapeHint] = useState(false);
   const frameRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
 
@@ -180,35 +184,24 @@ export function GameApp() {
       frame.style.width = `${Math.floor(vw)}px`;
       frame.style.height = `${Math.floor(vh)}px`;
 
-      const pad = 8;
-      const left = Math.max(cssPx("--sal"), pad);
-      const right = Math.max(cssPx("--sar"), pad);
-      const top = Math.max(cssPx("--sat"), pad);
-      const bottom = Math.max(cssPx("--sab"), pad);
-      const aw = Math.max(1, vw - left - right);
-      const ah = Math.max(1, vh - top - bottom);
+      // Safe-area padding on outer letterbox only (stage stays full design size).
+      const padL = cssPx("--sal");
+      const padR = cssPx("--sar");
+      const padT = cssPx("--sat");
+      const padB = cssPx("--sab");
+      const aw = Math.max(1, vw - padL - padR);
+      const ah = Math.max(1, vh - padT - padB);
+      const scale = Math.min(aw / DESIGN_W, ah / DESIGN_H);
+
+      stage.style.width = `${DESIGN_W}px`;
+      stage.style.height = `${DESIGN_H}px`;
+      stage.style.transformOrigin = "top left";
+      stage.style.transform = `scale(${scale})`;
+      stage.style.left = `${padL + (aw - DESIGN_W * scale) / 2}px`;
+      stage.style.top = `${padT + (ah - DESIGN_H * scale) / 2}px`;
+
       const portrait = vh > vw;
-      let sw: number;
-      let sh: number;
-      if (portrait) {
-        const maxW = ah;
-        const maxH = aw;
-        sh = Math.min(maxH, maxW / ASPECT);
-        sw = sh * ASPECT;
-        stage.style.transform = "translate(-50%, -50%) rotate(90deg)";
-      } else {
-        sh = Math.min(ah, aw / ASPECT);
-        sw = sh * ASPECT;
-        if (sw > aw) {
-          sw = aw;
-          sh = sw / ASPECT;
-        }
-        stage.style.transform = "translate(-50%, -50%)";
-      }
-      stage.style.width = `${Math.floor(sw)}px`;
-      stage.style.height = `${Math.floor(sh)}px`;
-      stage.style.left = "50%";
-      stage.style.top = "50%";
+      setShowLandscapeHint(portrait && scale < PORTRAIT_TIP_SCALE);
     };
     fit();
     window.addEventListener("resize", fit);
@@ -225,6 +218,11 @@ export function GameApp() {
 
   return (
     <div ref={frameRef} className="game-frame">
+      {showLandscapeHint ? (
+        <div className="game-landscape-hint" aria-live="polite">
+          横表示推奨
+        </div>
+      ) : null}
       <div ref={stageRef} className="game-stage">
         {screen === "title" ? <TitleScreen /> : null}
         {screen === "palace" ? <PalaceScreen /> : null}
