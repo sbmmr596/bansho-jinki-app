@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { redirectToLoginIfRequired } from "@/lib/app-data";
@@ -23,16 +23,6 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [loginUrl, setLoginUrl] = useState<string | null>(null);
-  const [repo, setRepo] = useState(DEFAULT_GH_REPO);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(GH_KEY);
-      if (saved?.trim()) setRepo(saved.trim());
-    } catch {
-      /* keep default */
-    }
-  }, []);
 
   const handleDrive = (result: DriveCatalogResult) => {
     if (!result.ok) {
@@ -81,7 +71,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
     }
     localStorage.setItem(CATALOG_KEY, result.payload);
     setCatalogSource("github");
-    setMsg(`${n}人を GitHub（${result.repo}）から適用した。`);
+    setMsg(`${n}人を GitHubから適用した。`);
     if (user) void saveUserCatalog({ data: result.payload }).catch(() => undefined);
     return true;
   };
@@ -145,15 +135,20 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
   };
 
   const onGithub = async () => {
-    const spec = repo.trim() || DEFAULT_GH_REPO;
-    setRepo(spec);
+    let spec = DEFAULT_GH_REPO;
+    try {
+      const saved = localStorage.getItem(GH_KEY)?.trim();
+      if (saved) spec = saved;
+    } catch {
+      /* default */
+    }
     setBusy(true);
     setMsg("GitHubを確認中…");
     try {
       localStorage.setItem(GH_KEY, spec);
       handleGithub(await loadGithubCatalog({ data: spec }));
     } catch {
-      setMsg("GitHubに届かなかった。公開リポジトリか確認して。");
+      setMsg("GitHubに届かなかった。");
     } finally {
       setBusy(false);
     }
@@ -168,7 +163,6 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
       resetCatalog();
       await loadChars();
       setCatalogSource("default");
-      setRepo(DEFAULT_GH_REPO);
       if (user) {
         try {
           await clearUserCatalog();
@@ -249,34 +243,14 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
             標準に戻す
           </button>
         </div>
-        <div className="mt-3 flex gap-2">
-          <input
-            type="text"
-            inputMode="url"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            value={repo}
-            disabled={busy}
-            placeholder={DEFAULT_GH_REPO}
-            onChange={(e) => setRepo(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void onGithub();
-              }
-            }}
-            className="h-11 min-w-0 flex-1 select-text rounded-md bg-raised px-3 text-sm text-fg hairline disabled:opacity-40"
-          />
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void onGithub()}
-            className="h-11 shrink-0 rounded-md bg-brass px-3 text-sm font-medium text-bg disabled:opacity-40"
-          >
-            GitHubから読む
-          </button>
-        </div>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void onGithub()}
+          className="mt-3 h-11 w-full rounded-md bg-brass text-sm font-medium text-bg disabled:opacity-40"
+        >
+          GitHubから読む
+        </button>
         {loginUrl ? (
           <button
             type="button"
@@ -294,7 +268,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
           </button>
         ) : null}
         <p className="mt-3 text-[10px] leading-relaxed text-faint">
-          万象陣記 / chars.json。差し替え絵は chars/id.png か cards/id.jpg。JSON の art が /chars/… ならアプリ標準絵のまま。GitHubは owner/name。
+          万象陣記 / chars.json。差し替え絵は chars/id.png か cards/id.jpg。JSON の art が /chars/… ならアプリ標準絵のまま。
         </p>
       </div>
     </div>
