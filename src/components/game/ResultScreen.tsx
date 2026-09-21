@@ -67,10 +67,10 @@ export function ResultScreen() {
               win ? (
                 <div className="mt-4 space-y-1 text-sm">
                   <p className="text-brass tabular">+{result.goldGain} 金</p>
-                  <p className="text-muted">入場料は返還されない。報酬のみ受け取った。</p>
+                  <p className="text-muted">消費した闘気は戻らない。報酬の金を受け取った。</p>
                 </div>
               ) : (
-                <p className="mt-4 text-sm text-muted">入場料は没収された。再挑戦するか本拠へ戻れ。</p>
+                <p className="mt-4 text-sm text-muted">闘気を消費した。再挑戦するか本拠へ戻れ。</p>
               )
             ) : win ? (
               <div className="mt-4 space-y-1 text-sm">

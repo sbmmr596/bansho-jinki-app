@@ -30,6 +30,7 @@ export function DebugPanel() {
   const setDebugOpen = useGame((s) => s.setDebugOpen);
   const setCatalogOpen = useGame((s) => s.setCatalogOpen);
   const debugAddGold = useGame((s) => s.debugAddGold);
+  const debugFillSpirit = useGame((s) => s.debugFillSpirit);
   const debugGrantAll = useGame((s) => s.debugGrantAll);
   const debugCaptureAll = useGame((s) => s.debugCaptureAll);
   const debugMaxLevels = useGame((s) => s.debugMaxLevels);
@@ -39,6 +40,7 @@ export function DebugPanel() {
   const scoutNodeId = useGame((s) => s.scoutNodeId);
   const screen = useGame((s) => s.screen);
   const gold = useGame((s) => s.gold);
+  const spirit = useGame((s) => s.spirit);
   const owned = useGame((s) => s.owned);
   const captured = useGame((s) => s.captured);
 
@@ -105,10 +107,11 @@ export function DebugPanel() {
           {tab === "ops" ? (
             <>
               <p className="mb-3 text-xs text-muted tabular">
-                金 {gold}　所持 {Object.keys(owned).length}/{HERO_CARDS.length}　領地 {captured.length}
+                金 {gold}　闘気 {spirit}　所持 {Object.keys(owned).length}/{HERO_CARDS.length}　領地 {captured.length}
               </p>
               <div className="grid grid-cols-2 gap-2 pb-1">
                 <DbgBtn onClick={debugAddGold}>金 +5000</DbgBtn>
+                <DbgBtn onClick={debugFillSpirit}>闘気回復</DbgBtn>
                 <DbgBtn onClick={debugGrantAll}>全カード</DbgBtn>
                 <DbgBtn onClick={debugCaptureAll}>全占領</DbgBtn>
                 <DbgBtn onClick={debugMaxLevels}>最大Lv</DbgBtn>

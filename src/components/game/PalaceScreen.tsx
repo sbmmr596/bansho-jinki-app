@@ -1,10 +1,14 @@
+import { SPIRIT_MAX } from "@/game/arena";
 import { CARD_BY_ID, NODES } from "@/game/data";
 import { difficultyLabel } from "@/game/difficulty";
 import { currentCostCap, partyCost, useGame } from "@/game/store";
-import { CardFace, GoldChip, PrimaryButton, Shell } from "./pieces";
+import { useEffect } from "react";
+import { CardFace, GoldChip, PrimaryButton, Shell, SpiritChip } from "./pieces";
 
 export function PalaceScreen() {
   const gold = useGame((s) => s.gold);
+  const spirit = useGame((s) => s.spirit);
+  const tickSpirit = useGame((s) => s.tickSpirit);
   const captured = useGame((s) => s.captured);
   const party = useGame((s) => s.party);
   const leaderId = useGame((s) => s.leaderId);
@@ -20,8 +24,14 @@ export function PalaceScreen() {
   const leader = leaderId ? CARD_BY_ID[leaderId] : null;
   const cap = currentCostCap(captured);
 
+  useEffect(() => {
+    tickSpirit();
+    const id = window.setInterval(() => tickSpirit(), 15_000);
+    return () => window.clearInterval(id);
+  }, [tickSpirit]);
+
   return (
-    <Shell title="始原の社" extra={<GoldChip gold={gold} />} bg="/bg/palace.jpg" nav="palace" wide>
+    <Shell title="始原の社" extra={<span className="inline-flex items-center gap-2"><SpiritChip spirit={spirit} max={SPIRIT_MAX} /><GoldChip gold={gold} /></span>} bg="/bg/palace.jpg" nav="palace" wide>
       <div className="flex h-full min-h-0 items-center justify-center">
         <div className="flex w-full max-w-3xl items-stretch gap-6">
           <div className="flex shrink-0 items-center">

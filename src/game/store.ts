@@ -5,7 +5,11 @@ import { beginTrial, clearTrial } from "./trial";
 import { clampDifficulty } from "./difficulty";
 import {
   ARENA_TIER_META,
+  SPIRIT_MAX,
+  applySpiritRegen,
+  arenaSpiritCost,
   buildArenaEncounter,
+  clampSpirit,
   partyAverageLevel,
   partyMaxCost,
   partyTotalCost,
@@ -59,7 +63,7 @@ interface GameStore extends SaveState {
   debugUnlocked: boolean;
   debugOpen: boolean;
   trial: { kills: number; field: FieldKind } | null;
-  /** Active arena bout metadata (fee already deducted). Separate from endless trial. */
+  /** Active arena bout metadata (spirit already spent; fee is reward baseline only). Separate from endless trial. */
   arena: { tier: ArenaTier; fee: number; reward: number; seed: number } | null;
   catalogSource: "default" | "custom" | "drive" | "github";
   catalogOpen: boolean;
@@ -87,6 +91,9 @@ interface GameStore extends SaveState {
   unlockDebug: () => void;
   setDebugOpen: (v: boolean) => void;
   debugAddGold: () => void;
+  debugFillSpirit: () => void;
+  /** Reconcile 闘気 regen from spiritAt; returns current spirit after tick. */
+  tickSpirit: () => number;
   debugGrantAll: () => void;
   debugCaptureAll: () => void;
   debugMaxLevels: () => void;
@@ -216,7 +223,8 @@ export const useGame = create<GameStore>((set, get) => ({
     unlockAudio();
     sfx("click");
     const loaded = sanitizeParty(loadSave());
-    set({ ...loaded, screen: "palace", hasExisting: true });
+    const hydrated = applySpiritRegen(loaded.spirit, loaded.spiritAt);
+    set({ ...loaded, ...hydrated, screen: "palace", hasExisting: true });
   },
 
   setScreen: (screen) => {
@@ -228,9 +236,18 @@ export const useGame = create<GameStore>((set, get) => ({
 
   persist: () => {
     const s = get();
+    const hydrated = applySpiritRegen(
+      clampSpirit(s.spirit ?? SPIRIT_MAX),
+      typeof s.spiritAt === "number" ? s.spiritAt : Date.now(),
+    );
+    if (hydrated.spirit !== s.spirit || hydrated.spiritAt !== s.spiritAt) {
+      set({ spirit: hydrated.spirit, spiritAt: hydrated.spiritAt });
+    }
     writeSave({
       version: s.version,
       gold: s.gold,
+      spirit: hydrated.spirit,
+      spiritAt: hydrated.spiritAt,
       owned: s.owned,
       party: s.party,
       leaderId: s.leaderId,
@@ -682,6 +699,23 @@ export const useGame = create<GameStore>((set, get) => ({
     get().persist();
   },
 
+  debugFillSpirit: () => {
+    set({ spirit: SPIRIT_MAX, spiritAt: Date.now() });
+    get().persist();
+  },
+
+  tickSpirit: () => {
+    const s = get();
+    const hydrated = applySpiritRegen(
+      clampSpirit(s.spirit ?? SPIRIT_MAX),
+      typeof s.spiritAt === "number" ? s.spiritAt : Date.now(),
+    );
+    if (hydrated.spirit !== s.spirit || hydrated.spiritAt !== s.spiritAt) {
+      set({ spirit: hydrated.spirit, spiritAt: hydrated.spiritAt });
+    }
+    return hydrated.spirit;
+  },
+
   debugGrantAll: () => {
     const owned = { ...get().owned };
     for (const c of CARDS) {
@@ -734,14 +768,20 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!player.length || !s.leaderId) {
       return { ok: false, reason: "リーダーとパーティが必要です" };
     }
+    const spiritNow = applySpiritRegen(
+      clampSpirit(s.spirit ?? SPIRIT_MAX),
+      typeof s.spiritAt === "number" ? s.spiritAt : Date.now(),
+    );
+    const cost = arenaSpiritCost(tier);
+    if (spiritNow.spirit < cost) {
+      return { ok: false, reason: "闘気が足りない" };
+    }
     const avg = partyAverageLevel(s.party, s.owned);
     const encounter = buildArenaEncounter(player.length, avg, tier, {
       playerTotalCost: partyTotalCost(s.party),
       playerMaxCost: partyMaxCost(s.party),
     });
-    if (s.gold < encounter.fee) {
-      return { ok: false, reason: "金が足りない" };
-    }
+    // encounter.fee is kept only as reward baseline — gold is not deducted on entry.
     const log = simulateBattle(
       player,
       encounter.enemies,
@@ -750,8 +790,12 @@ export const useGame = create<GameStore>((set, get) => ({
     );
     unlockAudio();
     sfx("click");
+    const spentSpirit = spiritNow.spirit - cost;
+    const now = Date.now();
     set({
-      gold: s.gold - encounter.fee,
+      spirit: spentSpirit,
+      // Restart regen clock from spend moment when not already mid-tick.
+      spiritAt: spiritNow.spirit >= SPIRIT_MAX ? now : spiritNow.spiritAt,
       battle: log,
       screen: "battle",
       result: null,
