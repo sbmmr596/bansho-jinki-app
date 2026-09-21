@@ -112,14 +112,14 @@ export function FormationScreen() {
           ) : null}
 
           <div className="formation-tray-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-            <div className="grid auto-rows-min grid-cols-4 content-start gap-1 pb-3 sm:gap-1.5">
+            <div className="grid auto-rows-min grid-cols-5 content-start gap-1 pb-3 sm:gap-1.5">
               {tray.map((card) => (
                 <CardFace
                   key={card.id}
                   card={card}
                   level={owned[card.id]?.level}
                   skill1Lv={owned[card.id]?.skill1Lv}
-                  size="sm"
+                  size="xs"
                   className="w-full"
                   selected={selected === card.id}
                   dimmed={(inParty.has(card.id) && selected !== card.id) || !!card.fodder}
@@ -215,8 +215,8 @@ function FormationGrid({
 }) {
   const formation = FORMATIONS[formationId];
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center">
-      <div className="grid aspect-square h-full max-h-full w-auto max-w-full grid-cols-3 grid-rows-3 gap-1 sm:gap-1.5">
+    <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden">
+      <div className="grid w-full max-w-full grid-cols-3 gap-1 sm:gap-1.5">
         {[0, 1, 2].map((row) =>
           [2, 1, 0].map((col) => {
             const slot = row * 3 + col;
@@ -229,7 +229,7 @@ function FormationGrid({
                 type="button"
                 onClick={() => onSlot(slot)}
                 className={cn(
-                  "flex min-h-0 items-center justify-center overflow-hidden rounded-sm p-0.5",
+                  "aspect-[2/3] w-full flex items-center justify-center overflow-hidden rounded-sm p-0.5",
                   open ? "bg-raised" : "bg-bg/50 opacity-30",
                   selected && open && "ring-1 ring-brass",
                 )}
@@ -239,9 +239,9 @@ function FormationGrid({
                     card={card}
                     level={owned[card.id]?.level}
                     skill1Lv={owned[card.id]?.skill1Lv}
-                    size="sm"
+                    size="xs"
                     leader={leaderId === card.id}
-                    className="h-full max-h-full w-auto max-w-full"
+                    className="w-full"
                   />
                 ) : open ? (
                   <span className="text-[10px] text-faint">
