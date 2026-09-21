@@ -102,12 +102,33 @@ body {
   position: fixed;
   inset: 0;
   overflow: hidden;
-  background: #0b0907 url("/bg/title.jpg") center / cover no-repeat;
+  background: #0b0907;
 }
 .game-stage {
   position: absolute;
+  top: 0;
+  left: 0;
+  width: 1280px;
+  height: 720px;
   overflow: hidden;
   background: var(--color-bg);
+  transform-origin: top left;
+}
+.game-landscape-hint {
+  position: absolute;
+  z-index: 50;
+  top: max(0.5rem, env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--color-brass) 40%, transparent);
+  background: color-mix(in oklab, var(--color-ink) 88%, transparent);
+  padding: 0.35rem 0.85rem;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--color-brass);
+  white-space: nowrap;
 }
 
 .debug-hit {
