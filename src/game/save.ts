@@ -93,7 +93,7 @@ export function defaultSave(): SaveState {
     party,
     leaderId,
     captured: [HOME_ID],
-    battleSpeed: 1,
+    battleSpeed: 0.1, // temporary for ATB debug / verification
     navSide: "right",
     difficulty: "normal",
   };
