@@ -239,7 +239,7 @@ export function TrainScreen() {
                 <PrimaryButton
                   onClick={() => trainGold(card.id)}
                   disabled={!canGold}
-                  className="h-9 text-xs"
+                  className="h-11 text-xs"
                 >
                   {canGold ? `金で鍛える ${cost}` : gold < cost ? "金が足りない" : "鍛えられない"}
                 </PrimaryButton>
@@ -321,7 +321,7 @@ export function TrainScreen() {
                     type="button"
                     disabled={!canSkill1}
                     onClick={() => setConfirmOpen(true)}
-                    className="mt-2 flex h-9 w-full items-center justify-center rounded-lg bg-surface text-xs hairline disabled:opacity-40"
+                    className="mt-2 flex h-11 w-full items-center justify-center rounded-lg bg-surface text-xs hairline disabled:opacity-40"
                   >
                     {skill1Max
                       ? "必殺技1は最大"
@@ -369,7 +369,7 @@ export function TrainScreen() {
                     type="button"
                     disabled={!canSkill2}
                     onClick={() => setConfirmOpen(true)}
-                    className="flex h-9 w-full items-center justify-center rounded-lg bg-surface text-xs hairline disabled:opacity-40"
+                    className="flex h-11 w-full items-center justify-center rounded-lg bg-surface text-xs hairline disabled:opacity-40"
                   >
                     {!matCard || !matLabel
                       ? "素材カードを選ぶ"
@@ -443,11 +443,11 @@ export function TrainScreen() {
               <button
                 type="button"
                 onClick={() => setConfirmOpen(false)}
-                className="h-10 flex-1 rounded-lg bg-raised text-sm text-muted"
+                className="h-11 flex-1 rounded-lg bg-raised text-sm text-muted"
               >
                 やめる
               </button>
-              <PrimaryButton onClick={doFuse} className="h-10 flex-1 text-sm">
+              <PrimaryButton onClick={doFuse} className="h-11 flex-1 text-sm">
                 合成する
               </PrimaryButton>
             </div>
@@ -491,7 +491,7 @@ function ModeChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "h-9 w-full rounded-md px-2 text-[11px]",
+        "h-11 w-full rounded-md px-2 text-[11px]",
         active ? "bg-brass text-bg" : "bg-surface text-muted hairline",
       )}
     >
