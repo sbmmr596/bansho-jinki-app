@@ -343,8 +343,8 @@ export function BattleView() {
       }
       // Pre-simulated (arena/map) playback: ATB flows every frame by spd while idle.
       // While an action is presenting (skill/hit/heal/…), freeze other tokens.
-      // Skill is stepEvent'd at the START of its DUR so actingRef is set during windup
-      // (otherwise gauges advance while waiting DUR[skill] with acting still null).
+      // Skill is early-presented only AFTER the actor's visual gauge reaches GAUGE_MAX
+      // (idle fill with acting=null), then freeze covers skill windup + follow-up hits.
       if (!liveNow) {
         const boundary =
           ev.kind === "skill" || ev.kind === "round" || ev.kind === "end";
@@ -381,10 +381,43 @@ export function BattleView() {
           setLunge(null);
           setStruck(null);
           setSkillBanner(null);
-          setUnits((prev) => prev.map((u) => (u.uid === doneId ? { ...u, gauge: 0 } : u)));
+          setUnits((prev) => {
+            const next = prev.map((u) => (u.uid === doneId ? { ...u, gauge: 0 } : u));
+            unitsRef.current = next;
+            return next;
+          });
         }
-        // Early-present skill: pin actor + banner/FX immediately, then wait DUR with freeze.
+        // Idle-fill before skill present: keep acting null and advance all gauges until
+        // the would-be actor reaches GAUGE_MAX. Do not count time toward skill DUR yet.
         if (ev.kind === "skill" && presentedIdxRef.current !== idxRef.current) {
+          const actorUid = ev.actorUid;
+          const actorGauge =
+            unitsRef.current.find((u) => u.uid === actorUid)?.gauge ?? 0;
+          if (actorGauge < GAUGE_MAX) {
+            gaugeTickRef.current += dtScaled;
+            if (gaugeTickRef.current >= 0.05) {
+              const step = gaugeTickRef.current;
+              gaugeTickRef.current = 0;
+              setUnits((prev) => {
+                let changed = false;
+                const next = prev.map((u) => {
+                  if (!u.alive) return u;
+                  const g = Math.min(
+                    GAUGE_MAX,
+                    (u.gauge ?? 0) + atbRate(u) * ATB_PER_SEC * step,
+                  );
+                  if (g === u.gauge) return u;
+                  changed = true;
+                  return { ...u, gauge: g };
+                });
+                if (changed) unitsRef.current = next;
+                return changed ? next : prev;
+              });
+            }
+            raf = requestAnimationFrame(tick);
+            return;
+          }
+          // Actor full — early-present: pin + banner/FX, then wait DUR with freeze.
           stepEvent(ev);
           presentedIdxRef.current = idxRef.current;
         }
@@ -415,12 +448,36 @@ export function BattleView() {
                 changed = true;
                 return { ...u, gauge: g };
               });
+              if (changed) unitsRef.current = next;
               return changed ? next : prev;
             });
           }
         }
       } else if (ev.kind === "skill" && presentedIdxRef.current !== idxRef.current) {
-        // Live trial: same early-present so freeze covers the skill windup.
+        // Live trial: wait until actor visual gauge is full before early-present.
+        // While filling, acting stays null so gauges can advance/sync.
+        const actorUid = ev.actorUid;
+        const actorGauge =
+          unitsRef.current.find((u) => u.uid === actorUid)?.gauge ?? 0;
+        if (actorGauge < GAUGE_MAX) {
+          if (!actingRef.current) {
+            advanceGauges(liveNow.units, dtScaled);
+          }
+          gaugeTickRef.current += dtScaled;
+          if (gaugeTickRef.current >= 0.04) {
+            gaugeTickRef.current = 0;
+            setUnits((prev) => {
+              const next = prev.map((u) => {
+                const lu = liveNow.units.find((x) => x.uid === u.uid);
+                return lu ? { ...u, gauge: lu.gauge, haste: lu.haste } : u;
+              });
+              unitsRef.current = next;
+              return next;
+            });
+          }
+          raf = requestAnimationFrame(tick);
+          return;
+        }
         stepEvent(ev);
         presentedIdxRef.current = idxRef.current;
       }
