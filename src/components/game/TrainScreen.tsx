@@ -259,7 +259,7 @@ export function TrainScreen() {
         </div>
 
         {/* Center: skills + synth controls */}
-        <div className="flex min-w-0 flex-col gap-2 md:min-h-0 md:overflow-y-auto">
+        <div className="flex min-w-0 flex-col gap-1.5 md:min-h-0 md:overflow-y-auto">
           {card && own ? (
             <>
               <SkillSlot
@@ -304,7 +304,7 @@ export function TrainScreen() {
               </div>
 
               {mode === "skill1" ? (
-                <div className="rounded-md bg-raised/50 p-2 text-[11px] hairline">
+                <div className="rounded-md bg-raised/50 p-1.5 text-[10px] hairline">
                   <p className="text-muted">
                     同じカードを素材にして必殺技1を強化。成功率はレベルが高いほど下がる。
                   </p>
@@ -331,8 +331,8 @@ export function TrainScreen() {
                   </button>
                 </div>
               ) : (
-                <div className="rounded-md bg-raised/50 p-2 text-[11px] hairline">
-                  <p className="mb-1.5 text-muted">
+                <div className="rounded-md bg-raised/50 p-1.5 text-[10px] hairline">
+                  <p className="mb-1 text-muted">
                     別カードを素材に必殺技2を装着／強化／上書き。同種・同レアで強化（成功率あり）、レア違い・種別違いは上書き。
                   </p>
                   <div className="mb-2 flex max-h-[7.5rem] flex-wrap gap-1.5 overflow-y-auto">
@@ -491,7 +491,7 @@ function ModeChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "h-8 flex-1 rounded-full px-2 text-[11px]",
+        "h-7 flex-1 rounded-full px-2 text-[10px]",
         active ? "bg-brass text-bg" : "bg-surface text-muted hairline",
       )}
     >
@@ -531,26 +531,30 @@ function SkillSlot({
         ? "bg-sky-500/10 border-sky-400/25"
         : "bg-raised/50 border-fg/10";
   return (
-    <div className={cn("rounded-md border p-2", bar)}>
-      <div className="flex items-baseline justify-between gap-2">
-        <p className="text-[10px] tracking-wide text-faint">{label}</p>
-        {empty ? (
-          <span className="text-[11px] tabular text-crimson">Lv.-</span>
-        ) : lv != null ? (
-          <span className="text-[11px] tabular text-fg">Lv.{lv}</span>
-        ) : null}
-      </div>
-      <p className={cn("font-display text-sm", empty ? "text-crimson" : "text-fg")}>{name}</p>
-      {subName && subName !== name ? (
-        <p className="text-[10px] text-faint">{subName}</p>
-      ) : null}
-      <p className="mt-0.5 text-[11px] leading-snug text-muted">{desc}</p>
-      {power != null && !empty ? (
-        <p className="mt-1 text-[10px] text-brass">
-          威力:{scaledPower ?? power}
-          {scaledPower != null && scaledPower !== power ? `（基礎 ${power}）` : ""}
+    <div className={cn("rounded-md border px-2 py-1", bar)}>
+      <div className="flex min-w-0 items-baseline gap-1.5">
+        <p className="shrink-0 text-[9px] tracking-wide text-faint">{label}</p>
+        <p className={cn("min-w-0 truncate font-display text-xs", empty ? "text-crimson" : "text-fg")}>
+          {name}
         </p>
-      ) : null}
+        {subName && subName !== name ? (
+          <p className="hidden min-w-0 truncate text-[9px] text-faint sm:block">({subName})</p>
+        ) : null}
+        <span className="ml-auto shrink-0 text-[10px] tabular text-muted">
+          {empty ? (
+            <span className="text-crimson">Lv.-</span>
+          ) : lv != null ? (
+            <span className="text-fg">Lv.{lv}</span>
+          ) : null}
+          {power != null && !empty ? (
+            <span className="ml-1.5 text-brass">
+              威{scaledPower ?? power}
+              {scaledPower != null && scaledPower !== power ? `/${power}` : ""}
+            </span>
+          ) : null}
+        </span>
+      </div>
+      <p className="mt-0.5 line-clamp-1 text-[10px] leading-tight text-muted">{desc}</p>
     </div>
   );
 }
