@@ -26,8 +26,8 @@ export function FormationScreen() {
     .filter((c): c is NonNullable<typeof c> => !!c)
     .sort((a, b) => Number(!!a.fodder) - Number(!!b.fodder) || b.cost - a.cost || a.name.localeCompare(b.name, "ja"));
 
-  const focusId = selected ?? leaderId ?? tray[0]?.id ?? null;
-  const focus = focusId ? CARD_BY_ID[focusId] : null;
+  // Detail column only while a card is selected — tray expands when cleared.
+  const focus = selected ? CARD_BY_ID[selected] : null;
 
   const onSlot = (slot: number) => {
     if (!form.slots[slot]) return;
@@ -74,30 +74,38 @@ export function FormationScreen() {
             </PrimaryButton>
           </div>
 
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-            <p className="mb-1 shrink-0 text-[10px] text-muted">
+          {/* Tray: hint reserved above; scroll only the grid */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2.5">
+            <p className="shrink-0 px-0.5 text-[10px] leading-snug text-muted">
               カードかマスを選んで置きたいマスへ。同じマスでもう一度で外す。リーダーを外すと全員解除。
             </p>
-            <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-3 gap-1.5 overflow-y-auto content-start pr-0.5 md:grid-cols-4">
-              {tray.map((card) => (
-                <CardFace
-                  key={card.id}
-                  card={card}
-                  level={owned[card.id]?.level}
-                  skill1Lv={owned[card.id]?.skill1Lv}
-                  size="sm"
-                  selected={selected === card.id}
-                  dimmed={(inParty.has(card.id) && selected !== card.id) || !!card.fodder}
-                  leader={leaderId === card.id}
-                  className="w-full"
-                  onClick={() => onTray(card.id)}
-                />
-              ))}
+            <div className="formation-tray-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+              <div
+                className={cn(
+                  "grid auto-rows-min content-start gap-1.5 pb-3",
+                  focus ? "grid-cols-3" : "grid-cols-3 md:grid-cols-4",
+                )}
+              >
+                {tray.map((card) => (
+                  <div key={card.id} className="flex justify-center">
+                    <CardFace
+                      card={card}
+                      level={owned[card.id]?.level}
+                      skill1Lv={owned[card.id]?.skill1Lv}
+                      size="sm"
+                      selected={selected === card.id}
+                      dimmed={(inParty.has(card.id) && selected !== card.id) || !!card.fodder}
+                      leader={leaderId === card.id}
+                      onClick={() => onTray(card.id)}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
           {focus ? (
-            <div className="panel flex w-[168px] shrink-0 flex-col gap-1.5 self-start rounded-lg p-2 sm:w-[176px]">
+            <aside className="panel flex w-[168px] shrink-0 flex-col gap-1.5 self-stretch overflow-y-auto rounded-lg p-2 sm:w-[176px]">
               <p className="font-display text-sm leading-tight">{focus.name}</p>
               <p className="text-[10px] leading-tight text-muted">
                 {FACTION_LABEL[focus.faction]}　{focus.title}
@@ -117,14 +125,14 @@ export function FormationScreen() {
                   type="button"
                   onClick={() => setLeader(focus.id)}
                   className={cn(
-                    "h-7 rounded-sm text-[10px]",
+                    "h-7 shrink-0 rounded-sm text-[10px]",
                     leaderId === focus.id ? "bg-brass text-bg" : "bg-raised text-muted",
                   )}
                 >
                   {leaderId === focus.id ? "LEADER" : "リーダーにする"}
                 </button>
               ) : null}
-            </div>
+            </aside>
           ) : null}
         </div>
       </div>
