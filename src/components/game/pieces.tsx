@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { CARD_BY_ID, TYPE_LABEL, scaledStat } from "@/game/data";
 import { useGame } from "@/game/store";
 import type { Card, ElementType, Rarity, Screen } from "@/game/types";
@@ -111,10 +111,27 @@ export function GoldChip({ gold }: { gold: number }) {
 }
 
 export function SpiritChip({ spirit, max }: { spirit: number; max: number }) {
+  const filled = Math.max(0, Math.min(max, Math.floor(spirit)));
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-raised px-2.5 py-1 text-xs text-crimson hairline tabular">
-      <span className="font-display tracking-wider">闘気</span>
-      {spirit}/{max}
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full bg-raised px-2.5 py-1 text-xs hairline"
+      role="img"
+      aria-label={`闘気 ${filled}/${max}`}
+    >
+      <span className="font-display tracking-wider text-crimson">闘気</span>
+      <span className="inline-flex items-center gap-0.5" aria-hidden>
+        {Array.from({ length: max }, (_, i) => (
+          <span
+            key={i}
+            className={cn(
+              "inline-block h-2.5 w-2.5 rounded-full",
+              i < filled
+                ? "bg-brass shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-fg)_20%,transparent)]"
+                : "bg-crimson/55 ring-1 ring-crimson/35",
+            )}
+          />
+        ))}
+      </span>
     </span>
   );
 }
@@ -608,6 +625,37 @@ export function GhostButton({
       className={cn("rounded-md bg-raised px-4 text-fg hairline", className)}
     >
       {children}
+    </button>
+  );
+}
+
+/** Circular × dismiss control — 44px touch, ~32px visual. */
+export function CloseButton({
+  onClick,
+  className,
+  label = "閉じる",
+}: {
+  onClick?: (e: MouseEvent<HTMLButtonElement>) => void;
+  className?: string;
+  label?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={cn(
+        "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted transition hover:text-fg active:bg-raised/50",
+        className,
+      )}
+    >
+      <span
+        aria-hidden
+        className="flex h-8 w-8 items-center justify-center rounded-full bg-raised text-base leading-none hairline"
+      >
+        ×
+      </span>
     </button>
   );
 }

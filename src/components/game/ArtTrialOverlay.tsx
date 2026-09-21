@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CloseButton } from "./pieces";
 
 const TRIALS = [
   { id: "kaien", name: "カイエン" },
@@ -35,9 +36,7 @@ export function ArtTrialOverlay({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         <p className="text-[11px] text-[#6e6558]">左からカイエン・アズハ・クレア・ゴウザン</p>
-        <button type="button" onClick={onClose} className="ml-auto px-3 py-1 text-sm">
-          閉じる
-        </button>
+        <CloseButton onClick={onClose} className="ml-auto" />
       </div>
       <div className="flex min-h-0 flex-1 gap-2">
         {TRIALS.map((t) => (

@@ -3,7 +3,7 @@ import { FACTION_LABEL, HERO_CARDS } from "@/game/data";
 import type { Faction } from "@/game/types";
 import { sfx } from "@/game/audio";
 import { useGame } from "@/game/store";
-import { CardFace } from "./pieces";
+import { CardFace, CloseButton } from "./pieces";
 import { requestGameDisplay } from "@/lib/display-mode";
 import { cn } from "@/lib/utils";
 
@@ -85,13 +85,7 @@ export function DebugPanel() {
       >
         <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
           <p className="font-display text-sm text-faint">内部</p>
-          <button
-            type="button"
-            onClick={run(() => setDebugOpen(false))}
-            className="debug-hit flex min-h-11 min-w-16 items-center justify-center px-3 text-sm text-muted"
-          >
-            閉じる
-          </button>
+          <CloseButton onClick={run(() => setDebugOpen(false))} className="debug-hit" />
         </div>
 
         <div className="mb-3 flex shrink-0 gap-1 rounded-md bg-raised p-1 hairline">
@@ -221,13 +215,7 @@ export function DebugPanel() {
             <p className="absolute inset-x-0 bottom-0 bg-bg/80 px-3 py-2 text-center text-xs text-muted tabular">
               {previewBg}
             </p>
-            <button
-              type="button"
-              onClick={run(() => setPreviewBg(null))}
-              className="debug-hit absolute right-2 top-2 flex min-h-11 min-w-14 items-center justify-center rounded-md bg-raised/90 px-3 text-sm text-muted hairline"
-            >
-              閉じる
-            </button>
+            <CloseButton onClick={run(() => setPreviewBg(null))} className="debug-hit absolute right-2 top-2" />
           </div>
         </div>
       ) : null}

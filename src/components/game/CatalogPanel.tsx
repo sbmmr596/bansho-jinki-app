@@ -7,6 +7,7 @@ import { CATALOG_KEY, clearUserCatalog, saveUserCatalog } from "@/game/catalog-a
 import { createDriveFolder, loadDriveCatalog, type DriveCatalogResult } from "@/game/drive-catalog";
 import { DEFAULT_GH_REPO, GH_KEY, loadGithubCatalog, type GithubCatalogResult } from "@/game/github-catalog";
 import { useGame } from "@/game/store";
+import { CloseButton } from "./pieces";
 
 function sourceLabel(src: "default" | "custom" | "drive" | "github") {
   if (src === "drive") return "ドライブ";
@@ -184,9 +185,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
       <div className="panel max-h-full w-full max-w-md overflow-y-auto rounded-xl p-4">
         <div className="mb-3 flex items-center justify-between gap-3">
           <p className="font-display text-sm text-fg">マイデータ</p>
-          <button type="button" onClick={onClose} className="h-10 px-3 text-sm text-muted">
-            閉じる
-          </button>
+          <CloseButton onClick={onClose} />
         </div>
         <div className="mb-2 min-h-8">
           {isPending ? <p className="text-xs text-muted">確認中…</p> : <UserButton />}

@@ -1,5 +1,6 @@
 import { useGame } from "@/game/store";
 import { AffinityDiagram } from "./AffinityDiagram";
+import { CloseButton } from "./pieces";
 
 export function HelpOverlay() {
   const close = () => useGame.getState().setHelp(false);
@@ -8,9 +9,7 @@ export function HelpOverlay() {
       <div className="panel max-h-full w-full max-w-3xl overflow-y-auto rounded-xl p-4">
         <div className="mb-2 flex items-start justify-between gap-3">
           <h2 className="font-display text-lg">遊び方</h2>
-          <button type="button" onClick={close} className="h-9 px-3 text-sm text-muted">
-            閉じる
-          </button>
+          <CloseButton onClick={close} />
         </div>
         <div className="grid gap-4 text-sm leading-relaxed text-muted lg:grid-cols-2">
           <div className="space-y-2">
