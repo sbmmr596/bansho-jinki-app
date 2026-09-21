@@ -11,7 +11,9 @@ import {
   buildArenaEncounter,
   clampSpirit,
   partyAverageLevel,
+  partyLevels,
   partyMaxCost,
+  partySkill1Lvs,
   partyTotalCost,
   type ArenaTier,
 } from "./arena";
@@ -780,6 +782,8 @@ export const useGame = create<GameStore>((set, get) => ({
     const encounter = buildArenaEncounter(player.length, avg, tier, {
       playerTotalCost: partyTotalCost(s.party),
       playerMaxCost: partyMaxCost(s.party),
+      playerLevels: partyLevels(s.party, s.owned),
+      playerSkill1Lvs: partySkill1Lvs(s.party, s.owned),
     });
     // encounter.fee is kept only as reward baseline — gold is not deducted on entry.
     const log = simulateBattle(
