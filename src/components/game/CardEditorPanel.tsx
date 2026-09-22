@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { SignInButtons, UserButton } from "@/lib/auth/gates";
 import { authEnabled } from "@/lib/auth/client";
+import { resolveSignInGateState } from "@/lib/auth/sign-in-gate";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import {
   applyCatalog,
@@ -179,7 +180,11 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState("");
 
-  const signedIn = !!user;
+  const gateState = resolveSignInGateState({
+    isPending,
+    hasUser: user !== null,
+  });
+  const signedIn = gateState === "signed_in";
   const canEdit = signedIn;
 
   const filtered = useMemo(() => {
@@ -338,10 +343,18 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="mb-2 min-h-8 shrink-0">
-          {isPending ? <p className="text-xs text-muted">確認中…</p> : <UserButton />}
+          {gateState === "pending" ? (
+            <p className="text-xs text-muted">確認中…</p>
+          ) : (
+            <UserButton />
+          )}
         </div>
 
-        {!isPending && !signedIn ? (
+        {gateState === "pending" ? (
+          <div className="space-y-2 p-2">
+            <p className="text-xs text-muted">セッションを確認しています…</p>
+          </div>
+        ) : gateState === "signed_out" ? (
           <div className="space-y-3 p-2">
             <p className="text-xs leading-relaxed text-muted">
               Googleアカウントでサインインすると、カード内容・陣営をこのアカウント専用に編集・保存できるよ。サインアウト時は標準カタログのまま。
