@@ -752,10 +752,10 @@ export function Shell({
   nav?: Screen;
   wide?: boolean;
 }) {
-  const navSide = useGame((s) => s.navSide);
-  const sideNav = nav ? <SideNav screen={nav} side={navSide} /> : null;
+  const setDebugOpen = useGame((s) => s.setDebugOpen);
+  const setHelp = useGame((s) => s.setHelp);
   return (
-    <div className="relative flex h-full min-h-0 flex-1 overflow-hidden text-fg">
+    <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden text-fg">
       {bg ? (
         <img
           src={bg}
@@ -765,33 +765,56 @@ export function Shell({
         />
       ) : null}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-bg/50 via-bg/30 to-bg/50" />
-      {navSide === "left" ? sideNav : null}
-      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col px-3 py-2">
-        <header className="mb-2 flex h-9 shrink-0 items-center gap-2">
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col px-3 pt-2">
+        <header className="mb-1 flex h-14 shrink-0 items-center gap-2">
           {onBack ? (
             <button
               type="button"
               onClick={onBack}
-              className="flex h-9 min-w-9 items-center justify-center rounded-md bg-surface hairline text-xs"
+              className="flex h-14 min-h-14 min-w-14 items-center justify-center rounded-md bg-surface px-3 hairline text-base"
             >
               戻る
             </button>
           ) : null}
           <h1 className="font-display text-lg tracking-wide">{title}</h1>
-          <div className="ml-auto flex items-center gap-2">{extra}</div>
+          <div className="ml-auto flex items-center gap-2">
+            {extra}
+            {nav ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setHelp(true)}
+                  className="inline-flex h-14 min-h-14 items-center justify-center rounded-md bg-surface px-4 text-base text-muted hairline active:bg-raised/60"
+                >
+                  遊び方
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setDebugOpen(true);
+                  }}
+                  className="debug-hit inline-flex h-14 min-h-14 items-center justify-center rounded-md bg-surface px-4 text-base text-muted hairline active:bg-raised/60"
+                >
+                  内部
+                </button>
+              </>
+            ) : null}
+          </div>
         </header>
         <div className={cn("min-h-0 min-w-0 flex-1", wide ? "overflow-hidden" : "overflow-auto")}>
           {children}
         </div>
+        {nav ? <BottomNav screen={nav} /> : null}
       </div>
-      {navSide === "right" ? sideNav : null}
     </div>
   );
 }
 
-export function SideNav({ screen, side = "right" }: { screen: string; side?: "left" | "right" }) {
+/** Primary destinations — bottom chrome (原作寄り: 上下振り分け、横長プレイ領域). */
+export function BottomNav({ screen }: { screen: string }) {
   const setScreen = useGame((s) => s.setScreen);
-  const setDebugOpen = useGame((s) => s.setDebugOpen);
   const items = [
     { id: "map" as const, label: "出陣" },
     { id: "formation" as const, label: "編成" },
@@ -800,17 +823,10 @@ export function SideNav({ screen, side = "right" }: { screen: string; side?: "le
     { id: "collection" as const, label: "図鑑" },
     { id: "summon" as const, label: "召喚" },
   ];
-  const edgePad =
-    side === "left"
-      ? "pl-[max(0.25rem,env(safe-area-inset-left,0px))]"
-      : "pr-[max(0.25rem,env(safe-area-inset-right,0px))]";
   return (
     <nav
-      className={cn(
-        "relative z-20 flex w-[10rem] shrink-0 flex-col bg-ink/95 py-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]",
-        edgePad,
-        side === "left" ? "border-r border-border order-first" : "border-l border-border",
-      )}
+      className="relative z-20 mt-1 flex h-[5.5rem] shrink-0 items-stretch gap-0.5 border-t border-border bg-ink/95 px-0.5 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
+      aria-label="メインメニュー"
     >
       {items.map((it) => (
         <button
@@ -818,7 +834,7 @@ export function SideNav({ screen, side = "right" }: { screen: string; side?: "le
           type="button"
           onClick={() => setScreen(it.id)}
           className={cn(
-            "flex min-h-24 flex-1 flex-col items-center justify-center px-2 text-xl font-semibold leading-none tracking-wide whitespace-nowrap active:bg-raised/60",
+            "flex min-h-[5rem] min-w-0 flex-1 flex-col items-center justify-center px-1 text-lg font-semibold leading-none tracking-wide whitespace-nowrap active:bg-raised/60",
             screen === it.id || (screen === "scout" && it.id === "map")
               ? "text-brass"
               : "text-muted",
@@ -827,19 +843,13 @@ export function SideNav({ screen, side = "right" }: { screen: string; side?: "le
           <span className="block whitespace-nowrap">{it.label}</span>
         </button>
       ))}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setDebugOpen(true);
-        }}
-        className="debug-hit flex min-h-24 w-full shrink-0 items-center justify-center whitespace-nowrap text-xl font-semibold leading-none text-muted active:bg-raised/60"
-      >
-        内部
-      </button>
     </nav>
   );
+}
+
+/** @deprecated Use BottomNav — kept as alias for any stray imports. */
+export function SideNav({ screen }: { screen: string; side?: "left" | "right" }) {
+  return <BottomNav screen={screen} />;
 }
 
 export function PrimaryButton({
