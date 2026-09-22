@@ -565,7 +565,7 @@ export function BattleView() {
               <div className="skill-banner-burst" />
               <div className="skill-banner-slash skill-banner-slash-a" />
               <div className="skill-banner-slash skill-banner-slash-b" />
-              <span className="skill-banner-name font-display text-3xl tracking-[0.12em] sm:text-4xl">
+              <span className="skill-banner-name font-display text-3xl tracking-[0.12em] @sm:text-4xl">
                 {skillBanner.name}
               </span>
             </div>

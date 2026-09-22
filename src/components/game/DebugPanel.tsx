@@ -142,7 +142,7 @@ export function DebugPanel() {
             <div className="space-y-4">
               <section>
                 <h3 className="mb-2 font-display text-xs tracking-wider text-faint">陣営背景</h3>
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                <div className="grid grid-cols-3 gap-2 @sm:grid-cols-6">
                   {FACTIONS.map((faction) => {
                     const path = `/factions/${faction}.svg`;
                     return (
@@ -180,7 +180,7 @@ export function DebugPanel() {
 
               <section>
                 <h3 className="mb-2 font-display text-xs tracking-wider text-faint">フィールド背景</h3>
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                <div className="grid grid-cols-3 gap-2 @sm:grid-cols-4">
                   {FIELD_BGS.map((bg) => (
                     <button
                       key={bg.id}

@@ -11,7 +11,7 @@ export function HelpOverlay() {
           <h2 className="font-display text-lg">遊び方</h2>
           <CloseButton onClick={close} />
         </div>
-        <div className="grid gap-4 text-sm leading-relaxed text-muted lg:grid-cols-2">
+        <div className="grid gap-4 text-sm leading-relaxed text-muted @lg:grid-cols-2">
           <div className="space-y-2">
             <p>
               カードを集め、リーダーの<span className="text-fg">陣形</span>に配置し、隣り合う領地を奪う陣取りです。戦闘は自動。勝敗は編成で決まります。

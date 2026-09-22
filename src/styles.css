@@ -140,6 +140,8 @@ body {
   overflow: hidden;
   background: var(--color-bg);
   transform-origin: top left;
+  container-type: inline-size;
+  container-name: stage;
 }
 .game-landscape-hint {
   position: absolute;
