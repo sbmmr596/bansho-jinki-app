@@ -269,14 +269,19 @@ function mulberry32(seed: number) {
   };
 }
 
-function pickFormation(rng: () => number, minOpen = 1): Formation {
+function pickFormation(rng: () => number, minOpen = 3): Formation {
+  // Formations may only expose 3–5 open slots; clamp picker bounds accordingly.
+  const lo = Math.max(3, Math.min(5, minOpen));
   const ids = Object.keys(FORMATIONS);
   const withRoom = ids
     .map((id) => FORMATIONS[id]!)
-    .filter((f) => f.slots.filter(Boolean).length >= minOpen);
+    .filter((f) => {
+      const n = f.slots.filter(Boolean).length;
+      return n >= lo && n <= 5;
+    });
   const pool = withRoom.length ? withRoom : [FORMATIONS.basic];
   // Bias toward basic when it has enough open slots.
-  if (FORMATIONS.basic.slots.filter(Boolean).length >= minOpen && rng() < 0.45) {
+  if (FORMATIONS.basic.slots.filter(Boolean).length >= lo && rng() < 0.45) {
     return FORMATIONS.basic;
   }
   return pool[Math.floor(rng() * pool.length)]! ?? FORMATIONS.basic;
@@ -483,6 +488,7 @@ export function buildArenaEncounter(
   const rng = mulberry32(seed || 1);
   const fee = arenaFee(tier, avgLevel);
   // Match player count so cost/level budgets stay balanced (strength comes from mul/skills).
+  // Enemy unit count / formation opens stay in the 3–5 band (formations never have 6+).
   const desired =
     tier === "even"
       ? Math.max(1, Math.min(5, playerCount))
