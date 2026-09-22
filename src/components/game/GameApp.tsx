@@ -21,7 +21,7 @@ import { TitleScreen } from "./TitleScreen";
 import { TrainScreen } from "./TrainScreen";
 import { ArenaScreen } from "./ArenaScreen";
 import { ArtZoom } from "./pieces";
-import { DESIGN_H, DESIGN_W } from "@/game/design";
+import { DESIGN_H, DESIGN_W, fitContainScale } from "@/game/design";
 
 /** Show portrait tip when contain-scale is this small (phone portrait). */
 const PORTRAIT_TIP_SCALE = 0.55;
@@ -188,9 +188,11 @@ export function GameApp() {
       const padR = cssPx("--sar");
       const padT = cssPx("--sat");
       const padB = cssPx("--sab");
+      // Playable area = visual viewport minus safe-area only (no desktop max-width/padding).
       const aw = Math.max(1, vw - padL - padR);
       const ah = Math.max(1, vh - padT - padB);
-      const scale = Math.min(aw / DESIGN_W, ah / DESIGN_H);
+      // True contain: may exceed 1 on PC/tablet so the stage enlarges like an image.
+      const scale = fitContainScale(aw, ah);
 
       stage.style.width = `${DESIGN_W}px`;
       stage.style.height = `${DESIGN_H}px`;
@@ -199,6 +201,7 @@ export function GameApp() {
       stage.style.left = `${padL + (aw - DESIGN_W * scale) / 2}px`;
       stage.style.top = `${padT + (ah - DESIGN_H * scale) / 2}px`;
       // Drive mild inverse text scale in CSS (--text-scale on .game-stage).
+      // When scale > 1, CSS keeps --text-scale at 1 so fonts enlarge with the stage.
       stage.style.setProperty("--stage-scale", String(scale));
 
       const portrait = vh > vw;

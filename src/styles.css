@@ -146,12 +146,13 @@ body {
   container-type: inline-size;
   container-name: stage;
   /*
-   * Mild inverse text scale: transform scale() shrinks physical fonts.
-   * GameApp sets --stage-scale; we boost logical fonts when the stage is small.
-   * scale 1 → 1.0; ~0.5 → ~1.22; ~0.35 → ~1.29; capped at 1.35.
-   * Keeps layout near the 8px grid without a full rem rewrite.
+   * Mild inverse text scale: transform scale() shrinks physical fonts when
+   * downscaled. GameApp sets --stage-scale (may be >1 on large displays).
+   * Boost only when stage-scale < 1 (min caps the input at 1 so upscale does
+   * not pull the formula below 1 before clamp). scale≥1 → 1.0; ~0.5 → ~1.22;
+   * ~0.35 → ~1.29; max 1.35. Layout stays on the 8px grid.
    */
-  --text-scale: clamp(1, calc(1.45 - 0.45 * var(--stage-scale, 1)), 1.35);
+  --text-scale: clamp(1, calc(1.45 - 0.45 * min(var(--stage-scale, 1), 1)), 1.35);
   --font-caption: calc(12px * var(--text-scale));
   --font-body: calc(14px * var(--text-scale));
   --font-ui: calc(16px * var(--text-scale));
