@@ -230,21 +230,26 @@ function openSignInPopup(providerId: string): Window | null {
  * for the user to dismiss the popup).
  */
 function waitForPopupToken(popup: Window): Promise<string | null> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const origin = window.location.origin;
     let settled = false;
     let closeTimer: number | undefined;
-    const settle = (token: string | null) => {
+    const settle = (token: string | null, error?: string) => {
       if (settled) return;
       settled = true;
       cleanup();
+      // Prefer the popup's explicit error over a generic cancel/fail message.
+      if (!token && error) {
+        reject(new Error(error));
+        return;
+      }
       resolve(token);
     };
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== origin) return;
       const data = event.data as PopupMessage | undefined;
       if (!data || data.source !== "grok-auth-popup") return;
-      settle(data.token ?? null);
+      settle(data.token ?? null, data.error);
     };
     // Fallback when the user dismisses the popup. Grace period lets the
     // completion page's postMessage win over a racing `popup.closed`.

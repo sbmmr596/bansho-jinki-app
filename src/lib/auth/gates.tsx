@@ -63,19 +63,68 @@ export function SignInGate({
   return <>{fallback ?? <SignInButtons />}</>;
 }
 
+function formatSignInError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  const lower = raw.toLowerCase();
+  if (lower.includes("pop-up blocked") || lower.includes("popup blocked")) {
+    return "ポップアップがブロックされました。プレビューでポップアップを許可して再試行してください。";
+  }
+  if (
+    lower.includes("localhost") ||
+    lower.includes("127.0.0.1") ||
+    lower.includes("live preview")
+  ) {
+    return (
+      "Google / X のサインインは http://localhost ではなく、" +
+      "ライブプレビュー URL（https://*.grok-sandbox.com）が必要です。" +
+      "Grok のライブプレビューから開いて再試行してください。"
+    );
+  }
+  if (lower.includes("cancelled") || lower.includes("canceled")) {
+    return "サインインがキャンセルされました";
+  }
+  return raw;
+}
+
 export function SignInButtons() {
+  const [busyProviderId, setBusyProviderId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSignIn(providerId: string) {
+    setError(null);
+    setBusyProviderId(providerId);
+    try {
+      await signIn(providerId, { callbackURL: "/" });
+    } catch (err) {
+      setError(formatSignInError(err));
+    } finally {
+      setBusyProviderId(null);
+    }
+  }
+
   return (
     <div className="flex w-full max-w-sm flex-col gap-2">
       {GROK_PROVIDERS.map((p) => (
         <button
           key={p.providerId}
           type="button"
-          onClick={() => signIn(p.providerId, { callbackURL: "/" })}
-          className="w-full cursor-pointer rounded-md border border-neutral-300 px-4 py-2 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-900"
+          disabled={busyProviderId !== null}
+          onClick={() => void handleSignIn(p.providerId)}
+          className="w-full cursor-pointer rounded-md border border-neutral-300 px-4 py-2 hover:bg-neutral-100 disabled:cursor-wait disabled:opacity-60 dark:border-neutral-700 dark:hover:bg-neutral-900"
         >
-          Continue with {p.label}
+          {busyProviderId === p.providerId
+            ? "接続中…"
+            : `Continue with ${p.label}`}
         </button>
       ))}
+      {error ? (
+        <p
+          role="alert"
+          className="text-sm text-red-600 dark:text-red-400"
+        >
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
