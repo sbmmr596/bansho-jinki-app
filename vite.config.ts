@@ -100,9 +100,18 @@ function authPopupPlugin(): Plugin {
               requestHeaders.set(key, value);
             }
           }
-          // Ensure Host is the public preview host so Better Auth's dynamic
-          // baseURL / redirect_uri match the popup origin.
-          if (!requestHeaders.has("host")) requestHeaders.set("host", host);
+          // Always set Host to the public preview host (x-forwarded-host when
+          // present). A bare `Host: 127.0.0.1:8080` makes Better Auth emit a
+          // localhost redirect_uri the broker rejects as "Invalid redirect URI".
+          requestHeaders.set("host", host);
+          if (req.headers["x-forwarded-host"]) {
+            requestHeaders.set("x-forwarded-host", String(req.headers["x-forwarded-host"]));
+          } else if (!host.startsWith("127.") && host !== "localhost" && !host.startsWith("localhost:")) {
+            requestHeaders.set("x-forwarded-host", host);
+          }
+          if (!requestHeaders.has("x-forwarded-proto")) {
+            requestHeaders.set("x-forwarded-proto", proto);
+          }
 
           const request = new Request(`${proto}://${host}${rawUrl}`, {
             method: "GET",
@@ -150,6 +159,9 @@ export default defineConfig(({ command, isPreview }) => ({
     host: "0.0.0.0",
     port: 8080,
     strictPort: true,
+    // Live preview / OAuth popup hit Vite with Host: *.grok-sandbox.com.
+    // Without this, Vite 8 returns 403 and sign-in never reaches the broker.
+    allowedHosts: [".grok-sandbox.com", "localhost", "127.0.0.1"],
   },
   preview: {
     host: "127.0.0.1",
