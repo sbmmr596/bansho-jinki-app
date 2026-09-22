@@ -51,27 +51,27 @@ export function AffinityDiagram({ compact = false }: { compact?: boolean }) {
         {/* Side relations + multipliers */}
         <div className="flex min-w-0 flex-1 flex-col justify-between gap-1">
           <div className="rounded-lg bg-raised/50 p-1.5 hairline">
-            <p className="mb-1 text-center text-[9px] tracking-wide text-faint">無・天・地</p>
+            <p className="mb-1 text-center text-[11px] tracking-wide text-faint">無・天・地</p>
             <div className="flex items-center justify-center gap-1">
               <Chip type="void" />
-              <span className="text-[9px] text-brass">⇔</span>
+              <span className="text-[11px] text-brass">⇔</span>
               <div className="flex flex-col items-center gap-0.5">
                 <Chip type="heaven" />
                 <Chip type="earth" />
               </div>
             </div>
-            <p className="mt-1 text-[9px] leading-snug text-muted">
+            <p className="mt-1 text-[11px] leading-snug text-muted">
               無は天・地に強い／天は力技魔にやや強い／地は天に強い
             </p>
           </div>
-          <div className="rounded-md bg-ink/80 px-2 py-1 text-[9px] leading-snug text-muted hairline">
+          <div className="rounded-md bg-ink/80 px-2 py-1 text-[11px] leading-snug text-muted hairline">
             <p>
               <span className="text-crimson">有利</span> 致命 1.5　
               <span className="text-brass">やや有利</span> 強 1.2　
               <span className="text-faint">不利</span> 防 0.5
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-0.5 text-[8px] leading-tight text-muted">
+          <div className="grid grid-cols-3 gap-0.5 text-[10px] leading-tight text-muted">
             <Tag type="power" text="＞技　＜魔天" />
             <Tag type="skill" text="＞魔　＜力天" />
             <Tag type="magic" text="＞力　＜技天" />
@@ -86,7 +86,7 @@ function Chip({ type, className }: { type: ElementType; className?: string }) {
   return (
     <div className={cn("z-10 flex flex-col items-center", className)}>
       <TypeBadge type={type} className={cn("h-6 min-w-6 rounded-full ring-1", RING[type])} />
-      <span className="mt-0.5 text-[9px] text-fg">{TYPE_LABEL[type]}</span>
+      <span className="mt-0.5 text-[11px] text-fg">{TYPE_LABEL[type]}</span>
     </div>
   );
 }

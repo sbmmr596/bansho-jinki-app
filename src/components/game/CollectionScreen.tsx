@@ -68,7 +68,7 @@ export function CollectionScreen() {
                   <span className="text-muted">{FACTION_LABEL[card.faction]}</span>
                   <span className="text-brass">{card.rarity}</span>
                   {card.fodder ? (
-                    <span className="rounded-sm bg-crimson/85 px-1.5 py-0.5 text-[10px] font-semibold text-fg">
+                    <span className="rounded-sm bg-crimson/85 px-1.5 py-0.5 text-[12px] font-semibold text-fg">
                       素材専用
                     </span>
                   ) : null}
@@ -89,9 +89,9 @@ export function CollectionScreen() {
             <div className="flex min-h-0 flex-1 flex-col gap-1.5 border-t border-fg/10 pt-1.5">
               <div className="flex items-start gap-2 rounded-md bg-raised/50 p-1.5 hairline">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] tracking-wide text-faint">リーダー陣形</p>
+                  <p className="text-[12px] tracking-wide text-faint">リーダー陣形</p>
                   <p className="font-display text-sm leading-snug text-fg">{form?.name ?? "—"}</p>
-                  <p className="mt-0.5 text-[11px] leading-snug text-muted">{form?.desc}</p>
+                  <p className="mt-0.5 text-[13px] leading-snug text-muted">{form?.desc}</p>
                 </div>
                 {form ? <FormationPreview slots={form.slots} /> : null}
               </div>
@@ -99,11 +99,11 @@ export function CollectionScreen() {
               <div className="flex min-h-0 flex-1 flex-col gap-1">
                 {/* 基本技は折りたたみ1行表示 — 必殺技2が初期ビューに収まるように */}
                 <div className="flex items-baseline justify-between gap-2 rounded-md bg-raised/50 px-2 py-1 hairline">
-                  <p className="min-w-0 truncate text-[11px] text-muted">
-                    <span className="text-[10px] tracking-wide text-faint">基本技</span>{" "}
+                  <p className="min-w-0 truncate text-[13px] text-muted">
+                    <span className="text-[12px] tracking-wide text-faint">基本技</span>{" "}
                     <span className="text-fg">{BASIC_SKILL.name}</span>
                   </p>
-                  <span className="shrink-0 text-[10px] text-brass">威力:{BASIC_SKILL.power}</span>
+                  <span className="shrink-0 text-[12px] text-brass">威力:{BASIC_SKILL.power}</span>
                 </div>
                 <DetailSkill
                   label="必殺技1"
@@ -133,7 +133,7 @@ export function CollectionScreen() {
                 ) : (
                   <DetailSkill label="必殺技2" name="-" desc="未装着" empty tone="s2" />
                 )}
-                <p className="pt-0.5 text-[10px] text-brass">
+                <p className="pt-0.5 text-[12px] text-brass">
                   属性 {TYPE_LABEL[card.type]}　／　種別 {SKILL_KIND_LABEL[card.skill.kind]}
                 </p>
               </div>
@@ -203,20 +203,20 @@ function DetailSkill({
       }
     >
       <div className="flex items-baseline justify-between gap-2">
-        <p className="text-[10px] tracking-wide text-faint">{label}</p>
+        <p className="text-[12px] tracking-wide text-faint">{label}</p>
         {empty ? (
-          <span className="text-[10px] tabular text-crimson">Lv.-</span>
+          <span className="text-[12px] tabular text-crimson">Lv.-</span>
         ) : lv != null ? (
-          <span className="text-[10px] tabular text-fg">Lv.{lv}</span>
+          <span className="text-[12px] tabular text-fg">Lv.{lv}</span>
         ) : null}
       </div>
       <p className={"font-display text-sm " + (empty ? "text-crimson" : "text-fg")}>{name}</p>
       {subName && subName !== name ? (
-        <p className="text-[10px] text-faint">{subName}</p>
+        <p className="text-[12px] text-faint">{subName}</p>
       ) : null}
-      <p className="mt-0.5 text-[11px] leading-snug text-muted">{desc}</p>
+      <p className="mt-0.5 text-[13px] leading-snug text-muted">{desc}</p>
       {power != null && !empty ? (
-        <p className="mt-0.5 text-[10px] text-brass">
+        <p className="mt-0.5 text-[12px] text-brass">
           威力:{scaled ?? power}
           {scaled != null && scaled !== power ? `（基礎 ${power}）` : ""}
         </p>

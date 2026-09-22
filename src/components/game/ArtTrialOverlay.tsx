@@ -35,7 +35,7 @@ export function ArtTrialOverlay({ onClose }: { onClose: () => void }) {
             L 長身
           </button>
         </div>
-        <p className="text-[11px] text-[#6e6558]">左からカイエン・アズハ・クレア・ゴウザン</p>
+        <p className="text-[13px] text-[#6e6558]">左からカイエン・アズハ・クレア・ゴウザン</p>
         <CloseButton onClick={onClose} className="ml-auto" />
       </div>
       <div className="flex min-h-0 flex-1 gap-2">

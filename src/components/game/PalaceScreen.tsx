@@ -113,7 +113,7 @@ export function PalaceScreen() {
 function Stat({ label, value, compact }: { label: string; value: string; compact?: boolean }) {
   return (
     <div className="rounded-lg bg-surface/80 px-3 py-2 hairline">
-      <p className="text-[10px] tracking-wide text-faint">{label}</p>
+      <p className="text-[12px] font-medium tracking-wide text-muted">{label}</p>
       <p className={"font-display tabular text-fg " + (compact ? "text-sm leading-tight" : "text-lg")}>
         {value}
       </p>

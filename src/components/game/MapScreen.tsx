@@ -62,7 +62,7 @@ export function MapScreen() {
                   if (open) openScout(n.id);
                 }}
                 className={cn(
-                  "absolute flex h-8 min-w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full px-2 text-[10px] font-medium",
+                  "absolute flex h-8 min-w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full px-2 text-[12px] font-medium",
                   n.home && "bg-brass text-bg",
                   mine && !n.home && "bg-ok text-bg",
                   open && "bg-crimson text-fg ring-2 ring-brass",
@@ -89,7 +89,7 @@ export function MapScreen() {
               <TypeBadge type={n.hint} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm text-fg">{n.name}</p>
-                <p className="truncate text-[10px] text-muted">
+                <p className="truncate text-[12px] text-muted">
                   {COUNTER_OF[n.hint].map((t) => TYPE_LABEL[t]).join("・")}が刺さる
                 </p>
               </div>

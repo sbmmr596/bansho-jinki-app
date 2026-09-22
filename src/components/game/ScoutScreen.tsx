@@ -38,7 +38,7 @@ export function ScoutScreen() {
       <div className="flex h-full min-h-0 items-center justify-center">
         <div className="flex w-full max-w-3xl items-stretch gap-6">
           <div className="flex w-[300px] shrink-0 flex-col">
-            <p className="mb-1 text-[10px] text-faint">
+            <p className="mb-1 text-[12px] text-faint">
               敵陣 {eForm.name}　→前
             </p>
             <div className="grid min-h-0 flex-1 grid-cols-3 gap-1.5">
@@ -63,7 +63,7 @@ export function ScoutScreen() {
                       {occupied ? (
                         <CardFace card={card} level={scaleEnemyLevel(eu.level, difficulty)} size="mini" leader={!!eu.leader} />
                       ) : open ? (
-                        <span className="text-[10px] text-faint">空</span>
+                        <span className="text-[12px] text-faint">空</span>
                       ) : null}
                     </div>
                   );
@@ -89,7 +89,7 @@ export function ScoutScreen() {
               {!hasCounter ? "　有利属性がいない" : "　有利あり"}
             </p>
             {leaderId ? (
-              <p className="text-[10px] text-faint">{FORMATIONS[pForm.id]?.desc}</p>
+              <p className="text-[12px] text-faint">{FORMATIONS[pForm.id]?.desc}</p>
             ) : (
               <p className="text-xs text-crimson">リーダー未設定</p>
             )}

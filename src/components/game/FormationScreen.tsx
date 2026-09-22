@@ -82,7 +82,7 @@ export function FormationScreen() {
       <div className="flex h-full min-h-0 gap-2">
         {/* Left: scrollable card inventory (~55–60%) */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-1.5">
-          <p className="shrink-0 px-0.5 text-[10px] leading-snug text-muted">
+          <p className="shrink-0 px-0.5 text-[12px] leading-snug text-muted">
             カードかマスを選んで置きたいマスへ。同じマスでもう一度で外す。リーダーを外すと全員解除。
           </p>
 
@@ -92,12 +92,12 @@ export function FormationScreen() {
               <CostHex cost={focus.cost} className="h-6 w-7 shrink-0 text-xs" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-display text-xs leading-tight text-fg">{focus.name}</p>
-                <p className="truncate text-[10px] leading-tight text-muted">
+                <p className="truncate text-[12px] leading-tight text-muted">
                   {FACTION_LABEL[focus.faction]}　{focus.title}
                 </p>
               </div>
               {focus.fodder ? (
-                <span className="shrink-0 rounded-sm bg-crimson/20 px-1.5 py-0.5 text-[10px] text-crimson">
+                <span className="shrink-0 rounded-sm bg-crimson/20 px-1.5 py-0.5 text-[12px] text-crimson">
                   素材専用
                 </span>
               ) : null}
@@ -106,7 +106,7 @@ export function FormationScreen() {
                   type="button"
                   onClick={() => setLeader(focus.id)}
                   className={cn(
-                    "h-7 shrink-0 rounded-sm px-2 text-[10px]",
+                    "h-7 shrink-0 rounded-sm px-2 text-[12px]",
                     leaderId === focus.id ? "bg-brass text-bg" : "bg-raised text-muted",
                   )}
                 >
@@ -168,14 +168,14 @@ export function FormationScreen() {
                 <p className="font-display text-sm leading-tight text-fg">
                   {form.name}
                   {!leaderId && previewLeaderId ? (
-                    <span className="ml-1 font-sans text-[10px] font-normal text-muted">（プレビュー）</span>
+                    <span className="ml-1 font-sans text-[12px] font-normal text-muted">（プレビュー）</span>
                   ) : null}
                 </p>
-                <p className="mt-0.5 text-[10px] leading-snug text-muted">{form.desc}</p>
+                <p className="mt-0.5 text-[12px] leading-snug text-muted">{form.desc}</p>
               </div>
 
-              <div className="mt-auto space-y-0.5 rounded-sm bg-bg/40 px-1.5 py-1.5 text-[11px]">
-                <p className="mb-1 text-[10px] text-faint">
+              <div className="mt-auto space-y-0.5 rounded-sm bg-bg/40 px-1.5 py-1.5 text-[13px]">
+                <p className="mb-1 text-[12px] text-faint">
                   {totals.count ? `${totals.count}体　平均Lv ${totals.avgLv}` : "未編成"}
                 </p>
                 <PartyStat label="HP" value={totals.hp} />
@@ -254,7 +254,7 @@ function FormationGrid({
                     className="w-full"
                   />
                 ) : open ? (
-                  <span className="text-[10px] text-faint">
+                  <span className="text-[12px] text-faint">
                     {col === 2 ? "前" : col === 1 ? "中" : "後"}
                   </span>
                 ) : null}

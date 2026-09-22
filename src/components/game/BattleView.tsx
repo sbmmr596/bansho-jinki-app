@@ -588,14 +588,14 @@ export function BattleView() {
           <button
             type="button"
             onClick={() => setShowAffinity((v) => !v)}
-            className="flex h-6 items-center rounded-sm bg-[#1c4a8a] px-2 text-[11px] tracking-wide text-white"
+            className="flex h-6 items-center rounded-sm bg-[#1c4a8a] px-2 text-[13px] tracking-wide text-white"
           >
             {showAffinity ? "相性隠す" : "相性"}
           </button>
           <button
             type="button"
             onClick={() => setBattleSpeed(nextBattleSpeed(battleSpeed))}
-            className="flex h-6 items-center rounded-sm bg-[#1c4a8a] px-2 text-[11px] tracking-wide text-white"
+            className="flex h-6 items-center rounded-sm bg-[#1c4a8a] px-2 text-[13px] tracking-wide text-white"
           >
             ◂ SPEED ×{battleSpeed} ▸
           </button>
@@ -603,7 +603,7 @@ export function BattleView() {
             <button
               type="button"
               onClick={() => endTrial()}
-              className="flex h-6 items-center rounded-sm bg-[#1c4a8a] px-3 text-[11px] text-white"
+              className="flex h-6 items-center rounded-sm bg-[#1c4a8a] px-3 text-[13px] text-white"
             >
               終了
             </button>
@@ -613,7 +613,7 @@ export function BattleView() {
               onClick={() => {
                 skipRef.current = true;
               }}
-              className="flex h-6 items-center rounded-sm bg-[#1c4a8a] px-3 text-[11px] text-white"
+              className="flex h-6 items-center rounded-sm bg-[#1c4a8a] px-3 text-[13px] text-white"
             >
               結果へ
             </button>

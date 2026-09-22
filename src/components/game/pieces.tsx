@@ -100,7 +100,7 @@ export function TypeBadge({ type, className }: { type: ElementType; className?: 
   return (
     <span
       className={cn(
-        "inline-flex h-5 min-w-5 items-center justify-center rounded-sm px-1 text-[10px] font-medium tracking-wide",
+        "inline-flex h-5 min-w-5 items-center justify-center rounded-sm px-1.5 text-[12px] font-semibold tracking-wide",
         TYPE_CLASS[type],
         className,
       )}
@@ -115,7 +115,7 @@ export function TypeHex({ type, className }: { type: ElementType; className?: st
   return (
     <span
       className={cn(
-        "card-hex card-type-badge inline-flex h-[2.2em] w-[2.45em] shrink-0 items-center justify-center text-[1.35em] font-semibold leading-none",
+        "card-hex card-type-badge inline-flex h-[2.35em] w-[2.55em] shrink-0 items-center justify-center text-[1.4em] font-semibold leading-none",
         TYPE_CLASS[type],
         className,
       )}
@@ -130,7 +130,7 @@ export function CostHex({ cost, className }: { cost: number; className?: string 
   return (
     <span
       className={cn(
-        "card-hex card-cost-num inline-flex h-[2.2em] w-[2.45em] shrink-0 items-center justify-center bg-ink/75 text-[1.35em] font-semibold leading-none tabular",
+        "card-hex card-cost-num inline-flex h-[2.35em] w-[2.55em] shrink-0 items-center justify-center bg-ink/75 text-[1.4em] font-semibold leading-none tabular",
         className,
       )}
     >
@@ -209,10 +209,10 @@ export function CardFace({
   const hold = useRef(0);
   const held = useRef(false);
   const sizes = {
-    mini: "w-[var(--card-w-mini)] aspect-[2/3] text-[8px]",
-    xs: "w-[var(--card-w-xs)] aspect-[2/3] text-[9px]",
-    sm: "w-[var(--card-w-sm)] aspect-[2/3] text-[10px]",
-    md: "w-[var(--card-w-md)] aspect-[2/3] text-[11px]",
+    mini: "w-[var(--card-w-mini)] aspect-[2/3] text-[10px]",
+    xs: "w-[var(--card-w-xs)] aspect-[2/3] text-[11px]",
+    sm: "w-[var(--card-w-sm)] aspect-[2/3] text-[12px]",
+    md: "w-[var(--card-w-md)] aspect-[2/3] text-[13px]",
     lg: "w-[var(--card-w-lg)] aspect-[2/3] text-sm",
   };
   const Tag = onClick ? "button" : "div";
@@ -275,7 +275,7 @@ export function CardFace({
         className={cn(
           "card-layer-name pointer-events-none absolute inset-x-[1%] top-[1.5%] z-[2] flex w-[98%] items-center gap-0 leading-none",
           nameChars.length <= 2 ? "justify-center" : "justify-between",
-          compact ? "text-[1.1em]" : "text-[1.4em]",
+          compact ? "text-[1.15em]" : "text-[1.45em]",
         )}
         aria-label={nameLabel}
       >
@@ -299,7 +299,7 @@ export function CardFace({
       )}
       <div className="card-layer-frame pointer-events-none absolute inset-0 z-[3] rounded-[inherit]" />
       {leader ? (
-        <span className="card-leader pointer-events-none absolute inset-x-1 bottom-[18%] z-[4] py-px text-center text-[8px]">
+        <span className="card-leader pointer-events-none absolute inset-x-1 bottom-[18%] z-[4] py-px text-center text-[10px] font-semibold tracking-wide">
           LEADER
         </span>
       ) : null}
@@ -307,7 +307,7 @@ export function CardFace({
         <span
           className={cn(
             "pointer-events-none absolute right-[2%] top-[14%] z-[4] rounded-sm bg-crimson/90 px-1 font-semibold leading-none text-fg",
-            compact ? "py-px text-[7px]" : "py-0.5 text-[8px]",
+            compact ? "py-px text-[9px]" : "py-0.5 text-[10px]",
           )}
         >
           素材
@@ -375,7 +375,7 @@ export function ArtZoom() {
 
           {/* カード外フッタ帯: TypeHex | Lv·HP | CostHex、その下に攻防速 */}
           <div className="shrink-0 rounded-md bg-raised/60 p-2 hairline">
-            <div className="mb-1.5 grid grid-cols-3 items-center gap-x-2 gap-y-1 text-[10px]">
+            <div className="mb-1.5 grid grid-cols-3 items-center gap-x-2 gap-y-1 text-[12px]">
               <span className="flex items-center justify-start gap-1">
                 <span className="text-faint">TYPE</span>
                 <TypeHex type={card.type} className="h-7 w-8 text-sm" />
@@ -397,7 +397,7 @@ export function ArtZoom() {
                 <CostHex cost={card.cost} className="h-7 w-8 text-sm" />
               </span>
             </div>
-            <div className="grid grid-cols-3 gap-1 text-center text-[10px]">
+            <div className="grid grid-cols-3 gap-1 text-center text-[12px]">
               <ZoomStatChip label="攻" value={scaledStat(card.atk, level)} tone="atk" />
               <ZoomStatChip label="防" value={scaledStat(card.def, level)} tone="def" />
               <ZoomStatChip label="速" value={scaledStat(card.spd, level)} tone="spd" />
@@ -409,26 +409,26 @@ export function ArtZoom() {
         <div className="flex min-h-0 flex-col gap-2 pr-8 @sm:pr-10">
           <div className="shrink-0 space-y-0.5">
             <p className="font-display text-base leading-snug text-fg @sm:text-lg">{card.name}</p>
-            <p className="text-[10px] text-muted">{card.title}</p>
+            <p className="text-[12px] text-muted">{card.title}</p>
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] text-brass">{card.rarity}</span>
+              <span className="text-[12px] text-brass">{card.rarity}</span>
               {card.fodder ? (
-                <span className="rounded-sm bg-crimson/85 px-1 py-0.5 text-[9px] font-semibold text-fg">
+                <span className="rounded-sm bg-crimson/85 px-1 py-0.5 text-[11px] font-semibold text-fg">
                   素材専用
                 </span>
               ) : null}
               {own ? (
-                <span className="text-[10px] text-muted">
+                <span className="text-[12px] text-muted">
                   所持 <span className="tabular text-fg">{own.count}</span>
                 </span>
               ) : (
-                <span className="text-[10px] text-faint">未所持</span>
+                <span className="text-[12px] text-faint">未所持</span>
               )}
             </div>
           </div>
 
           {form ? (
-            <div className="flex shrink-0 items-start gap-2 rounded-md bg-raised/40 p-2 text-[10px] hairline">
+            <div className="flex shrink-0 items-start gap-2 rounded-md bg-raised/40 p-2 text-[12px] hairline">
               <div className="min-w-0 flex-1">
                 <p className="text-faint">リーダー陣形</p>
                 <p className="font-display text-xs text-fg">{form.name}</p>
@@ -557,20 +557,20 @@ export function SkillSlot({
   return (
     <div className={cn("rounded-md border p-2", bar, className)}>
       <div className="flex items-baseline justify-between gap-2">
-        <p className="text-[10px] tracking-wide text-faint">{label}</p>
+        <p className="text-[12px] font-medium tracking-wide text-muted">{label}</p>
         {empty ? (
-          <span className="text-[11px] tabular text-crimson">Lv.-</span>
+          <span className="text-[13px] tabular text-crimson">Lv.-</span>
         ) : lv != null ? (
-          <span className="text-[11px] tabular text-fg">Lv.{lv}</span>
+          <span className="text-[13px] tabular text-fg">Lv.{lv}</span>
         ) : null}
       </div>
       <p className={cn("font-display text-sm", empty ? "text-crimson" : "text-fg")}>{name}</p>
       {subName && subName !== name ? (
-        <p className="text-[10px] text-faint">{subName}</p>
+        <p className="text-[12px] text-faint">{subName}</p>
       ) : null}
-      <p className="mt-0.5 text-[11px] leading-snug text-muted">{desc}</p>
+      <p className="mt-0.5 text-[13px] leading-snug text-muted">{desc}</p>
       {power != null && !empty ? (
-        <p className="mt-1 text-[10px] text-brass">
+        <p className="mt-1 text-[12px] text-brass">
           威力:{scaledPower ?? power}
           {scaledPower != null && scaledPower !== power ? `（基礎 ${power}）` : ""}
         </p>
@@ -695,7 +695,7 @@ export function StatRow({
     { k: "速", v: scaledStat(card.spd, level) },
   ];
   return (
-    <dl className="flex flex-col gap-0.5 text-[11px]">
+    <dl className="flex flex-col gap-0.5 text-[13px]">
       {rows.map((r) => (
         <div key={r.k} className="flex items-center gap-1.5">
           <dt className="w-5 shrink-0 text-muted">{r.k}</dt>
@@ -797,7 +797,7 @@ export function SideNav({ screen, side = "right" }: { screen: string; side?: "le
           type="button"
           onClick={() => setScreen(it.id)}
           className={cn(
-            "flex min-h-10 flex-1 flex-col items-center justify-center px-0.5 text-[11px] leading-none tracking-wide whitespace-nowrap active:bg-raised/60",
+            "flex min-h-10 flex-1 flex-col items-center justify-center px-0.5 text-[13px] font-medium leading-none tracking-wide whitespace-nowrap active:bg-raised/60",
             screen === it.id || (screen === "scout" && it.id === "map")
               ? "text-brass"
               : "text-muted",
@@ -813,7 +813,7 @@ export function SideNav({ screen, side = "right" }: { screen: string; side?: "le
           e.stopPropagation();
           setDebugOpen(true);
         }}
-        className="debug-hit flex min-h-11 w-full shrink-0 items-center justify-center whitespace-nowrap text-[11px] leading-none text-faint active:bg-raised/60"
+        className="debug-hit flex min-h-11 w-full shrink-0 items-center justify-center whitespace-nowrap text-[13px] font-medium leading-none text-muted active:bg-raised/60"
       >
         内部
       </button>
