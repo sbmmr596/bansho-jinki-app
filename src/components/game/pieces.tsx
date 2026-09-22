@@ -141,7 +141,7 @@ export function CostHex({ cost, className }: { cost: number; className?: string 
 
 export function GoldChip({ gold }: { gold: number }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-raised px-2.5 py-1 text-xs text-brass hairline tabular">
+    <span className="inline-flex h-12 min-h-12 items-center gap-1.5 rounded-md bg-raised px-3 text-sm text-brass hairline tabular">
       <span className="font-display tracking-wider">金</span>
       {gold}
     </span>
@@ -152,17 +152,17 @@ export function SpiritChip({ spirit, max }: { spirit: number; max: number }) {
   const filled = Math.max(0, Math.min(max, Math.floor(spirit)));
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full bg-raised px-2.5 py-1 text-xs hairline"
+      className="inline-flex h-12 min-h-12 items-center gap-2 rounded-md bg-raised px-3 text-sm hairline"
       role="img"
       aria-label={`闘気 ${filled}/${max}`}
     >
       <span className="font-display tracking-wider text-crimson">闘気</span>
-      <span className="inline-flex items-center gap-0.5" aria-hidden>
+      <span className="inline-flex items-center gap-1" aria-hidden>
         {Array.from({ length: max }, (_, i) => (
           <span
             key={i}
             className={cn(
-              "inline-block h-2.5 w-2.5 rounded-full",
+              "inline-block h-3 w-3 rounded-full",
               i < filled
                 ? "bg-brass shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-fg)_20%,transparent)]"
                 : "bg-crimson/55 ring-1 ring-crimson/35",
@@ -765,8 +765,8 @@ export function Shell({
         />
       ) : null}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-bg/50 via-bg/30 to-bg/50" />
-      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col px-3 pt-2">
-        <header className="mb-1 flex h-14 shrink-0 items-center gap-2">
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        <header className="relative z-20 flex h-[4.5rem] shrink-0 items-center gap-3 border-b border-border bg-ink/90 px-3">
           {onBack ? (
             <button
               type="button"
@@ -776,7 +776,7 @@ export function Shell({
               戻る
             </button>
           ) : null}
-          <h1 className="font-display text-lg tracking-wide">{title}</h1>
+          <h1 className="font-display text-2xl tracking-wide">{title}</h1>
           <div className="ml-auto flex items-center gap-2">
             {extra}
             {nav ? (
@@ -803,7 +803,12 @@ export function Shell({
             ) : null}
           </div>
         </header>
-        <div className={cn("min-h-0 min-w-0 flex-1", wide ? "overflow-hidden" : "overflow-auto")}>
+        <div
+          className={cn(
+            "min-h-0 min-w-0 flex-1 px-3 pt-1",
+            wide ? "overflow-hidden" : "overflow-auto",
+          )}
+        >
           {children}
         </div>
         {nav ? <BottomNav screen={nav} /> : null}
@@ -825,7 +830,7 @@ export function BottomNav({ screen }: { screen: string }) {
   ];
   return (
     <nav
-      className="relative z-20 mt-1 flex h-[5.5rem] shrink-0 items-stretch gap-0.5 border-t border-border bg-ink/95 px-0.5 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
+      className="relative z-20 flex h-20 shrink-0 items-stretch gap-0.5 border-t border-border bg-ink/95 px-0.5 pt-0.5 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
       aria-label="メインメニュー"
     >
       {items.map((it) => (
@@ -834,7 +839,7 @@ export function BottomNav({ screen }: { screen: string }) {
           type="button"
           onClick={() => setScreen(it.id)}
           className={cn(
-            "flex min-h-[5rem] min-w-0 flex-1 flex-col items-center justify-center px-1 text-lg font-semibold leading-none tracking-wide whitespace-nowrap active:bg-raised/60",
+            "flex min-h-[4.5rem] min-w-0 flex-1 flex-col items-center justify-center px-1 text-base font-semibold leading-none tracking-wide whitespace-nowrap active:bg-raised/60",
             screen === it.id || (screen === "scout" && it.id === "map")
               ? "text-brass"
               : "text-muted",

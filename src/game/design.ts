@@ -55,8 +55,8 @@ export const TOUCH_MIN = 44;
 
 /**
  * Button / chrome logical sizes on the 1280×720 stage.
- * iPhone 12 mini landscape contain ≈0.52 → bottom nav ~88h → ~46 CSS-px (≥TOUCH_MIN).
- * Top secondary (遊び方/内部) and Primary stay at h-14 (56).
+ * iPhone 12 mini landscape contain ≈0.52 → bottom nav ~80h → ~42 CSS-px (modest trim from 88; still tappable).
+ * Top chrome band ~72h filled with title / resources / 遊び方・内部 (Primary stays h-14).
  * Former right SideNav (10rem) removed so content uses full stage width.
  */
 export const BTN = {
@@ -69,9 +69,9 @@ export const BTN = {
   sideNavW: 0,
   sideNavItemMinH: 0,
   sideNavText: 18,
-  bottomNavH: 88,
-  bottomNavText: 18,
-  topBarH: 56,
+  bottomNavH: 80,
+  bottomNavText: 16,
+  topBarH: 72,
 } as const;
 
 /** Base grid unit (px). Steps: 8 / 16 / 24 / 32. */
