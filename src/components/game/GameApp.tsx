@@ -198,6 +198,8 @@ export function GameApp() {
       stage.style.transform = `scale(${scale})`;
       stage.style.left = `${padL + (aw - DESIGN_W * scale) / 2}px`;
       stage.style.top = `${padT + (ah - DESIGN_H * scale) / 2}px`;
+      // Drive mild inverse text scale in CSS (--text-scale on .game-stage).
+      stage.style.setProperty("--stage-scale", String(scale));
 
       const portrait = vh > vw;
       setShowLandscapeHint(portrait && scale < PORTRAIT_TIP_SCALE);

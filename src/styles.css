@@ -20,12 +20,15 @@
   --card-w-sm: 100px;
   --card-w-md: 120px;
   --card-w-lg: 160px;
-  --font-caption: 10px;
-  --font-body: 12px;
-  --font-ui: 14px;
-  --font-title: 22px;
-  --font-display-min: 36px;
-  --font-display-max: 44px;
+  /* Base font ladder (logical px). .game-stage multiplies by --text-scale. */
+  --font-caption: 12px;
+  --font-body: 14px;
+  --font-ui: 16px;
+  --font-title: 24px;
+  --font-display-min: 38px;
+  --font-display-max: 46px;
+  --stage-scale: 1;
+  --text-scale: 1;
   --touch-min: 44px;
   --grid: 8px;
   --space-1: 8px;
@@ -42,9 +45,9 @@
   --color-ink: #16120e;
   --color-surface: #1f1a14;
   --color-raised: #2a241c;
-  --color-fg: #e8dfd0;
-  --color-muted: #9a8f7c;
-  --color-faint: #6e6558;
+  --color-fg: #f0e8da;
+  --color-muted: #b5a890;
+  --color-faint: #8f8576;
   --color-brass: #b8a07a;
   --color-brass-dim: #8a7454;
   --color-crimson: #8b2a2a;
@@ -142,6 +145,48 @@ body {
   transform-origin: top left;
   container-type: inline-size;
   container-name: stage;
+  /*
+   * Mild inverse text scale: transform scale() shrinks physical fonts.
+   * GameApp sets --stage-scale; we boost logical fonts when the stage is small.
+   * scale 1 → 1.0; ~0.5 → ~1.22; ~0.35 → ~1.29; capped at 1.35.
+   * Keeps layout near the 8px grid without a full rem rewrite.
+   */
+  --text-scale: clamp(1, calc(1.45 - 0.45 * var(--stage-scale, 1)), 1.35);
+  --font-caption: calc(12px * var(--text-scale));
+  --font-body: calc(14px * var(--text-scale));
+  --font-ui: calc(16px * var(--text-scale));
+  --font-title: calc(24px * var(--text-scale));
+  --font-display-min: calc(38px * var(--text-scale));
+  --font-display-max: calc(46px * var(--text-scale));
+  font-size: var(--font-body);
+  color: var(--color-fg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Design-token typography (prefer these over raw text-[Npx] for chrome). */
+.text-caption {
+  font-size: var(--font-caption);
+  line-height: 1.35;
+}
+.text-body {
+  font-size: var(--font-body);
+  line-height: 1.45;
+}
+.text-ui {
+  font-size: var(--font-ui);
+  line-height: 1.4;
+  font-weight: 500;
+}
+.text-title {
+  font-size: var(--font-title);
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+/* Slightly stronger labels on busy art / panels */
+.text-readable {
+  color: color-mix(in oklab, var(--color-fg) 92%, white);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.55);
 }
 .game-landscape-hint {
   position: absolute;
@@ -153,8 +198,9 @@ body {
   border-radius: 999px;
   border: 1px solid color-mix(in oklab, var(--color-brass) 40%, transparent);
   background: color-mix(in oklab, var(--color-ink) 88%, transparent);
-  padding: 0.35rem 0.85rem;
-  font-size: 11px;
+  padding: 0.4rem 0.9rem;
+  font-size: 13px;
+  font-weight: 500;
   letter-spacing: 0.12em;
   color: var(--color-brass);
   white-space: nowrap;
@@ -571,10 +617,10 @@ body {
   display: inline-block;
 }
 .card-text-outline {
-  color: #f4ebe0;
-  -webkit-text-stroke: 0.1em #0b0907;
+  color: #fff6ea;
+  -webkit-text-stroke: 0.11em #0b0907;
   paint-order: stroke fill;
-  text-shadow: 0 0.05em 0.07em rgb(0 0 0 / 0.5);
+  text-shadow: 0 0.05em 0.08em rgb(0 0 0 / 0.55);
 }
 .card-hex {
   clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);

@@ -1,6 +1,10 @@
 /**
  * Design baseline (locked). See docs/design-baseline.md.
  * Keep in sync with CSS custom properties on :root / .game-stage.
+ *
+ * Font ladder is logical px on the 1280×720 stage. Transform scale shrinks
+ * physical size; `.game-stage` applies a mild `--text-scale` boost when the
+ * stage is scaled down so UI stays readable on phones without exploding layout.
  */
 
 /** Stage logical size (px). */
@@ -31,14 +35,18 @@ export const CARD_W = {
 
 export type CardSizeKey = keyof typeof CARD_W;
 
-/** Font sizes (logical px). */
+/**
+ * Font sizes (logical px at `--text-scale: 1`).
+ * Raised so body/UI stay nearer ≥10–11 physical px at typical phone scale
+ * (~0.35–0.5) once CSS `--text-scale` (~1.0–1.35) is applied.
+ */
 export const FONT = {
-  caption: 10,
-  body: 12,
-  ui: 14,
-  title: 22,
-  displayMin: 36,
-  displayMax: 44,
+  caption: 12,
+  body: 14,
+  ui: 16,
+  title: 24,
+  displayMin: 38,
+  displayMax: 46,
 } as const;
 
 /** Minimum touch target (px). */

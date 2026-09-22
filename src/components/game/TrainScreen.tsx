@@ -185,17 +185,17 @@ export function TrainScreen() {
                 <CardFace card={card} level={own.level} skill1Lv={skill1Lv} size="lg" className="w-[min(100%,14rem)]" />
                 <div className="w-full space-y-0.5 text-center">
                   <p className="font-display text-sm leading-snug text-fg">{card.name}</p>
-                  <p className="text-[10px] text-muted">{card.title}</p>
+                  <p className="text-[12px] text-muted">{card.title}</p>
                   <div className="flex flex-wrap items-center justify-center gap-1.5">
                     <TypeHex type={card.type} className="h-6 w-7 text-xs" />
                     <CostHex cost={card.cost} className="h-6 w-7 text-xs" />
-                    <span className="text-[10px] text-brass">{card.rarity}</span>
+                    <span className="text-[12px] text-brass">{card.rarity}</span>
                     {card.fodder ? (
-                      <span className="rounded-sm bg-crimson/85 px-1 py-0.5 text-[9px] font-semibold text-fg">
+                      <span className="rounded-sm bg-crimson/85 px-1 py-0.5 text-[11px] font-semibold text-fg">
                         素材専用
                       </span>
                     ) : null}
-                    <span className="text-[10px] text-muted">
+                    <span className="text-[12px] text-muted">
                       所持 <span className="tabular text-fg">{own.count}</span>
                     </span>
                   </div>
@@ -203,7 +203,7 @@ export function TrainScreen() {
               </div>
 
               <div className="rounded-md bg-raised/60 p-2 hairline">
-                <div className="mb-1.5 grid grid-cols-3 items-center gap-x-2 gap-y-1 text-[10px]">
+                <div className="mb-1.5 grid grid-cols-3 items-center gap-x-2 gap-y-1 text-[12px]">
                   <span className="flex items-center justify-start gap-1">
                     <span className="text-faint">TYPE</span>
                     <TypeHex type={card.type} className="h-6 w-7 text-xs" />
@@ -225,7 +225,7 @@ export function TrainScreen() {
                     <CostHex cost={card.cost} className="h-6 w-7 text-xs" />
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-1 text-center text-[10px]">
+                <div className="grid grid-cols-3 gap-1 text-center text-[12px]">
                   <StatChip label="攻" value={scaledStat(card.atk, own.level)} tone="atk" />
                   <StatChip label="防" value={scaledStat(card.def, own.level)} tone="def" />
                   <StatChip label="速" value={scaledStat(card.spd, own.level)} tone="spd" />
@@ -233,11 +233,11 @@ export function TrainScreen() {
               </div>
 
               {isFodderBase ? (
-                <p className="rounded-sm bg-crimson/20 px-1.5 py-1 text-[11px] text-crimson">
+                <p className="rounded-sm bg-crimson/20 px-1.5 py-1 text-[13px] text-crimson">
                   素材専用 — 金鍛錬・同名合成不可（異名の素材には使える）
                 </p>
               ) : lvMax ? (
-                <p className="text-[11px] text-brass">レベルは最大。</p>
+                <p className="text-[13px] text-brass">レベルは最大。</p>
               ) : (
                 <PrimaryButton
                   onClick={() => trainGold(card.id)}
@@ -249,7 +249,7 @@ export function TrainScreen() {
               )}
 
               {form ? (
-                <div className="rounded-md bg-raised/40 p-2 text-[10px] hairline">
+                <div className="rounded-md bg-raised/40 p-2 text-[12px] hairline">
                   <p className="text-faint">リーダー陣形</p>
                   <p className="font-display text-xs text-fg">{form.name}</p>
                   <p className="text-muted">{form.desc}</p>
@@ -307,7 +307,7 @@ export function TrainScreen() {
               </div>
 
               {mode === "skill1" ? (
-                <div className="rounded-md bg-raised/50 p-2 text-[11px] hairline">
+                <div className="rounded-md bg-raised/50 p-2 text-[13px] hairline">
                   <p className="text-muted">
                     同じカードを素材にして必殺技1を強化。成功率はレベルが高いほど下がる。
                   </p>
@@ -334,11 +334,11 @@ export function TrainScreen() {
                   </button>
                 </div>
               ) : (
-                <div className="rounded-md bg-raised/50 p-2 text-[11px] hairline">
+                <div className="rounded-md bg-raised/50 p-2 text-[13px] hairline">
                   <p className="text-muted">
                     別カードを素材に必殺技2を装着／強化／上書き。同種・同レアで強化（成功率あり）、レア違い・種別違いは上書き。
                   </p>
-                  <p className="mt-1 text-[10px] text-faint">
+                  <p className="mt-1 text-[12px] text-faint">
                     ベースは左のカード。変更は同名タブでトレイから。
                   </p>
                   {matCard && matLabel ? (
@@ -371,7 +371,7 @@ export function TrainScreen() {
               {lastResult ? (
                 <p
                   className={cn(
-                    "rounded-md px-2 py-1.5 text-[11px]",
+                    "rounded-md px-2 py-1.5 text-[13px]",
                     lastResult.success ? "bg-brass/20 text-brass" : "bg-crimson/15 text-crimson",
                   )}
                 >
@@ -386,10 +386,10 @@ export function TrainScreen() {
         <div className="flex min-h-[9rem] shrink-0 flex-col pb-[max(0.25rem,env(safe-area-inset-bottom,0px))] @md:min-h-0 @md:pb-0">
           {mode === "skill2" ? (
             <>
-              <p className="mb-1 text-[10px] text-muted">素材カード</p>
+              <p className="mb-1 text-[12px] text-muted">素材カード</p>
               <div className="grid max-h-[40%] auto-rows-min grid-cols-4 justify-items-stretch gap-x-0.5 gap-y-1 overflow-y-auto content-start @sm:grid-cols-5 @md:max-h-none @md:min-h-0 @md:flex-1 @md:grid-cols-5">
                 {otherMaterials.length === 0 ? (
-                  <p className="col-span-full text-[11px] text-faint">他に所持カードがない。</p>
+                  <p className="col-span-full text-[13px] text-faint">他に所持カードがない。</p>
                 ) : (
                   otherMaterials.map((c) => (
                     <button
@@ -408,10 +408,10 @@ export function TrainScreen() {
                         size="xs"
                         className="w-full"
                       />
-                      <p className="mt-0.5 w-full truncate text-center text-[9px] leading-tight text-fg">
+                      <p className="mt-0.5 w-full truncate text-center text-[12px] font-medium leading-tight text-fg">
                         {materialSkillLabel(c.skill, c.rarity)}
                       </p>
-                      <p className="text-center text-[9px] tabular text-muted">
+                      <p className="text-center text-[11px] tabular text-muted">
                         ×{owned[c.id]?.count ?? 0}
                       </p>
                     </button>
@@ -421,7 +421,7 @@ export function TrainScreen() {
             </>
           ) : (
             <>
-              <p className="mb-1 text-[10px] text-muted">ベースカード</p>
+              <p className="mb-1 text-[12px] text-muted">ベースカード</p>
               <div className="grid max-h-[40%] auto-rows-min grid-cols-4 justify-items-stretch gap-x-0.5 gap-y-1 overflow-y-auto content-start @sm:grid-cols-5 @md:max-h-none @md:min-h-0 @md:flex-1 @md:grid-cols-5">
                 {tray.map((c) => (
                   <div key={c.id} className="flex w-full min-w-0 flex-col items-stretch">
@@ -436,7 +436,7 @@ export function TrainScreen() {
                     />
                     <p
                       className={cn(
-                        "mt-0.5 w-full truncate text-center text-[9px] tabular",
+                        "mt-0.5 w-full truncate text-center text-[12px] font-medium tabular",
                         (owned[c.id]?.level ?? 1) >= MAX_LEVEL ? "text-brass" : "text-muted",
                       )}
                     >
@@ -514,7 +514,7 @@ function ModeChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "h-11 w-full rounded-md px-2 text-[11px]",
+        "h-11 w-full rounded-md px-2 text-[13px] font-medium",
         active ? "bg-brass text-bg" : "bg-surface text-muted hairline",
       )}
     >
