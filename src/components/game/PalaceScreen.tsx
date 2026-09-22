@@ -18,8 +18,6 @@ export function PalaceScreen() {
   const setHelp = useGame((s) => s.setHelp);
   const setCatalogOpen = useGame((s) => s.setCatalogOpen);
   const resetAll = useGame((s) => s.resetAll);
-  const navSide = useGame((s) => s.navSide);
-  const setNavSide = useGame((s) => s.setNavSide);
   const won = captured.includes("capital");
   const leader = leaderId ? CARD_BY_ID[leaderId] : null;
   const cap = currentCostCap(captured);
@@ -77,31 +75,6 @@ export function PalaceScreen() {
               >
                 進行を消す
               </button>
-            </div>
-            <div className="flex shrink-0 flex-nowrap items-center gap-2 text-base">
-              <span className="shrink-0 whitespace-nowrap text-faint">操作ボタン</span>
-              <div className="flex shrink-0 overflow-hidden rounded-md hairline">
-                <button
-                  type="button"
-                  onClick={() => setNavSide("left")}
-                  className={
-                    "inline-flex h-14 min-h-14 w-14 shrink-0 items-center justify-center whitespace-nowrap text-base font-medium " +
-                    (navSide === "left" ? "bg-brass/25 text-brass" : "bg-surface text-muted")
-                  }
-                >
-                  左
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setNavSide("right")}
-                  className={
-                    "inline-flex h-14 min-h-14 w-14 shrink-0 items-center justify-center whitespace-nowrap text-base font-medium " +
-                    (navSide === "right" ? "bg-brass/25 text-brass" : "bg-surface text-muted")
-                  }
-                >
-                  右
-                </button>
-              </div>
             </div>
           </div>
         </div>
