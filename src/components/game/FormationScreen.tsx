@@ -16,7 +16,12 @@ export function FormationScreen() {
   const setLeader = useGame((s) => s.setLeader);
   const setSelected = useGame((s) => s.setSelected);
 
-  const form = formationOfLeader(leaderId);
+  // Empty party: preview selected non-fodder card's formation on the 3×3 before place.
+  // Once a leader exists, keep that formation until 「リーダーにする」.
+  const previewLeaderId =
+    leaderId ??
+    (selected && !CARD_BY_ID[selected]?.fodder ? selected : null);
+  const form = formationOfLeader(previewLeaderId);
   const cost = partyCost(party);
   const cap = currentCostCap(captured);
   const over = cost > cap;
@@ -160,7 +165,12 @@ export function FormationScreen() {
 
             <div className="flex w-[132px] shrink-0 flex-col gap-1.5 overflow-y-auto sm:w-[148px]">
               <div className="min-w-0">
-                <p className="font-display text-sm leading-tight text-fg">{form.name}</p>
+                <p className="font-display text-sm leading-tight text-fg">
+                  {form.name}
+                  {!leaderId && previewLeaderId ? (
+                    <span className="ml-1 font-sans text-[10px] font-normal text-muted">（プレビュー）</span>
+                  ) : null}
+                </p>
                 <p className="mt-0.5 text-[10px] leading-snug text-muted">{form.desc}</p>
               </div>
 
