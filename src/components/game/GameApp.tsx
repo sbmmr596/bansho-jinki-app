@@ -8,6 +8,7 @@ import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { ArtTrialOverlay } from "./ArtTrialOverlay";
 import { BattleView } from "./BattleView";
 import { CatalogPanel } from "./CatalogPanel";
+import { CardEditorPanel } from "./CardEditorPanel";
 import { CollectionScreen } from "./CollectionScreen";
 import { DebugPanel } from "./DebugPanel";
 import { FormationScreen } from "./FormationScreen";
@@ -34,6 +35,8 @@ export function GameApp() {
   const persist = useGame((s) => s.persist);
   const debugOpen = useGame((s) => s.debugOpen);
   const catalogOpen = useGame((s) => s.catalogOpen);
+  const cardEditorOpen = useGame((s) => s.cardEditorOpen);
+  const setCardEditorOpen = useGame((s) => s.setCardEditorOpen);
   const setCatalogOpen = useGame((s) => s.setCatalogOpen);
   const setCatalogSource = useGame((s) => s.setCatalogSource);
   const { user, isPending: authPending } = useCurrentUserState();
@@ -242,6 +245,7 @@ export function GameApp() {
         {helpOpen ? <HelpOverlay /> : null}
         {debugOpen ? <DebugPanel /> : null}
         {catalogOpen ? <CatalogPanel onClose={() => setCatalogOpen(false)} /> : null}
+        {cardEditorOpen ? <CardEditorPanel onClose={() => setCardEditorOpen(false)} /> : null}
         {artOpen ? <ArtTrialOverlay onClose={() => setArtOpen(false)} /> : null}
         <ArtZoom />
       </div>

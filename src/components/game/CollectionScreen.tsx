@@ -10,12 +10,13 @@ const FACTIONS: Faction[] = ["koryu", "tekki", "tensho", "metsujin", "reiju", "y
 
 export function CollectionScreen() {
   const owned = useGame((s) => s.owned);
+  const catalogEpoch = useGame((s) => s.catalogEpoch);
   const gold = useGame((s) => s.gold);
   const [faction, setFaction] = useState<Faction | "all">("all");
   const [focus, setFocus] = useState<string | null>(CARDS[0]?.id ?? null);
   const list = useMemo(
     () => CARDS.filter((c) => faction === "all" || c.faction === faction),
-    [faction],
+    [faction, catalogEpoch],
   );
   const card = focus ? CARDS.find((c) => c.id === focus) : null;
   const own = card ? owned[card.id] : null;
