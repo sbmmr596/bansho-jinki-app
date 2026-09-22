@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { sfx } from "@/game/audio";
 import { CARD_BY_ID, NODE_BY_ID } from "@/game/data";
-import { ATB_PER_SEC, atbRate, advanceGauges, GAUGE_MAX, modLabel } from "@/game/combat";
+import { ATB_PER_SEC, atbRate, advanceGauges, GAUGE_MAX, affinityLabel } from "@/game/combat";
 import { activeTrial, pumpTrial } from "@/game/trial";
 import { useGame } from "@/game/store";
 import type { BattleEvent, ElementType, FieldKind, Side, SkillKind, Unit } from "@/game/types";
@@ -59,6 +59,14 @@ type SkillFxState = {
 
 type Lunge = { uid: string; x: number; y: number };
 
+type FloatFx = {
+  uid: string;
+  text: string;
+  kind: "damage" | "heal";
+  affinity: "クリティカル" | "ガード" | null;
+  key: number;
+};
+
 export function BattleView() {
   const battle = useGame((s) => s.battle);
   const finishBattle = useGame((s) => s.finishBattle);
@@ -67,9 +75,7 @@ export function BattleView() {
   const trial = useGame((s) => s.trial);
   const scoutNodeId = useGame((s) => s.scoutNodeId);
   const [units, setUnits] = useState<Unit[]>(() => battle?.units.map((u) => ({ ...u })) ?? []);
-  const [float, setFloat] = useState<{ uid: string; text: string; crit: boolean; key: number } | null>(
-    null,
-  );
+  const [float, setFloat] = useState<FloatFx | null>(null);
   const [acting, setActing] = useState<string | null>(null);
   const [struck, setStruck] = useState<string | null>(null);
   const [fx, setFx] = useState<SkillFxState | null>(null);
@@ -217,11 +223,11 @@ export function BattleView() {
         setUnits((prev) =>
           prev.map((u) => (u.uid === ev.targetUid ? { ...u, hp: ev.hpAfter } : u)),
         );
-        const label = modLabel(ev.mod);
         setFloat({
           uid: ev.targetUid,
-          text: label ? `${label} ${ev.damage}` : String(ev.damage),
-          crit: ev.mod >= 1.2,
+          text: String(ev.damage),
+          kind: "damage",
+          affinity: affinityLabel(ev.mod),
           key: ev.targetUid.length + ev.damage + idxRef.current,
         });
         setStruck(ev.targetUid);
@@ -239,7 +245,8 @@ export function BattleView() {
         setFloat({
           uid: ev.targetUid,
           text: `+${ev.amount}`,
-          crit: false,
+          kind: "heal",
+          affinity: null,
           key: idxRef.current,
         });
         setStruck(ev.targetUid);
@@ -684,7 +691,7 @@ function UnitSpot({
   unit: Unit;
   acting: string | null;
   struck: string | null;
-  float: { uid: string; text: string; crit: boolean; key: number } | null;
+  float: FloatFx | null;
   lunge: Lunge | null;
 }) {
   const p = visOf(unit.slot, unit.side);

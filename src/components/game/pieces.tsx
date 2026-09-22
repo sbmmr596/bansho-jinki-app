@@ -596,7 +596,12 @@ export function CharSprite({
   dimmed?: boolean;
   hp?: number;
   maxHp?: number;
-  float?: { text: string; crit: boolean; key: number } | null;
+  float?: {
+    text: string;
+    kind: "damage" | "heal";
+    affinity: "クリティカル" | "ガード" | null;
+    key: number;
+  } | null;
   flip?: boolean;
   bust?: boolean;
 }) {
@@ -610,9 +615,20 @@ export function CharSprite({
         dimmed && "opacity-35 grayscale",
       )}
     >
+      {float ? (
+        <span
+          key={`num-${float.key}`}
+          className={cn(
+            "battle-float-num anim-float pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 tabular",
+            float.kind === "heal" ? "is-heal" : "is-dmg",
+          )}
+        >
+          {float.text}
+        </span>
+      ) : null}
       {hp != null && maxHp != null ? (
         <div className="absolute left-1/2 top-0 z-[3] w-[72%] -translate-x-1/2">
-          <HpBar hp={hp} max={maxHp} />
+          <HpBar hp={hp} max={maxHp} thick />
         </div>
       ) : null}
       <span
@@ -635,15 +651,15 @@ export function CharSprite({
       ) : (
         <Crest card={card} />
       )}
-      {float ? (
+      {float?.affinity ? (
         <span
-          key={float.key}
+          key={`aff-${float.key}`}
           className={cn(
-            "anim-float pointer-events-none absolute left-1/2 top-1 z-10 -translate-x-1/2 font-display text-sm tabular",
-            float.crit ? "text-brass" : float.text.startsWith("+") ? "text-ok" : "text-fg",
+            "battle-affinity pointer-events-none absolute left-1/2 top-[44%] z-[5]",
+            float.affinity === "クリティカル" ? "is-crit" : "is-guard",
           )}
         >
-          {float.text}
+          {float.affinity}
         </span>
       ) : null}
     </div>
@@ -664,11 +680,16 @@ function Crest({ card }: { card: Card }) {
   );
 }
 
-export function HpBar({ hp, max }: { hp: number; max: number }) {
+export function HpBar({ hp, max, thick }: { hp: number; max: number; thick?: boolean }) {
   const pct = Math.max(0, Math.min(100, (hp / Math.max(1, max)) * 100));
   const low = pct < 30;
   return (
-    <div className="mt-0.5 h-1 w-full overflow-hidden rounded-full bg-bg/80">
+    <div
+      className={cn(
+        "mt-0.5 w-full overflow-hidden rounded-full bg-bg/80",
+        thick ? "h-1.5" : "h-1",
+      )}
+    >
       <div
         className={cn("h-full rounded-full", low ? "bg-crimson" : "bg-ok")}
         style={{ width: `${pct}%` }}

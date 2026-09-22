@@ -273,6 +273,71 @@ body {
   animation: 0.28s ease-out hit-flash;
 }
 
+/* Battle damage / heal floats (above HP gauge) */
+.battle-float-num {
+  top: -0.35em;
+  font-family: var(--font-display);
+  font-size: calc(17px * var(--text-scale, 1));
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  paint-order: stroke fill;
+  -webkit-text-stroke: 0.14em #120c08;
+  text-shadow:
+    0 0.04em 0 #120c08,
+    0 0.08em 0.12em rgb(0 0 0 / 0.55);
+}
+.battle-float-num.is-dmg {
+  color: #ff4a4a;
+}
+.battle-float-num.is-heal {
+  color: #5dcf6a;
+}
+
+/* Type affinity labels over character art */
+@keyframes affinity-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.72);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -62%) scale(1);
+  }
+}
+.battle-affinity {
+  font-family: var(--font-display);
+  font-size: calc(14px * var(--text-scale, 1));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  white-space: nowrap;
+  paint-order: stroke fill;
+  -webkit-text-stroke: 0.16em #0b0907;
+  text-shadow:
+    0 0 0.04em #fff,
+    0.03em 0.03em 0 #fff,
+    -0.03em -0.03em 0 #fff,
+    0.03em -0.03em 0 #fff,
+    -0.03em 0.03em 0 #fff,
+    0 0.08em 0.12em rgb(0 0 0 / 0.6);
+  animation: 0.85s ease-out forwards affinity-pop;
+}
+.battle-affinity.is-crit {
+  color: #ff6a45;
+}
+.battle-affinity.is-guard {
+  color: #7dff8a;
+}
+
 @keyframes fx-burst {
   0% {
     opacity: 1;

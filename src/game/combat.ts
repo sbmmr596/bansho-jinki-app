@@ -46,6 +46,13 @@ export function modLabel(mod: number): "致命" | "強" | "防" | "耐" | null {
   return null;
 }
 
+/** Battle FX affinity label: type-up → クリティカル, type-down → ガード, neutral → none. */
+export function affinityLabel(mod: number): "クリティカル" | "ガード" | null {
+  if (mod > 1) return "クリティカル";
+  if (mod < 1) return "ガード";
+  return null;
+}
+
 export function rowOf(slot: number): number {
   return Math.floor(slot / 3);
 }
