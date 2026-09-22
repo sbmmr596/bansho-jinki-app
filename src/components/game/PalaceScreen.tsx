@@ -56,16 +56,16 @@ export function PalaceScreen() {
               <Stat label="難易度" value={difficultyLabel(difficulty)} compact />
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <PrimaryButton onClick={() => setScreen("map")} className="min-w-36">
+              <PrimaryButton onClick={() => setScreen("map")} className="min-w-40">
                 出陣する
               </PrimaryButton>
-              <PrimaryButton onClick={() => setScreen("arena")} className="min-w-28">
+              <PrimaryButton onClick={() => setScreen("arena")} className="min-w-32">
                 闘技場
               </PrimaryButton>
-              <button type="button" onClick={() => setHelp(true)} className="h-11 text-sm text-muted">
+              <button type="button" onClick={() => setHelp(true)} className="h-12 px-1 text-base text-muted">
                 属性相性
               </button>
-              <button type="button" onClick={() => setCatalogOpen(true)} className="h-11 text-sm text-muted">
+              <button type="button" onClick={() => setCatalogOpen(true)} className="h-12 px-1 text-base text-muted">
                 マイデータ
               </button>
               <button
@@ -73,19 +73,19 @@ export function PalaceScreen() {
                 onClick={() => {
                   if (window.confirm("進行を消して最初からにしますか？")) resetAll();
                 }}
-                className="h-11 text-xs text-faint"
+                className="h-12 px-1 text-sm text-faint"
               >
                 進行を消す
               </button>
             </div>
-            <div className="flex shrink-0 flex-nowrap items-center gap-2 text-sm">
+            <div className="flex shrink-0 flex-nowrap items-center gap-3 text-base">
               <span className="shrink-0 whitespace-nowrap text-faint">操作ボタン</span>
-              <div className="flex shrink-0 overflow-hidden rounded-md hairline">
+              <div className="flex shrink-0 overflow-hidden rounded-lg hairline">
                 <button
                   type="button"
                   onClick={() => setNavSide("left")}
                   className={
-                    "h-11 w-14 shrink-0 whitespace-nowrap px-2 " +
+                    "h-[7.5rem] w-24 shrink-0 whitespace-nowrap px-3 text-[1.75rem] font-display leading-none " +
                     (navSide === "left" ? "bg-brass/25 text-brass" : "bg-surface text-muted")
                   }
                 >
@@ -95,7 +95,7 @@ export function PalaceScreen() {
                   type="button"
                   onClick={() => setNavSide("right")}
                   className={
-                    "h-11 w-14 shrink-0 whitespace-nowrap px-2 " +
+                    "h-[7.5rem] w-24 shrink-0 whitespace-nowrap px-3 text-[1.75rem] font-display leading-none " +
                     (navSide === "right" ? "bg-brass/25 text-brass" : "bg-surface text-muted")
                   }
                 >

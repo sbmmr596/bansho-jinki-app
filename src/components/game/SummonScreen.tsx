@@ -36,7 +36,7 @@ export function SummonScreen() {
             <p className="text-sm leading-relaxed text-muted">
               {SUMMON_COST}金で一枚。重複はレベルになる。SPは稀。
             </p>
-            <PrimaryButton onClick={onSummon} disabled={locked} className="mt-4 h-11 min-w-40">
+            <PrimaryButton onClick={onSummon} disabled={locked} className="mt-4 min-w-44 text-lg">
               {gold < SUMMON_COST ? "金が足りない" : busy ? "召喚中…" : "召喚する"}
             </PrimaryButton>
           </div>

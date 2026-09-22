@@ -99,10 +99,10 @@ export function TitleScreen() {
             </div>
             <p className="text-xs text-muted">選択中：{difficultyLabel(difficulty)}</p>
             <div className="flex gap-3">
-              <GhostButton onClick={() => setPicking(false)} className="h-11 min-w-28">
+              <GhostButton onClick={() => setPicking(false)} className="min-w-28">
                 戻る
               </GhostButton>
-              <PrimaryButton onClick={confirmNewGame} className="h-11 min-w-36">
+              <PrimaryButton onClick={confirmNewGame} className="min-w-40">
                 この難易度ではじめる
               </PrimaryButton>
             </div>
@@ -144,22 +144,22 @@ export function TitleScreen() {
               return card ? <CardFace key={id} card={card} size="xs" /> : null;
             })}
           </div>
-          <div className="flex w-44 shrink-0 flex-col gap-2">
+          <div className="flex w-52 shrink-0 flex-col gap-2.5">
             {hasExisting ? (
-              <PrimaryButton onClick={() => continueGame()} className="h-11">
+              <PrimaryButton onClick={() => continueGame()}>
                 つづきから
               </PrimaryButton>
             ) : null}
             {hasExisting ? (
-              <GhostButton onClick={openDifficulty} className="h-11">
+              <GhostButton onClick={openDifficulty}>
                 はじめから
               </GhostButton>
             ) : (
-              <PrimaryButton onClick={openDifficulty} className="h-11">
+              <PrimaryButton onClick={openDifficulty}>
                 はじめる
               </PrimaryButton>
             )}
-            <GhostButton onClick={() => void onFullscreen()} className="h-11">
+            <GhostButton onClick={() => void onFullscreen()}>
               全画面
             </GhostButton>
             {displayHint ? (
@@ -172,21 +172,21 @@ export function TitleScreen() {
                 e.stopPropagation();
                 unlockDebug();
               }}
-              className="debug-hit h-10 text-sm text-faint"
+              className="debug-hit h-11 text-sm text-faint"
             >
               内部
             </button>
             <button
               type="button"
               onClick={() => setHelp(true)}
-              className="h-10 text-sm text-muted"
+              className="h-11 text-base text-muted"
             >
               遊び方
             </button>
             <button
               type="button"
               onClick={() => setCatalogOpen(true)}
-              className="h-10 text-sm text-muted"
+              className="h-11 text-base text-muted"
             >
               マイデータ
             </button>

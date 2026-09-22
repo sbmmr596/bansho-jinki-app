@@ -50,8 +50,21 @@ export const FONT = {
   displayMax: 46,
 } as const;
 
-/** Minimum touch target (px). */
+/** Minimum touch target (px) — physical after stage scale. */
 export const TOUCH_MIN = 44;
+
+/**
+ * Button logical sizes on the 1280×720 stage.
+ * At phone landscape contain (~0.35–0.5), primary ~56 → ~20–28 CSS-px;
+ * ops (左/右) ~120 → ~42–60 CSS-px ≈ TOUCH_MIN.
+ */
+export const BTN = {
+  primaryH: 56,
+  primaryText: 16,
+  opsH: 120,
+  opsW: 96,
+  opsText: 28,
+} as const;
 
 /** Base grid unit (px). Steps: 8 / 16 / 24 / 32. */
 export const GRID = 8;
