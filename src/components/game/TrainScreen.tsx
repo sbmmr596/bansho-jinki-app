@@ -175,8 +175,8 @@ export function TrainScreen() {
   return (
     <Shell title="合成・育成" extra={<GoldChip gold={gold} />} bg="/bg/palace.jpg" nav="train" wide>
       {/* Phone: one scroll column so スキル合成 stays reachable.
-          md+: equal 3-col (大カード / 技 / トレイ). */}
-      <div className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-y-auto overscroll-contain md:grid-cols-3 md:gap-3 md:overflow-hidden">
+          md+: 3:3:4 (大カード / 技 / トレイ). */}
+      <div className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-y-auto overscroll-contain md:grid-cols-[minmax(0,3fr)_minmax(0,3fr)_minmax(0,4fr)] md:gap-3 md:overflow-hidden">
         {/* Left: large focus card + stats (原作風・縦積み) */}
         <div className="flex shrink-0 flex-col gap-2 md:min-h-0 md:overflow-y-auto">
           {card && own ? (
@@ -382,12 +382,12 @@ export function TrainScreen() {
           ) : null}
         </div>
 
-        {/* Right: base tray (同名) or material picker (異名) — thumbnails, no stretch */}
+        {/* Right: base tray (同名) or material picker (異名) — dense flush tiles */}
         <div className="flex min-h-[9rem] shrink-0 flex-col pb-[max(0.25rem,env(safe-area-inset-bottom,0px))] md:min-h-0 md:pb-0">
           {mode === "skill2" ? (
             <>
               <p className="mb-1 text-[10px] text-muted">素材カード</p>
-              <div className="grid max-h-[28vh] auto-rows-min grid-cols-4 justify-items-center gap-1.5 overflow-y-auto content-start sm:grid-cols-5 md:max-h-none md:min-h-0 md:flex-1 md:grid-cols-4 lg:grid-cols-5">
+              <div className="grid max-h-[28vh] auto-rows-min grid-cols-4 justify-items-stretch gap-x-0.5 gap-y-1 overflow-y-auto content-start sm:grid-cols-5 md:max-h-none md:min-h-0 md:flex-1 md:grid-cols-5">
                 {otherMaterials.length === 0 ? (
                   <p className="col-span-full text-[11px] text-faint">他に所持カードがない。</p>
                 ) : (
@@ -397,7 +397,7 @@ export function TrainScreen() {
                       type="button"
                       onClick={() => setMaterialId(c.id)}
                       className={cn(
-                        "flex flex-col items-center rounded-md p-0.5",
+                        "flex w-full min-w-0 flex-col items-stretch rounded-md",
                         materialId === c.id ? "ring-2 ring-brass" : "opacity-80 hover:opacity-100",
                       )}
                     >
@@ -406,8 +406,9 @@ export function TrainScreen() {
                         level={owned[c.id]?.level}
                         skill1Lv={owned[c.id]?.skill1Lv}
                         size="xs"
+                        className="w-full"
                       />
-                      <p className="mt-0.5 max-w-[4.75rem] truncate text-center text-[9px] leading-tight text-fg">
+                      <p className="mt-0.5 w-full truncate text-center text-[9px] leading-tight text-fg">
                         {materialSkillLabel(c.skill, c.rarity)}
                       </p>
                       <p className="text-center text-[9px] tabular text-muted">
@@ -421,9 +422,9 @@ export function TrainScreen() {
           ) : (
             <>
               <p className="mb-1 text-[10px] text-muted">ベースカード</p>
-              <div className="grid max-h-[28vh] auto-rows-min grid-cols-4 justify-items-center gap-1.5 overflow-y-auto content-start sm:grid-cols-5 md:max-h-none md:min-h-0 md:flex-1 md:grid-cols-4 lg:grid-cols-5">
+              <div className="grid max-h-[28vh] auto-rows-min grid-cols-4 justify-items-stretch gap-x-0.5 gap-y-1 overflow-y-auto content-start sm:grid-cols-5 md:max-h-none md:min-h-0 md:flex-1 md:grid-cols-5">
                 {tray.map((c) => (
-                  <div key={c.id} className="flex flex-col items-center">
+                  <div key={c.id} className="flex w-full min-w-0 flex-col items-stretch">
                     <CardFace
                       card={c}
                       level={owned[c.id]?.level}
@@ -431,10 +432,11 @@ export function TrainScreen() {
                       size="xs"
                       selected={focusId === c.id}
                       onClick={() => selectBase(c.id)}
+                      className="w-full"
                     />
                     <p
                       className={cn(
-                        "mt-0.5 text-center text-[9px] tabular",
+                        "mt-0.5 w-full truncate text-center text-[9px] tabular",
                         (owned[c.id]?.level ?? 1) >= MAX_LEVEL ? "text-brass" : "text-muted",
                       )}
                     >
