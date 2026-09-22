@@ -54,16 +54,19 @@ export const FONT = {
 export const TOUCH_MIN = 44;
 
 /**
- * Button logical sizes on the 1280×720 stage.
- * At phone landscape contain (~0.35–0.5), primary ~56 → ~20–28 CSS-px;
- * ops (左/右) ~120 → ~42–60 CSS-px ≈ TOUCH_MIN.
+ * Button / SideNav logical sizes on the 1280×720 stage.
+ * iPhone 12 mini landscape contain ≈0.52 → SideNav item ~96×160 → ~50×83 CSS-px.
+ * Primary / 左・右 ops stay at h-14 (56) so they do not dominate palace.
  */
 export const BTN = {
   primaryH: 56,
   primaryText: 16,
-  opsH: 120,
-  opsW: 96,
-  opsText: 28,
+  opsH: 56,
+  opsW: 56,
+  opsText: 16,
+  sideNavW: 160,
+  sideNavItemMinH: 96,
+  sideNavText: 20,
 } as const;
 
 /** Base grid unit (px). Steps: 8 / 16 / 24 / 32. */

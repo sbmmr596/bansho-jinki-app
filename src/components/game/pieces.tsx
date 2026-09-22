@@ -807,7 +807,7 @@ export function SideNav({ screen, side = "right" }: { screen: string; side?: "le
   return (
     <nav
       className={cn(
-        "relative z-20 flex w-[5.5rem] shrink-0 flex-col bg-ink/95 py-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]",
+        "relative z-20 flex w-[10rem] shrink-0 flex-col bg-ink/95 py-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]",
         edgePad,
         side === "left" ? "border-r border-border order-first" : "border-l border-border",
       )}
@@ -818,7 +818,7 @@ export function SideNav({ screen, side = "right" }: { screen: string; side?: "le
           type="button"
           onClick={() => setScreen(it.id)}
           className={cn(
-            "flex min-h-12 flex-1 flex-col items-center justify-center px-1 text-sm font-medium leading-none tracking-wide whitespace-nowrap active:bg-raised/60",
+            "flex min-h-24 flex-1 flex-col items-center justify-center px-2 text-xl font-semibold leading-none tracking-wide whitespace-nowrap active:bg-raised/60",
             screen === it.id || (screen === "scout" && it.id === "map")
               ? "text-brass"
               : "text-muted",
@@ -834,7 +834,7 @@ export function SideNav({ screen, side = "right" }: { screen: string; side?: "le
           e.stopPropagation();
           setDebugOpen(true);
         }}
-        className="debug-hit flex min-h-12 w-full shrink-0 items-center justify-center whitespace-nowrap text-sm font-medium leading-none text-muted active:bg-raised/60"
+        className="debug-hit flex min-h-24 w-full shrink-0 items-center justify-center whitespace-nowrap text-xl font-semibold leading-none text-muted active:bg-raised/60"
       >
         内部
       </button>
