@@ -2,6 +2,7 @@ import { genericOAuthClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { runPreSignInSignOut, runSignOut } from "../../../scripts/sign-out-plan.mjs";
 import { GROK_PROVIDERS } from "./providers";
+import { SESSION_REFETCH_TIMEOUT_MS, withTimeout } from "./session-resolve";
 
 /**
  * Better Auth client for this React SPA (browser-side).
@@ -87,12 +88,18 @@ async function refreshSessionAtom(): Promise<void> {
   const refetch = sessionAtom?.get()?.refetch as
     | ((queryParams?: { query?: Record<string, string> }) => Promise<void>)
     | undefined;
-  if (typeof refetch === "function") {
-    await refetch();
-    return;
-  }
-  authClient.$store.notify("$sessionSignal");
-  await authClient.getSession();
+  const run =
+    typeof refetch === "function"
+      ? () => refetch()
+      : async () => {
+          authClient.$store.notify("$sessionSignal");
+          await authClient.getSession();
+        };
+  // Bound the wait: a hung /get-session after popup would leave signIn()
+  // awaiting forever while the card editor stays on 「セッションを確認…」.
+  // Bearer is already stored; the UI timeout in useCurrentUserState also
+  // falls back to the gate if the atom never clears pending.
+  await withTimeout(run(), SESSION_REFETCH_TIMEOUT_MS, "session refetch");
 }
 
 /**

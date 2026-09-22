@@ -162,7 +162,7 @@ function knownFile(name: string, list: readonly string[]) {
 }
 
 export function CardEditorPanel({ onClose }: { onClose: () => void }) {
-  const { user, isPending } = useCurrentUserState();
+  const { user, isPending, sessionResolveTimedOut } = useCurrentUserState();
   const setCatalogSource = useGame((s) => s.setCatalogSource);
   const bumpCatalog = useGame((s) => s.bumpCatalog);
   const catalogEpoch = useGame((s) => s.catalogEpoch);
@@ -344,22 +344,43 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
 
         <div className="mb-2 min-h-8 shrink-0">
           {gateState === "pending" ? (
-            <p className="text-xs text-muted">確認中…</p>
+            <p className="text-xs text-muted">接続中…</p>
           ) : (
             <UserButton />
           )}
         </div>
 
         {gateState === "pending" ? (
-          <div className="space-y-2 p-2">
+          <div className="space-y-3 p-2">
+            <p className="text-xs text-brass">接続中…</p>
             <p className="text-xs text-muted">セッションを確認しています…</p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-10 rounded-md bg-raised px-4 text-sm text-fg hairline"
+            >
+              元に戻る
+            </button>
           </div>
         ) : gateState === "signed_out" ? (
           <div className="space-y-3 p-2">
-            <p className="text-xs leading-relaxed text-muted">
-              Googleアカウントでサインインすると、カード内容・陣営をこのアカウント専用に編集・保存できるよ。サインアウト時は標準カタログのまま。
-            </p>
+            {sessionResolveTimedOut ? (
+              <p className="text-xs leading-relaxed text-red-400">
+                セッション確認がタイムアウトしました。通信やポップアップを確認して、もう一度サインインしてね。
+              </p>
+            ) : (
+              <p className="text-xs leading-relaxed text-muted">
+                Googleアカウントでサインインすると、カード内容・陣営をこのアカウント専用に編集・保存できるよ。サインアウト時は標準カタログのまま。
+              </p>
+            )}
             {authEnabled ? <SignInButtons /> : null}
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-10 rounded-md bg-raised px-4 text-sm text-fg hairline"
+            >
+              元に戻る
+            </button>
           </div>
         ) : (
           <>
