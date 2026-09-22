@@ -1,4 +1,9 @@
+import { useEffect, useState } from "react";
 import { authClient, authEnabled } from "./client";
+import {
+  SESSION_RESOLVE_TIMEOUT_MS,
+  resolveEffectivePending,
+} from "./session-resolve";
 
 /** Normalized user shape used across the app, auth on or off. */
 export type AppUser = {
@@ -31,7 +36,29 @@ export type CurrentUserState = {
   user: AppUser | null;
   /** True while the session is still resolving — don't treat `user: null` as signed out yet. */
   isPending: boolean;
+  /**
+   * True when `/get-session` never settled within {@link SESSION_RESOLVE_TIMEOUT_MS}
+   * and we forced pending off so the gate can show Continue with Google/X.
+   */
+  sessionResolveTimedOut: boolean;
 };
+
+/**
+ * Flip to timed-out after `ms` while `isPending` stays true. Resets when
+ * pending clears (late success still promotes to signed_in).
+ */
+function useSessionResolveTimedOut(isPending: boolean, ms: number): boolean {
+  const [timedOut, setTimedOut] = useState(false);
+  useEffect(() => {
+    if (!isPending) {
+      setTimedOut(false);
+      return;
+    }
+    const t = window.setTimeout(() => setTimedOut(true), ms);
+    return () => window.clearTimeout(t);
+  }, [isPending, ms]);
+  return timedOut;
+}
 
 /**
  * Current user + loading state. Same behavior in live preview and when deployed:
@@ -41,6 +68,9 @@ export type CurrentUserState = {
  *                            Better Auth `useSession()` → `/api/auth/get-session`
  *                            (cookie when deployed; bearer in live preview).
  *   - Auth disabled (`VITE_AUTH_ENABLED=false`) -> `DEV_USER`, never pending.
+ *
+ * If get-session hangs (partitioned iframe / iPhone Safari), pending is forced
+ * off after {@link SESSION_RESOLVE_TIMEOUT_MS} so gates never stick forever.
  *
  * Protect a route by waiting out `isPending` before acting on `user` —
  * redirecting on `user: null` alone bounces signed-in visitors to sign-in on
@@ -55,9 +85,14 @@ export type CurrentUserState = {
  * call keeps a stable hook order across every render of a given component.
  */
 export function useCurrentUserState(): CurrentUserState {
-  if (!authEnabled) return { user: DEV_USER, isPending: false };
+  if (!authEnabled) {
+    return { user: DEV_USER, isPending: false, sessionResolveTimedOut: false };
+  }
   // eslint-disable-next-line react-hooks/rules-of-hooks -- authEnabled is constant for the app's lifetime
-  const { data, isPending } = authClient.useSession();
+  const { data, isPending: rawPending } = authClient.useSession();
+  // eslint-disable-next-line react-hooks/rules-of-hooks -- authEnabled is constant for the app's lifetime
+  const timedOut = useSessionResolveTimedOut(rawPending, SESSION_RESOLVE_TIMEOUT_MS);
+  const isPending = resolveEffectivePending({ isPending: rawPending, timedOut });
   const user = data?.user;
   return {
     user: user
@@ -70,6 +105,7 @@ export function useCurrentUserState(): CurrentUserState {
         }
       : null,
     isPending,
+    sessionResolveTimedOut: timedOut && rawPending,
   };
 }
 
