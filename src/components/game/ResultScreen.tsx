@@ -82,7 +82,7 @@ export function ResultScreen() {
             ) : (
               <p className="mt-4 text-sm text-muted">編成と属性を見直して、再攻せよ。</p>
             )}
-            <PrimaryButton onClick={afterResult} className="mt-5 h-11 min-w-36">
+            <PrimaryButton onClick={afterResult} className="mt-5 min-w-40">
               {result.arena ? "闘技場へ" : result.trial || capital ? "本拠へ" : "地図へ"}
             </PrimaryButton>
           </div>

@@ -94,10 +94,10 @@ export function ScoutScreen() {
               <p className="text-xs text-crimson">リーダー未設定</p>
             )}
             <div className="mt-1 flex gap-2">
-              <GhostButton onClick={() => setScreen("formation")} className="h-10 min-w-32">
+              <GhostButton onClick={() => setScreen("formation")} className="min-w-36">
                 編成を見直す
               </GhostButton>
-              <PrimaryButton onClick={startBattle} disabled={!canGo} className="h-10 min-w-32">
+              <PrimaryButton onClick={startBattle} disabled={!canGo} className="min-w-36">
                 出撃
               </PrimaryButton>
             </div>
