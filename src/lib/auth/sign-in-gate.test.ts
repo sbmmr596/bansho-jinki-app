@@ -27,4 +27,32 @@ describe("resolveSignInGateState", () => {
       "signed_out",
     );
   });
+
+  it("stays pending during bearer grace so a just-applied token does not bounce to Continue with", () => {
+    assert.equal(
+      resolveSignInGateState({
+        isPending: false,
+        hasUser: false,
+        hasPreviewBearer: true,
+        previewBearerAppliedAt: 1_000,
+        nowMs: 1_000 + 3_000,
+        bearerGraceMs: 10_000,
+      }),
+      "pending",
+    );
+  });
+
+  it("falls through to signed_out after bearer grace (hang → Continue with, token kept)", () => {
+    assert.equal(
+      resolveSignInGateState({
+        isPending: false,
+        hasUser: false,
+        hasPreviewBearer: true,
+        previewBearerAppliedAt: 1_000,
+        nowMs: 1_000 + 12_000,
+        bearerGraceMs: 10_000,
+      }),
+      "signed_out",
+    );
+  });
 });

@@ -1,6 +1,10 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { SignInButtons, UserButton } from "@/lib/auth/gates";
-import { authEnabled } from "@/lib/auth/client";
+import {
+  authEnabled,
+  getPreviewBearerMeta,
+  subscribePreviewBearer,
+} from "@/lib/auth/client";
 import { resolveSignInGateState } from "@/lib/auth/sign-in-gate";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import {
@@ -180,9 +184,16 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState("");
 
+  const bearerMeta = useSyncExternalStore(
+    subscribePreviewBearer,
+    getPreviewBearerMeta,
+    () => ({ hasBearer: false, appliedAt: null }),
+  );
   const gateState = resolveSignInGateState({
     isPending,
     hasUser: user !== null,
+    hasPreviewBearer: bearerMeta.hasBearer,
+    previewBearerAppliedAt: bearerMeta.appliedAt,
   });
   const signedIn = gateState === "signed_in";
   const canEdit = signedIn;

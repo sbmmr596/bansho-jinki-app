@@ -170,11 +170,21 @@ function completionResponse(message: PopupMessage): Response {
   });
 }
 
-/** Minimal HTML: postMessage the token to the opener and close. No React. */
+/**
+ * Minimal HTML: deliver the session bearer to the SPA, then close or redirect.
+ * No React.
+ *
+ * Delivery order (iPhone / Grok WebView resilient):
+ *  1. Write token to opener.sessionStorage (same-origin) — survives lost postMessage
+ *  2. postMessage to opener (retries)
+ *  3. If no opener (same-window OAuth): write own sessionStorage and replace to /
+ */
 function completionHtml(message: PopupMessage): string {
   // JSON is safe inside a <script type="application/json"> block; the inline
   // script only reads it. Avoids escaping pitfalls of embedding in JS source.
   const payload = JSON.stringify(message).replace(/</g, "\\u003c");
+  // Must match PREVIEW_BEARER_STORAGE_KEY in preview-bearer.ts / client.ts.
+  const bearerKey = "grok-auth.bearer-token";
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -192,19 +202,39 @@ function completionHtml(message: PopupMessage): string {
 <script type="application/json" id="grok-auth-popup-msg">${payload}</script>
 <script>
 (function () {
+  var BEARER_KEY = ${JSON.stringify(bearerKey)};
   var el = document.getElementById("grok-auth-popup-msg");
   var msg = { source: "grok-auth-popup", token: null };
   try { if (el && el.textContent) msg = JSON.parse(el.textContent); } catch (e) {}
-  // Retry a few times: the opener may still be awaiting pre-sign-in sign-out
-  // before its message listener is attached (iPhone Safari + fast SSO).
+
+  function writeStorage(win) {
+    if (!msg.token || !win) return;
+    try { win.sessionStorage.setItem(BEARER_KEY, msg.token); } catch (e) {}
+  }
+
+  // No real opener: this window IS the app context (iPhone same-window OAuth).
+  // Stash the bearer and return to the SPA so get-session can use Authorization.
+  if (!window.opener) {
+    writeStorage(window);
+    try {
+      window.location.replace(window.location.origin + "/");
+    } catch (e) {
+      try { window.location.href = window.location.origin + "/"; } catch (e2) {}
+    }
+    return;
+  }
+
+  // Opener path: storage first (survives frozen opener / missed postMessage),
+  // then postMessage with retries, then close.
+  writeStorage(window.opener);
   var tries = 0;
   function post() {
     tries += 1;
     try {
-      if (window.opener) window.opener.postMessage(msg, window.location.origin);
+      window.opener.postMessage(msg, window.location.origin);
     } catch (e) {}
-    if (tries < 5) {
-      setTimeout(post, 120);
+    if (tries < 8) {
+      setTimeout(post, 100);
       return;
     }
     try { window.close(); } catch (e) {}
