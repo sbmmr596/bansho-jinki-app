@@ -54,6 +54,7 @@ export const COUNTER_OF: Record<ElementType, ElementType[]> = {
   earth: ["void"],
 };
 
+/** Open slot count per formation must be 3–5 (inclusive). No 6+ layouts. */
 export const FORMATIONS: Record<string, Formation> = {
   cross: {
     id: "cross",
@@ -100,7 +101,7 @@ export const FORMATIONS: Record<string, Formation> = {
   fangs: {
     id: "fangs",
     name: "双牙陣",
-    slots: [true, false, true, false, true, true, true, false, true],
+    slots: [true, false, true, false, true, true, true, false, false],
     bonus: { atk: 0.1, hp: 0.06 },
     desc: "攻+10% HP+6%",
   },
@@ -119,6 +120,13 @@ export const FORMATIONS: Record<string, Formation> = {
     desc: "HP・攻+6%",
   },
 };
+
+for (const f of Object.values(FORMATIONS)) {
+  const open = f.slots.filter(Boolean).length;
+  if (open < 3 || open > 5) {
+    throw new Error(`Formation "${f.id}" has ${open} open slots; must be 3–5`);
+  }
+}
 
 const FALLBACK_HEROES: Card[] = [
   {
