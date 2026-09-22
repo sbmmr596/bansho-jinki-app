@@ -195,10 +195,21 @@ function completionHtml(message: PopupMessage): string {
   var el = document.getElementById("grok-auth-popup-msg");
   var msg = { source: "grok-auth-popup", token: null };
   try { if (el && el.textContent) msg = JSON.parse(el.textContent); } catch (e) {}
-  try {
-    if (window.opener) window.opener.postMessage(msg, window.location.origin);
-  } catch (e) {}
-  try { window.close(); } catch (e) {}
+  // Retry a few times: the opener may still be awaiting pre-sign-in sign-out
+  // before its message listener is attached (iPhone Safari + fast SSO).
+  var tries = 0;
+  function post() {
+    tries += 1;
+    try {
+      if (window.opener) window.opener.postMessage(msg, window.location.origin);
+    } catch (e) {}
+    if (tries < 5) {
+      setTimeout(post, 120);
+      return;
+    }
+    try { window.close(); } catch (e) {}
+  }
+  post();
 })();
 </script>
 </body>
