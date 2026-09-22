@@ -42,29 +42,57 @@ export { GROK_PROVIDERS };
 
 // ── Live-preview bearer token ────────────────────────────────────────────────
 // The embedded preview iframe has partitioned cookies, so we keep the session's
-// bearer token in sessionStorage and attach it to every Better Auth request (and
-// to server functions, via `@/lib/auth/middleware`). Empty everywhere except the
-// preview after a popup sign-in, so the cookie path is untouched elsewhere.
+// bearer token in memory AND sessionStorage, then attach it to every Better Auth
+// request (and to server functions, via `@/lib/auth/middleware`). Memory covers
+// iPhone Safari / ITP cases where sessionStorage throws or is ephemeral inside
+// a cross-site iframe; storage survives same-tab reloads when it works. Empty
+// everywhere except the preview after a popup sign-in, so the cookie path is
+// untouched elsewhere.
 const BEARER_KEY = "grok-auth.bearer-token";
+
+/** In-memory copy — `undefined` means "not hydrated from storage yet". */
+let bearerMemory: string | null | undefined;
 
 /** The stored preview bearer token, or null. */
 export function getBearerToken(): string | null {
   if (typeof window === "undefined") return null;
+  if (bearerMemory !== undefined) return bearerMemory;
   try {
-    return window.sessionStorage.getItem(BEARER_KEY);
+    bearerMemory = window.sessionStorage.getItem(BEARER_KEY);
   } catch {
-    return null;
+    bearerMemory = null;
   }
+  return bearerMemory;
 }
 
 function setBearerToken(token: string | null): void {
+  bearerMemory = token;
   if (typeof window === "undefined") return;
   try {
     if (token) window.sessionStorage.setItem(BEARER_KEY, token);
     else window.sessionStorage.removeItem(BEARER_KEY);
   } catch {
-    /* storage unavailable — ignore */
+    /* storage unavailable — memory still holds the token for this page life */
   }
+}
+
+/**
+ * Refresh the Better Auth `useSession()` atom after a popup sets the bearer.
+ * Plain `getSession()` does NOT notify `$sessionSignal` (matcher skips
+ * `/get-session`), so without this the UI can stay signed-out until a flaky
+ * focus refetch — common when the OAuth popup closes over an iframe on iOS.
+ */
+async function refreshSessionAtom(): Promise<void> {
+  const sessionAtom = authClient.$store.atoms.session;
+  const refetch = sessionAtom?.get()?.refetch as
+    | ((queryParams?: { query?: Record<string, string> }) => Promise<void>)
+    | undefined;
+  if (typeof refetch === "function") {
+    await refetch();
+    return;
+  }
+  authClient.$store.notify("$sessionSignal");
+  await authClient.getSession();
 }
 
 /**
@@ -125,11 +153,11 @@ export async function signIn(
     const token = await waitForPopupToken(popup);
     if (!token) throw new Error("Sign-in was cancelled or failed");
     setBearerToken(token);
-    // Refresh the client session store with the bearer attached (onRequest).
+    // Refresh useSession() atomically with the bearer attached (onRequest).
     // Avoid a full iframe reload when we're already on the destination — that
     // reload was the slow "still loading after the popup closed" feeling.
     try {
-      await authClient.getSession();
+      await refreshSessionAtom();
     } catch {
       /* session store will recover on next useSession fetch */
     }
