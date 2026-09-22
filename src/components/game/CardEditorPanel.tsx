@@ -158,7 +158,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 }
 
 const inputCls =
-  "h-9 w-full rounded-md bg-raised px-2 text-sm text-fg hairline outline-none focus:ring-1 focus:ring-brass/60";
+  "h-10 w-full rounded-md bg-raised px-2.5 text-sm text-fg hairline outline-none focus:ring-1 focus:ring-brass/60";
 
 function knownFile(name: string, list: readonly string[]) {
   const n = name.trim().replace(/^\/+/, "").split("/").pop() ?? "";
@@ -347,7 +347,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
       className="absolute inset-0 z-[80] flex items-center justify-center bg-bg/70 p-2"
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <div className="panel flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-xl p-3">
+      <div className="panel flex max-h-[92%] min-h-0 w-full max-w-3xl flex-col overflow-hidden rounded-xl p-3">
         <div className="mb-2 flex shrink-0 items-center justify-between gap-3">
           <p className="font-display text-sm text-fg">カード編集</p>
           <CloseButton onClick={onClose} />
@@ -362,19 +362,19 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
         </div>
 
         {gateState === "pending" ? (
-          <div className="space-y-3 p-2">
+          <div className="stage-scroll min-h-0 flex-1 space-y-3 p-2">
             <p className="text-xs text-brass">接続中…</p>
             <p className="text-xs text-muted">セッションを確認しています…</p>
             <button
               type="button"
               onClick={onClose}
-              className="h-10 rounded-md bg-raised px-4 text-sm text-fg hairline"
+              className="h-11 rounded-md bg-raised px-4 text-sm text-fg hairline"
             >
               元に戻る
             </button>
           </div>
         ) : gateState === "signed_out" ? (
-          <div className="space-y-3 p-2">
+          <div className="stage-scroll min-h-0 flex-1 space-y-3 p-2">
             {sessionResolveTimedOut ? (
               <p className="text-xs leading-relaxed text-red-400">
                 セッション確認がタイムアウトしました。通信やポップアップを確認して、もう一度サインインしてね。
@@ -388,7 +388,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               onClick={onClose}
-              className="h-10 rounded-md bg-raised px-4 text-sm text-fg hairline"
+              className="h-11 rounded-md bg-raised px-4 text-sm text-fg hairline"
             >
               元に戻る
             </button>
@@ -403,58 +403,52 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
             <div className="mb-2 flex shrink-0 gap-1 rounded-md bg-raised p-1 hairline">
               <button
                 type="button"
-                className={`h-10 flex-1 rounded text-sm ${tab === "cards" ? "bg-panel text-brass" : "text-muted"}`}
+                className={`h-11 flex-1 rounded text-sm ${tab === "cards" ? "bg-panel text-brass" : "text-muted"}`}
                 onClick={() => setTab("cards")}
               >
                 カード
               </button>
               <button
                 type="button"
-                className={`h-10 flex-1 rounded text-sm ${tab === "factions" ? "bg-panel text-brass" : "text-muted"}`}
+                className={`h-11 flex-1 rounded text-sm ${tab === "factions" ? "bg-panel text-brass" : "text-muted"}`}
                 onClick={() => setTab("factions")}
               >
                 陣営
               </button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-hidden">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               {tab === "factions" ? (
-                <div className="flex h-full flex-col gap-2 overflow-y-auto pr-1">
-                  {FACTION_IDS.map((id) => (
-                    <Field key={id} label={id}>
-                      <input
-                        className={inputCls}
-                        value={factionDraft[id]}
-                        onChange={(e) =>
-                          setFactionDraft((f) => ({ ...f, [id]: e.target.value }))
-                        }
-                      />
-                    </Field>
-                  ))}
-                  <button
-                    type="button"
-                    disabled={busy || !canEdit}
-                    onClick={() => void onSaveFactions()}
-                    className="mt-2 h-11 rounded-md bg-brass text-sm font-medium text-bg disabled:opacity-40"
-                  >
-                    陣営名を保存
-                  </button>
+                <div className="stage-scroll min-h-0 flex-1 pr-1">
+                  <div className="flex flex-col gap-2 pb-2">
+                    {FACTION_IDS.map((id) => (
+                      <Field key={id} label={id}>
+                        <input
+                          className={inputCls}
+                          value={factionDraft[id]}
+                          onChange={(e) =>
+                            setFactionDraft((f) => ({ ...f, [id]: e.target.value }))
+                          }
+                        />
+                      </Field>
+                    ))}
+                  </div>
                 </div>
               ) : (
-                <div className="flex h-full min-h-0 gap-2">
-                  <div className="flex w-[38%] min-w-0 flex-col gap-2">
+                <div className="flex min-h-0 flex-1 gap-2 overflow-hidden">
+                  <div className="flex w-[38%] min-h-0 min-w-0 flex-col gap-2">
                     <input
-                      className={inputCls}
+                      className={`${inputCls} shrink-0`}
                       placeholder="検索（名前 / ID）"
                       value={filter}
                       onChange={(e) => setFilter(e.target.value)}
                     />
-                    <div className="flex gap-1">
+                    <div className="flex shrink-0 gap-1">
                       <button
                         type="button"
                         disabled={!canEdit}
                         onClick={onAdd}
-                        className="h-9 flex-1 rounded-md bg-brass text-xs font-medium text-bg disabled:opacity-40"
+                        className="h-10 flex-1 rounded-md bg-brass text-xs font-medium text-bg disabled:opacity-40"
                       >
                         追加
                       </button>
@@ -462,18 +456,18 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                         type="button"
                         disabled={busy || !canEdit}
                         onClick={() => void onDelete()}
-                        className="h-9 flex-1 rounded-md bg-raised text-xs text-fg hairline disabled:opacity-40"
+                        className="h-10 flex-1 rounded-md bg-raised text-xs text-fg hairline disabled:opacity-40"
                       >
                         削除
                       </button>
                     </div>
-                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-md bg-raised/40 hairline">
+                    <div className="stage-scroll min-h-0 flex-1 rounded-md bg-raised/40 hairline">
                       {filtered.map((c) => (
                         <button
                           key={c.id}
                           type="button"
                           onClick={() => selectCard(c.id)}
-                          className={`flex w-full flex-col items-start gap-0.5 border-b border-white/5 px-2 py-2 text-left ${
+                          className={`flex w-full flex-col items-start gap-0.5 border-b border-white/5 px-2 py-2.5 text-left ${
                             c.id === selectedId ? "bg-brass/20" : ""
                           }`}
                         >
@@ -486,8 +480,8 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                     </div>
                   </div>
 
-                  <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-                    <div className="grid grid-cols-2 gap-2">
+                  <div className="stage-scroll min-h-0 flex-1 pr-1">
+                    <div className="grid grid-cols-2 gap-2 pb-2">
                       <Field label="ID">
                         <input className={inputCls} value={draft.id} onChange={(e) => patch("id", e.target.value)} />
                       </Field>
@@ -583,16 +577,30 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                         <option key={f} value={f} />
                       ))}
                     </datalist>
-                    <button
-                      type="button"
-                      disabled={busy || !canEdit}
-                      onClick={() => void onSaveCard()}
-                      className="mt-3 h-11 w-full rounded-md bg-brass text-sm font-medium text-bg disabled:opacity-40"
-                    >
-                      このカードを保存
-                    </button>
                   </div>
                 </div>
+              )}
+            </div>
+
+            <div className="mt-2 flex shrink-0 flex-col gap-1 border-t border-white/10 pt-2">
+              {tab === "factions" ? (
+                <button
+                  type="button"
+                  disabled={busy || !canEdit}
+                  onClick={() => void onSaveFactions()}
+                  className="h-11 w-full rounded-md bg-brass text-sm font-medium text-bg disabled:opacity-40"
+                >
+                  陣営名を保存
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy || !canEdit}
+                  onClick={() => void onSaveCard()}
+                  className="h-11 w-full rounded-md bg-brass text-sm font-medium text-bg disabled:opacity-40"
+                >
+                  このカードを保存
+                </button>
               )}
             </div>
           </>

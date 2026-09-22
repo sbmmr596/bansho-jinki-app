@@ -1066,3 +1066,12 @@ body {
 .formation-tray-scroll::-webkit-scrollbar-thumb:hover {
   background: #8a7454;
 }
+
+/* Scroll regions inside the scaled 1280×720 stage (iOS/WebKit). */
+.stage-scroll {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
