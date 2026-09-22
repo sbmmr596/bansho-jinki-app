@@ -222,7 +222,7 @@ export function GameApp() {
           横表示推奨
         </div>
       ) : null}
-      <div ref={stageRef} className="game-stage">
+      <div ref={stageRef} className="game-stage @container">
         {screen === "title" ? <TitleScreen /> : null}
         {screen === "palace" ? <PalaceScreen /> : null}
         {screen === "collection" ? <CollectionScreen /> : null}

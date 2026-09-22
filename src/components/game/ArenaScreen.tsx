@@ -77,12 +77,12 @@ export function ArenaScreen() {
       {/* Short landscape: scroll body, pin actions so 挑戦 stays visible */}
       <div className="flex h-full min-h-0 w-full flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col items-center justify-center gap-2 py-1 sm:gap-3">
-            <p className="max-w-md text-center text-xs leading-relaxed text-muted sm:text-sm">
+          <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col items-center justify-center gap-2 py-1 @sm:gap-3">
+            <p className="max-w-md text-center text-xs leading-relaxed text-muted @sm:text-sm">
               闘気を消費してランダムな英雄隊と戦う。敗北しても闘気は戻らない。
               報酬の金は勝利時のみ（相手の強さに応じて変動）。1分で互角1回分が回復する。
             </p>
-            <p className="text-[10px] text-faint sm:text-xs">
+            <p className="text-[10px] text-faint @sm:text-xs">
               パーティ平均 Lv.{avg.toFixed(1)}　合計Lv {myLevelSum}　人数 {partySize}　コスト {myCost}
               {!leaderId ? "　リーダー未設定" : ""}
             </p>
@@ -101,12 +101,12 @@ export function ArenaScreen() {
                       setHint(null);
                     }}
                     className={cn(
-                      "rounded-lg px-2 py-2 text-left hairline transition sm:py-3",
+                      "rounded-lg px-2 py-2 text-left hairline transition @sm:py-3",
                       selected ? "bg-brass/25 text-fg" : "bg-surface/80 text-muted",
                       locked && "opacity-60",
                     )}
                   >
-                    <p className="font-display text-sm text-fg sm:text-base">{m.name}</p>
+                    <p className="font-display text-sm text-fg @sm:text-base">{m.name}</p>
                     <p className="mt-0.5 text-[10px] text-faint">合計Lv ×{m.levelMul.toFixed(2)}</p>
                     <p className={cn("mt-1 text-xs tabular", locked ? "text-crimson" : "text-brass")}>
                       闘気 {c}
@@ -115,7 +115,7 @@ export function ArenaScreen() {
                 );
               })}
             </div>
-            <div className="w-full max-w-lg rounded-lg bg-surface/80 px-3 py-2 hairline sm:px-4 sm:py-3">
+            <div className="w-full max-w-lg rounded-lg bg-surface/80 px-3 py-2 hairline @sm:px-4 @sm:py-3">
               <p className="text-sm text-fg">
                 {meta.name}　消費 闘気{cost}　→　勝利報酬 約{reward}金
               </p>

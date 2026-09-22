@@ -351,11 +351,11 @@ export function ArtZoom() {
 
   return (
     <div
-      className="absolute inset-0 z-[90] flex items-center justify-center bg-bg/80 p-1.5 sm:p-2"
+      className="absolute inset-0 z-[90] flex items-center justify-center bg-bg/80 p-1.5 @sm:p-2"
       onPointerDown={() => setZoomCard(null)}
     >
       <div
-        className="panel relative grid h-full max-h-full w-full max-w-4xl grid-cols-2 gap-2 overflow-hidden rounded-xl p-2 sm:gap-3 sm:p-3"
+        className="panel relative grid h-full max-h-full w-full max-w-4xl grid-cols-2 gap-2 overflow-hidden rounded-xl p-2 @sm:gap-3 @sm:p-3"
         onPointerDown={(e) => e.stopPropagation()}
       >
         <CloseButton
@@ -406,9 +406,9 @@ export function ArtZoom() {
         </div>
 
         {/* Right: name → formation → skills fill remaining height */}
-        <div className="flex min-h-0 flex-col gap-2 pr-8 sm:pr-10">
+        <div className="flex min-h-0 flex-col gap-2 pr-8 @sm:pr-10">
           <div className="shrink-0 space-y-0.5">
-            <p className="font-display text-base leading-snug text-fg sm:text-lg">{card.name}</p>
+            <p className="font-display text-base leading-snug text-fg @sm:text-lg">{card.name}</p>
             <p className="text-[10px] text-muted">{card.title}</p>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] text-brass">{card.rarity}</span>

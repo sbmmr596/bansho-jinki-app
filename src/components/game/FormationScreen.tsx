@@ -117,7 +117,7 @@ export function FormationScreen() {
           ) : null}
 
           <div className="formation-tray-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-            <div className="grid auto-rows-min grid-cols-5 content-start gap-1 pb-3 sm:gap-1.5">
+            <div className="grid auto-rows-min grid-cols-5 content-start gap-1 pb-3 @sm:gap-1.5">
               {tray.map((card) => (
                 <CardFace
                   key={card.id}
@@ -163,7 +163,7 @@ export function FormationScreen() {
               onSlot={onSlot}
             />
 
-            <div className="flex w-[132px] shrink-0 flex-col gap-1.5 overflow-y-auto sm:w-[148px]">
+            <div className="flex w-[132px] shrink-0 flex-col gap-1.5 overflow-y-auto @sm:w-[148px]">
               <div className="min-w-0">
                 <p className="font-display text-sm leading-tight text-fg">
                   {form.name}
@@ -226,7 +226,7 @@ function FormationGrid({
   const formation = FORMATIONS[formationId];
   return (
     <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden">
-      <div className="grid w-full max-w-full grid-cols-3 gap-1 sm:gap-1.5">
+      <div className="grid w-full max-w-full grid-cols-3 gap-1 @sm:gap-1.5">
         {[0, 1, 2].map((row) =>
           [2, 1, 0].map((col) => {
             const slot = row * 3 + col;

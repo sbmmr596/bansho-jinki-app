@@ -174,11 +174,11 @@ export function TrainScreen() {
 
   return (
     <Shell title="合成・育成" extra={<GoldChip gold={gold} />} bg="/bg/palace.jpg" nav="train" wide>
-      {/* Phone: one scroll column so スキル合成 stays reachable.
-          md+: 3:3:4 (大カード / 技 / トレイ). */}
-      <div className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-y-auto overscroll-contain md:grid-cols-[minmax(0,3fr)_minmax(0,3fr)_minmax(0,4fr)] md:gap-3 md:overflow-hidden">
+      {/* Narrow container: one scroll column so スキル合成 stays reachable.
+          @md+ (stage 1280 always): 3:3:4 (大カード / 技 / トレイ). */}
+      <div className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-y-auto overscroll-contain @md:grid-cols-[minmax(0,3fr)_minmax(0,3fr)_minmax(0,4fr)] @md:gap-3 @md:overflow-hidden">
         {/* Left: large focus card + stats (原作風・縦積み) */}
-        <div className="flex shrink-0 flex-col gap-2 md:min-h-0 md:overflow-y-auto">
+        <div className="flex shrink-0 flex-col gap-2 @md:min-h-0 @md:overflow-y-auto">
           {card && own ? (
             <>
               <div className="flex flex-col items-center gap-1.5">
@@ -262,7 +262,7 @@ export function TrainScreen() {
         </div>
 
         {/* Center: skills + mode + confirm (素材グリッドは右列へ) */}
-        <div className="flex min-w-0 flex-col gap-2 md:min-h-0 md:overflow-y-auto">
+        <div className="flex min-w-0 flex-col gap-2 @md:min-h-0 @md:overflow-y-auto">
           {card && own ? (
             <>
               <SkillSlot
@@ -383,11 +383,11 @@ export function TrainScreen() {
         </div>
 
         {/* Right: base tray (同名) or material picker (異名) — dense flush tiles */}
-        <div className="flex min-h-[9rem] shrink-0 flex-col pb-[max(0.25rem,env(safe-area-inset-bottom,0px))] md:min-h-0 md:pb-0">
+        <div className="flex min-h-[9rem] shrink-0 flex-col pb-[max(0.25rem,env(safe-area-inset-bottom,0px))] @md:min-h-0 @md:pb-0">
           {mode === "skill2" ? (
             <>
               <p className="mb-1 text-[10px] text-muted">素材カード</p>
-              <div className="grid max-h-[28vh] auto-rows-min grid-cols-4 justify-items-stretch gap-x-0.5 gap-y-1 overflow-y-auto content-start sm:grid-cols-5 md:max-h-none md:min-h-0 md:flex-1 md:grid-cols-5">
+              <div className="grid max-h-[40%] auto-rows-min grid-cols-4 justify-items-stretch gap-x-0.5 gap-y-1 overflow-y-auto content-start @sm:grid-cols-5 @md:max-h-none @md:min-h-0 @md:flex-1 @md:grid-cols-5">
                 {otherMaterials.length === 0 ? (
                   <p className="col-span-full text-[11px] text-faint">他に所持カードがない。</p>
                 ) : (
@@ -422,7 +422,7 @@ export function TrainScreen() {
           ) : (
             <>
               <p className="mb-1 text-[10px] text-muted">ベースカード</p>
-              <div className="grid max-h-[28vh] auto-rows-min grid-cols-4 justify-items-stretch gap-x-0.5 gap-y-1 overflow-y-auto content-start sm:grid-cols-5 md:max-h-none md:min-h-0 md:flex-1 md:grid-cols-5">
+              <div className="grid max-h-[40%] auto-rows-min grid-cols-4 justify-items-stretch gap-x-0.5 gap-y-1 overflow-y-auto content-start @sm:grid-cols-5 @md:max-h-none @md:min-h-0 @md:flex-1 @md:grid-cols-5">
                 {tray.map((c) => (
                   <div key={c.id} className="flex w-full min-w-0 flex-col items-stretch">
                     <CardFace
