@@ -103,10 +103,28 @@ const LOCAL_DEV_ORIGINS: string[] = [
   "http://127.0.0.1:8080",
   "http://[::1]:8080",
 ];
+// Better Auth matches `Host` including port (`localhost:8080`). Bare
+// `localhost` does NOT match — keep both forms so dynamic baseURL resolves.
+const LOCAL_DEV_HOSTS: string[] = [
+  "localhost",
+  "localhost:8080",
+  "127.0.0.1",
+  "127.0.0.1:8080",
+  "[::1]",
+  "[::1]:8080",
+];
+// Deployed apps live on `*.grok.me`. When `BETTER_AUTH_URL` is unset, still
+// derive redirect_uri from the request host (deployer normally injects both
+// BETTER_AUTH_URL and GROK_AUTH_* — this is a safety net, not a substitute).
+const DEPLOYED_ALLOWED_HOSTS: string[] = ["*.grok.me"];
 const baseURL = explicitBaseURL ?? {
   // Include loopback hosts so dynamic baseURL resolves for local email/password
   // (not only the preview wildcard).
-  allowedHosts: [...previewAllowedHosts, "localhost", "127.0.0.1", "[::1]"],
+  allowedHosts: [
+    ...previewAllowedHosts,
+    ...DEPLOYED_ALLOWED_HOSTS,
+    ...LOCAL_DEV_HOSTS,
+  ],
   // `auto` → trust both http:// and https:// expansions of allowedHosts
   // (preview is https; local dev is http).
   protocol: "auto" as const,
@@ -120,8 +138,10 @@ const trustedOrigins: string[] = explicitBaseURL
   : [
       // Host wildcards (matched against Origin's host)
       ...previewAllowedHosts,
+      ...DEPLOYED_ALLOWED_HOSTS,
       // Full-origin wildcards (matched against Origin)
       ...previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`]),
+      ...DEPLOYED_ALLOWED_HOSTS.flatMap((host) => [`https://${host}`, `http://${host}`]),
       ...LOCAL_DEV_ORIGINS,
     ];
 

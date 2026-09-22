@@ -17,6 +17,11 @@
  * `client.ts` (`signIn` → `openSignInPopup`).
  */
 import { auth, SESSION_TOKEN_COOKIE } from "./server";
+import {
+  isLoopbackHostname,
+  loopbackPreviewOauthMessage,
+  resolvePublicAuthOrigin,
+} from "./public-origin.server";
 
 /** Message shape the popup posts to the opener (must match `client.ts`). */
 type PopupMessage = {
@@ -59,18 +64,45 @@ export async function handleAuthPopupRequest(request: Request): Promise<Response
     });
   }
 
+  // Public preview origin for redirect_uri — see `public-origin.server.ts`.
+  const resolved = resolvePublicAuthOrigin(request, url.searchParams.get("origin"));
+  if (!resolved) {
+    let requestHost = "";
+    try {
+      requestHost = new URL(request.url).hostname;
+    } catch {
+      requestHost = request.headers.get("host") ?? "";
+    }
+    const hostOnly = requestHost.split(":")[0] ?? requestHost;
+    const message = isLoopbackHostname(hostOnly)
+      ? loopbackPreviewOauthMessage()
+      : "Could not resolve a broker-allowlisted preview origin for OAuth redirect_uri.";
+    return completionResponse({
+      source: "grok-auth-popup",
+      token: null,
+      error: message,
+    });
+  }
+
+  const publicOrigin = resolved.origin;
   // Stay first-party for the callback so the session cookie lands in THIS popup.
-  const back = `${url.origin}/auth/popup?done=1`;
+  const back = `${publicOrigin}/auth/popup?done=1`;
   try {
+    // Rebuild headers so Better Auth's dynamic baseURL uses the public host
+    // (not the proxied loopback Host).
+    const publicHost = new URL(publicOrigin).host;
+    const headers = new Headers(request.headers);
+    headers.set("host", publicHost);
+    headers.set("x-forwarded-host", publicHost);
+    headers.set("x-forwarded-proto", "https");
+
     const apiRes = await auth.api.signInWithOAuth2({
       body: {
         providerId,
         callbackURL: back,
         errorCallbackURL: `${back}&error=1`,
       },
-      // Forward the preview host so Better Auth derives the correct baseURL /
-      // redirect_uri for the dynamic `*.grok-sandbox.com` origin.
-      headers: request.headers,
+      headers,
       asResponse: true,
     });
 
@@ -95,13 +127,29 @@ export async function handleAuthPopupRequest(request: Request): Promise<Response
       });
     }
 
+    // Guard: never send the user to the broker with a loopback redirect_uri.
+    try {
+      const brokerUrl = new URL(location);
+      const redirectUri = brokerUrl.searchParams.get("redirect_uri") ?? "";
+      const redirectHost = redirectUri ? new URL(redirectUri).hostname : "";
+      if (redirectHost && isLoopbackHostname(redirectHost)) {
+        return completionResponse({
+          source: "grok-auth-popup",
+          token: null,
+          error: loopbackPreviewOauthMessage(),
+        });
+      }
+    } catch {
+      /* if we can't parse, still 302 — broker will reject bad URIs */
+    }
+
     // 302 to the broker (which headlessly forwards to Google/X). Forward any
     // Set-Cookie (OAuth state / PKCE) so the callback can complete in this popup.
-    const headers = new Headers({ location, "cache-control": "no-store" });
+    const outHeaders = new Headers({ location, "cache-control": "no-store" });
     for (const cookie of apiRes.headers.getSetCookie()) {
-      headers.append("set-cookie", cookie);
+      outHeaders.append("set-cookie", cookie);
     }
-    return new Response(null, { status: 302, headers });
+    return new Response(null, { status: 302, headers: outHeaders });
   } catch (err) {
     const message = err instanceof Error ? err.message : "oauth_init_threw";
     return completionResponse({

@@ -143,6 +143,16 @@ export async function signIn(
     return;
   }
 
+  // grok_preview only allows https://*.grok-sandbox.com/... redirect_uris.
+  // Starting OAuth from loopback always yields Invalid redirect URI at the broker.
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1" || host === "[::1]") {
+    throw new Error(
+      "Google / X sign-in needs the live preview URL (https://*.grok-sandbox.com), " +
+        "not http://localhost. Open the app from the Grok live preview, then retry.",
+    );
+  }
+
   const { data, error } = await authClient.signIn.oauth2({
     providerId,
     callbackURL,
@@ -163,7 +173,12 @@ export async function signIn(
  */
 function openSignInPopup(providerId: string): Window | null {
   const origin = window.location.origin;
-  const url = `${origin}/auth/popup?providerId=${encodeURIComponent(providerId)}`;
+  // Pass the browser origin explicitly: the preview proxy may present Vite with
+  // Host=127.0.0.1 and no X-Forwarded-Host, which would otherwise make Better
+  // Auth emit redirect_uri=http://localhost:8080/... (rejected by the broker).
+  const url =
+    `${origin}/auth/popup?providerId=${encodeURIComponent(providerId)}` +
+    `&origin=${encodeURIComponent(origin)}`;
   // Unique name per attempt so a prior attempt stuck on the SPA is not reused.
   const name = `grok-signin-${Date.now()}`;
   return window.open(url, name, "popup,width=500,height=650");
