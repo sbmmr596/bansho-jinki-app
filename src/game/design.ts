@@ -2,9 +2,10 @@
  * Design baseline (locked). See docs/design-baseline.md.
  * Keep in sync with CSS custom properties on :root / .game-stage.
  *
- * Font ladder is logical px on the 1280×720 stage. Transform scale shrinks
- * physical size; `.game-stage` applies a mild `--text-scale` boost when the
- * stage is scaled down so UI stays readable on phones without exploding layout.
+ * Font ladder is logical px on the 1280×720 stage. Transform scale changes
+ * physical size (contain fit may exceed 1 on large displays). `.game-stage`
+ * applies a mild `--text-scale` boost only when the stage is scaled down so
+ * UI stays readable on phones; at scale ≥ 1, text-scale stays 1.
  */
 
 /** Stage logical size (px). */
@@ -61,3 +62,14 @@ export const SPACE = {
   3: GRID * 3, // 24
   4: GRID * 4, // 32
 } as const;
+
+/**
+ * Contain-fit scale for the 1280×720 stage inside an available rectangle.
+ * Uses the shorter side; **no max of 1** — large displays upscale (e.g. 1920×1080 → 1.5).
+ * Letterbox only when viewport aspect ≠ 16:9.
+ */
+export function fitContainScale(availW: number, availH: number): number {
+  const aw = Math.max(1, availW);
+  const ah = Math.max(1, availH);
+  return Math.min(aw / DESIGN_W, ah / DESIGN_H);
+}
