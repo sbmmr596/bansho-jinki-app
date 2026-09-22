@@ -29,6 +29,7 @@ export function DebugPanel() {
 
   const setDebugOpen = useGame((s) => s.setDebugOpen);
   const setCatalogOpen = useGame((s) => s.setCatalogOpen);
+  const setCardEditorOpen = useGame((s) => s.setCardEditorOpen);
   const debugAddGold = useGame((s) => s.debugAddGold);
   const debugFillSpirit = useGame((s) => s.debugFillSpirit);
   const debugGrantAll = useGame((s) => s.debugGrantAll);
@@ -119,6 +120,14 @@ export function DebugPanel() {
                   }}
                 >
                   マイデータ
+                </DbgBtn>
+                <DbgBtn
+                  onClick={() => {
+                    setDebugOpen(false);
+                    setCardEditorOpen(true);
+                  }}
+                >
+                  カード編集
                 </DbgBtn>
                 <DbgBtn onClick={startTrial} disabled={!leaderId} hint="リーダーが必要">
                   テスト戦闘

@@ -69,6 +69,8 @@ interface GameStore extends SaveState {
   arena: { tier: ArenaTier; fee: number; reward: number; seed: number } | null;
   catalogSource: "default" | "custom" | "drive" | "github";
   catalogOpen: boolean;
+  cardEditorOpen: boolean;
+  catalogEpoch: number;
   zoomCardId: string | null;
   hydrate: () => void;
   newGame: (difficulty?: Difficulty) => void;
@@ -107,6 +109,8 @@ interface GameStore extends SaveState {
   resetAll: () => void;
   setCatalogSource: (v: "default" | "custom" | "drive" | "github") => void;
   setCatalogOpen: (v: boolean) => void;
+  setCardEditorOpen: (v: boolean) => void;
+  bumpCatalog: () => void;
   setZoomCard: (id: string | null) => void;
 }
 
@@ -163,6 +167,8 @@ export const useGame = create<GameStore>((set, get) => ({
   arena: null,
   catalogSource: "default",
   catalogOpen: false,
+  cardEditorOpen: false,
+  catalogEpoch: 0,
   zoomCardId: null,
 
   hydrate: async () => {
@@ -196,6 +202,7 @@ export const useGame = create<GameStore>((set, get) => ({
         debugOpen: false,
         catalogSource,
         catalogOpen: false,
+        cardEditorOpen: false,
       });
     }
   },
@@ -883,6 +890,8 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   setCatalogSource: (v) => set({ catalogSource: v }),
   setCatalogOpen: (v) => set({ catalogOpen: v }),
+  setCardEditorOpen: (v) => set({ cardEditorOpen: v }),
+  bumpCatalog: () => set((s) => ({ catalogEpoch: s.catalogEpoch + 1 })),
   setZoomCard: (id) => set({ zoomCardId: id }),
 }));
 

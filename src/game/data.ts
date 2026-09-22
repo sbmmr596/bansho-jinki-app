@@ -20,7 +20,38 @@ export const TYPE_LABEL: Record<ElementType, string> = {
   earth: "地",
 };
 
-export const FACTION_LABEL: Record<Faction, string> = {
+export const FACTION_IDS = [
+  "koryu",
+  "tekki",
+  "tensho",
+  "metsujin",
+  "reiju",
+  "yukei",
+] as const satisfies readonly Faction[];
+
+export const TYPE_IDS = [
+  "power",
+  "skill",
+  "magic",
+  "void",
+  "heaven",
+  "earth",
+] as const satisfies readonly ElementType[];
+
+export const RARITY_IDS = ["N", "S", "H", "SP"] as const satisfies readonly Rarity[];
+
+export const SKILL_KIND_IDS = [
+  "front",
+  "pierce",
+  "sweep",
+  "random",
+  "all",
+  "heal",
+  "haste",
+  "slow",
+] as const satisfies readonly SkillKind[];
+
+const DEFAULT_FACTION_LABEL: Record<Faction, string> = {
   koryu: "煌龍",
   tekki: "鉄騎",
   tensho: "天翔",
@@ -28,6 +59,9 @@ export const FACTION_LABEL: Record<Faction, string> = {
   reiju: "霊獣",
   yukei: "幽契",
 };
+
+/** Mutable labels — user catalog may override via `factions` in payload. */
+export const FACTION_LABEL: Record<Faction, string> = { ...DEFAULT_FACTION_LABEL };
 
 export const RARITY_LABEL: Record<Rarity, string> = {
   N: "N",
@@ -127,6 +161,9 @@ for (const f of Object.values(FORMATIONS)) {
     throw new Error(`Formation "${f.id}" has ${open} open slots; must be 3–5`);
   }
 }
+
+export const FORMATION_IDS = Object.keys(FORMATIONS);
+
 
 const FALLBACK_HEROES: Card[] = [
   {
@@ -901,7 +938,7 @@ const FALLBACK_HEROES: Card[] = [
 
 
 const ELEMENTS: ElementType[] = ["power", "skill", "magic", "void", "heaven", "earth"];
-const FACTION_IDS: Faction[] = ["koryu", "tekki", "tensho", "metsujin", "reiju", "yukei"];
+const FODDER_FACTIONS: Faction[] = [...FACTION_IDS];
 
 /** Experimental: include fodder in summon pool as material-only. Easy to flip off. */
 export const SUMMON_INCLUDE_FODDER = true;
@@ -1013,6 +1050,8 @@ export const SPECIAL_FODDER: Card[] = [
   },
 ];
 
+export const STARTER_IDS = ["sora", "maki", "kuro", "hito", "rin", "ryuji", "bold"];
+
 export const CARDS: Card[] = [];
 export const HERO_CARDS: Card[] = [];
 export const CARD_BY_ID: Record<string, Card> = {};
@@ -1076,14 +1115,19 @@ function parseHero(raw: unknown): Card | null {
   };
 }
 
-function rebuildCatalog(heroes: Card[]) {
-  // Remote/custom catalogs must not drop bundled heroes (esp. starters).
-  // Missing ids are filled from FALLBACK_HEROES so newGame/defaultSave never
-  // hit CARD_BY_ID[id] === undefined.
+function rebuildCatalog(heroes: Card[], opts?: { replaceAll?: boolean }) {
+  // Default: merge missing FALLBACK_HEROES so remote catalogs never drop starters.
+  // replaceAll (editor saves): honor the list, but always re-inject STARTER_IDS.
   const byId = new Map<string, Card>();
   for (const h of heroes) byId.set(h.id, h);
-  for (const fb of FALLBACK_HEROES) {
-    if (!byId.has(fb.id)) byId.set(fb.id, fb);
+  if (opts?.replaceAll) {
+    for (const fb of FALLBACK_HEROES) {
+      if (STARTER_IDS.includes(fb.id) && !byId.has(fb.id)) byId.set(fb.id, fb);
+    }
+  } else {
+    for (const fb of FALLBACK_HEROES) {
+      if (!byId.has(fb.id)) byId.set(fb.id, fb);
+    }
   }
   const merged = [...byId.values()];
   const all = [...merged, ...FODDER_CARDS, ...SPECIAL_FODDER];
@@ -1095,18 +1139,83 @@ function rebuildCatalog(heroes: Card[]) {
 
 rebuildCatalog(FALLBACK_HEROES);
 
-export function applyCatalog(raw: unknown): number {
+export function applyFactionLabels(raw: unknown) {
+  if (!raw || typeof raw !== "object") return;
+  const r = raw as Record<string, unknown>;
+  for (const id of FACTION_IDS) {
+    const v = r[id];
+    if (typeof v === "string" && v.trim()) FACTION_LABEL[id] = v.trim();
+  }
+}
+
+export function resetFactionLabels() {
+  for (const id of FACTION_IDS) FACTION_LABEL[id] = DEFAULT_FACTION_LABEL[id];
+}
+
+export type CatalogPayload = {
+  chars: Array<Record<string, unknown>>;
+  factions: Record<Faction, string>;
+  replaceAll?: boolean;
+};
+
+function serializeHero(card: Card): Record<string, unknown> {
+  const row: Record<string, unknown> = {
+    id: card.id,
+    name: card.name,
+    title: card.title,
+    faction: card.faction,
+    type: card.type,
+    rarity: card.rarity,
+    cost: card.cost,
+    hp: card.hp,
+    atk: card.atk,
+    def: card.def,
+    spd: card.spd,
+    formation: card.formation,
+    skill: {
+      name: card.skill.name,
+      kind: card.skill.kind,
+      power: card.skill.power,
+      desc: card.skill.desc,
+      ...(card.skill.hits != null ? { hits: card.skill.hits } : {}),
+    },
+    portrait: card.portrait ?? card.id,
+  };
+  if (card.art) row.art = card.art;
+  if (card.bust) row.bust = card.bust;
+  return row;
+}
+
+/** Snapshot current hero catalog + faction labels for local/cloud persistence. */
+export function exportCatalogPayload(): CatalogPayload {
+  return {
+    chars: HERO_CARDS.map(serializeHero),
+    factions: { ...FACTION_LABEL },
+    replaceAll: true,
+  };
+}
+
+export function applyCatalog(raw: unknown, opts?: { replaceAll?: boolean }): number {
+  const replaceAll =
+    opts?.replaceAll === true ||
+    (!!raw &&
+      typeof raw === "object" &&
+      (raw as { replaceAll?: unknown }).replaceAll === true);
+  if (raw && typeof raw === "object" && (raw as { factions?: unknown }).factions) {
+    applyFactionLabels((raw as { factions: unknown }).factions);
+  }
   const list = Array.isArray(raw)
     ? raw
     : raw && typeof raw === "object" && Array.isArray((raw as { chars?: unknown }).chars)
       ? (raw as { chars: unknown[] }).chars
       : [];
   const heroes = list.map(parseHero).filter((c): c is Card => !!c);
-  if (heroes.length) rebuildCatalog(heroes);
+  if (heroes.length) rebuildCatalog(heroes, { replaceAll });
   return heroes.length;
 }
 
 export function resetCatalog() {
+  resetFactionLabels();
   rebuildCatalog(FALLBACK_HEROES);
 }
 
@@ -1124,7 +1233,6 @@ export async function loadChars() {
   }
 }
 
-export const STARTER_IDS = ["sora", "maki", "kuro", "hito", "rin", "ryuji", "bold"];
 export const SUMMON_COST = 200;
 /** Opening cost cap at shrine-only (capturedCount=1). */
 export const BASE_COST_CAP = 10;
