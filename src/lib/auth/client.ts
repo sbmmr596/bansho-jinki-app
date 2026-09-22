@@ -135,6 +135,12 @@ export async function signIn(
   // (including signOut). Awaiting first drops user-gesture privilege in some
   // browsers when the opener is a cross-origin live-preview iframe.
   const popup = inLivePreview() ? openSignInPopup(providerId) : null;
+  // Attach the message listener BEFORE awaiting pre-sign-in sign-out.
+  // Fast Google SSO (already signed-in on iPhone Safari) often postMessages
+  // and closes within ~1s — the same window as PREVIEW_SIGN_OUT_TIMEOUT_MS —
+  // so listening only after clear would miss the token and leave the card
+  // editor on Continue with Google/X after a "successful" popup.
+  const popupToken = popup ? waitForPopupToken(popup) : null;
 
   // Clear any prior session so switching providers actually switches identity.
   // Bounded because the popup is already open — a request that never settles
@@ -149,8 +155,8 @@ export async function signIn(
   });
 
   if (inLivePreview()) {
-    if (!popup) throw new Error("Pop-up blocked — allow pop-ups for sign-in");
-    const token = await waitForPopupToken(popup);
+    if (!popup || !popupToken) throw new Error("Pop-up blocked — allow pop-ups for sign-in");
+    const token = await popupToken;
     if (!token) throw new Error("Sign-in was cancelled or failed");
     setBearerToken(token);
     // Refresh useSession() atomically with the bearer attached (onRequest).
