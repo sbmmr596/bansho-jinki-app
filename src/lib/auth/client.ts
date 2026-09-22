@@ -2,6 +2,7 @@ import { genericOAuthClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { runPreSignInSignOut, runSignOut } from "../../../scripts/sign-out-plan.mjs";
 import { GROK_PROVIDERS } from "./providers";
+import { PREVIEW_BEARER_STORAGE_KEY } from "./preview-bearer";
 import { SESSION_REFETCH_TIMEOUT_MS, withTimeout } from "./session-resolve";
 
 /**
@@ -49,10 +50,65 @@ export { GROK_PROVIDERS };
 // a cross-site iframe; storage survives same-tab reloads when it works. Empty
 // everywhere except the preview after a popup sign-in, so the cookie path is
 // untouched elsewhere.
-const BEARER_KEY = "grok-auth.bearer-token";
+const BEARER_KEY = PREVIEW_BEARER_STORAGE_KEY;
 
 /** In-memory copy — `undefined` means "not hydrated from storage yet". */
 let bearerMemory: string | null | undefined;
+
+/** Epoch ms when a non-null bearer was last applied (gate grace). */
+let bearerAppliedAt: number | null = null;
+
+const bearerListeners = new Set<() => void>();
+
+function notifyBearerListeners(): void {
+  for (const listener of bearerListeners) listener();
+}
+
+/** Subscribe to preview-bearer apply/clear (for gate grace UI). */
+export function subscribePreviewBearer(listener: () => void): () => void {
+  bearerListeners.add(listener);
+  return () => {
+    bearerListeners.delete(listener);
+  };
+}
+
+/** Snapshot for gates: token present + when it was applied. */
+export function getPreviewBearerMeta(): {
+  hasBearer: boolean;
+  appliedAt: number | null;
+} {
+  return {
+    hasBearer: Boolean(getBearerToken()),
+    appliedAt: bearerAppliedAt,
+  };
+}
+
+function readBearerFromStorage(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.sessionStorage.getItem(BEARER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Re-read sessionStorage into memory. Needed when the popup completion page
+ * writes the opener's sessionStorage directly after we cleared memory to null.
+ */
+export function syncBearerFromStorage(): string | null {
+  const token = readBearerFromStorage();
+  if (token) {
+    bearerMemory = token;
+    if (bearerAppliedAt == null) bearerAppliedAt = Date.now();
+  } else if (bearerMemory) {
+    // Storage empty but memory still has a token (ITP wiped storage) — keep memory.
+    return bearerMemory;
+  } else {
+    bearerMemory = null;
+  }
+  return bearerMemory ?? null;
+}
 
 /** The stored preview bearer token, or null. */
 export function getBearerToken(): string | null {
@@ -68,13 +124,19 @@ export function getBearerToken(): string | null {
 
 function setBearerToken(token: string | null): void {
   bearerMemory = token;
-  if (typeof window === "undefined") return;
+  if (token) bearerAppliedAt = Date.now();
+  else bearerAppliedAt = null;
+  if (typeof window === "undefined") {
+    notifyBearerListeners();
+    return;
+  }
   try {
     if (token) window.sessionStorage.setItem(BEARER_KEY, token);
     else window.sessionStorage.removeItem(BEARER_KEY);
   } catch {
     /* storage unavailable — memory still holds the token for this page life */
   }
+  notifyBearerListeners();
 }
 
 /**
@@ -100,6 +162,49 @@ async function refreshSessionAtom(): Promise<void> {
   // Bearer is already stored; the UI timeout in useCurrentUserState also
   // falls back to the gate if the atom never clears pending.
   await withTimeout(run(), SESSION_REFETCH_TIMEOUT_MS, "session refetch");
+}
+
+/**
+ * When the app becomes visible again after OAuth (popup close / WebView sheet
+ * dismiss / bfcache restore), re-sync any bearer the completion page stashed
+ * and refetch the session atom. Without this, iPhone often returns to
+ * Continue with Google even though auth completed on auth.grok.me.
+ */
+let resumeInstalled = false;
+let resumeInFlight: Promise<void> | null = null;
+
+async function resumePreviewSessionFromBearer(): Promise<void> {
+  if (!inLivePreview()) return;
+  const token = syncBearerFromStorage();
+  if (!token) return;
+  notifyBearerListeners();
+  if (resumeInFlight) return resumeInFlight;
+  resumeInFlight = (async () => {
+    try {
+      await refreshSessionAtom();
+    } catch {
+      /* keep bearer; next visibility retries */
+    } finally {
+      resumeInFlight = null;
+    }
+  })();
+  return resumeInFlight;
+}
+
+function installPreviewAuthResume(): void {
+  if (resumeInstalled || typeof window === "undefined") return;
+  if (!inLivePreview()) return;
+  resumeInstalled = true;
+  const onReturn = () => {
+    void resumePreviewSessionFromBearer();
+  };
+  window.addEventListener("pageshow", onReturn);
+  window.addEventListener("focus", onReturn);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") onReturn();
+  });
+  // Cold load after same-window OAuth redirect home with token in sessionStorage.
+  void resumePreviewSessionFromBearer();
 }
 
 /**
@@ -138,16 +243,20 @@ export async function signIn(
   const callbackURL = opts.callbackURL ?? "/";
   const errorCallbackURL = opts.errorCallbackURL ?? "/";
 
+  installPreviewAuthResume();
+
   // Open the popup SYNCHRONOUSLY on the user gesture — before any await
   // (including signOut). Awaiting first drops user-gesture privilege in some
   // browsers when the opener is a cross-origin live-preview iframe.
   const popup = inLivePreview() ? openSignInPopup(providerId) : null;
+  const sameWindow = Boolean(popup && popup === window);
   // Attach the message listener BEFORE awaiting pre-sign-in sign-out.
   // Fast Google SSO (already signed-in on iPhone Safari) often postMessages
   // and closes within ~1s — the same window as PREVIEW_SIGN_OUT_TIMEOUT_MS —
   // so listening only after clear would miss the token and leave the card
   // editor on Continue with Google/X after a "successful" popup.
-  const popupToken = popup ? waitForPopupToken(popup) : null;
+  // Skip for same-window OAuth (this document is navigating away).
+  const popupToken = popup && !sameWindow ? waitForPopupToken(popup) : null;
 
   // Clear any prior session so switching providers actually switches identity.
   // Bounded because the popup is already open — a request that never settles
@@ -160,6 +269,10 @@ export async function signIn(
     requestSignOut: () => authClient.signOut(),
     clearToken: () => setBearerToken(null),
   });
+
+  // Same-window navigation (some iPhone WebViews): this document is leaving.
+  // Completion page stashes the bearer in sessionStorage and redirects home.
+  if (sameWindow) return;
 
   if (inLivePreview()) {
     if (!popup || !popupToken) throw new Error("Pop-up blocked — allow pop-ups for sign-in");
@@ -227,7 +340,8 @@ function openSignInPopup(providerId: string): Window | null {
 
 /**
  * Wait for the popup's completion page to postMessage the session bearer (or
- * for the user to dismiss the popup).
+ * for the user to dismiss the popup). Also polls sessionStorage: the completion
+ * page writes the opener's storage when postMessage is unreliable (iPhone).
  */
 function waitForPopupToken(popup: Window): Promise<string | null> {
   return new Promise((resolve, reject) => {
@@ -252,12 +366,21 @@ function waitForPopupToken(popup: Window): Promise<string | null> {
       settle(data.token ?? null, data.error);
     };
     // Fallback when the user dismisses the popup. Grace period lets the
-    // completion page's postMessage win over a racing `popup.closed`.
+    // completion page's postMessage (or sessionStorage write) win over a
+    // racing `popup.closed`.
     const pollTimer = window.setInterval(() => {
+      const fromStorage = syncBearerFromStorage();
+      if (fromStorage) {
+        settle(fromStorage);
+        return;
+      }
       if (!popup.closed) return;
       window.clearInterval(pollTimer);
-      closeTimer = window.setTimeout(() => settle(null), 400);
-    }, 300);
+      closeTimer = window.setTimeout(() => {
+        const stored = syncBearerFromStorage();
+        settle(stored);
+      }, 600);
+    }, 250);
     function cleanup() {
       window.clearInterval(pollTimer);
       if (closeTimer !== undefined) window.clearTimeout(closeTimer);
@@ -294,4 +417,11 @@ export async function signOut(redirectTo = "/"): Promise<void> {
       window.location.href = redirectTo;
     },
   });
+}
+
+// Install resume hooks as soon as this module loads in the browser preview so a
+// same-window OAuth return (token already in sessionStorage) refreshes session
+// without requiring another Continue with tap.
+if (typeof window !== "undefined") {
+  installPreviewAuthResume();
 }

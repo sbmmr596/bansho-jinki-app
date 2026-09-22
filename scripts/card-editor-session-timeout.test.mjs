@@ -18,7 +18,7 @@ describe("card editor session resolve timeout", () => {
     const src = readFileSync(join(root, "src/lib/auth/client.ts"), "utf8");
     assert.match(src, /withTimeout\(run\(\), SESSION_REFETCH_TIMEOUT_MS/);
     // Keep #89: listen before pre-sign-in clear
-    const listenIdx = src.indexOf("const popupToken = popup ? waitForPopupToken(popup) : null;");
+    const listenIdx = src.indexOf("const popupToken = popup && !sameWindow ? waitForPopupToken(popup) : null;");
     const clearIdx = src.indexOf("await runPreSignInSignOut({");
     assert.ok(listenIdx > 0);
     assert.ok(clearIdx > listenIdx);

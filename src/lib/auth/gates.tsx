@@ -1,6 +1,13 @@
 import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { Navigate } from "@tanstack/react-router";
-import { GROK_PROVIDERS, authEnabled, signIn, signOut } from "./client";
+import {
+  GROK_PROVIDERS,
+  authEnabled,
+  getPreviewBearerMeta,
+  signIn,
+  signOut,
+  subscribePreviewBearer,
+} from "./client";
 import { hasGateSessionMarker } from "./gate-session-marker";
 import { resolveSignInGateState } from "./sign-in-gate";
 import { useCurrentUser, useCurrentUserState } from "./use-current-user";
@@ -57,7 +64,17 @@ export function SignInGate({
   fallback?: ReactNode;
 }) {
   const { user, isPending } = useCurrentUserState();
-  const state = resolveSignInGateState({ isPending, hasUser: user !== null });
+  const bearerMeta = useSyncExternalStore(
+    subscribePreviewBearer,
+    getPreviewBearerMeta,
+    () => ({ hasBearer: false, appliedAt: null }),
+  );
+  const state = resolveSignInGateState({
+    isPending,
+    hasUser: user !== null,
+    hasPreviewBearer: bearerMeta.hasBearer,
+    previewBearerAppliedAt: bearerMeta.appliedAt,
+  });
   if (state === "pending") return null;
   if (state === "signed_in") return <>{children}</>;
   return <>{fallback ?? <SignInButtons />}</>;
