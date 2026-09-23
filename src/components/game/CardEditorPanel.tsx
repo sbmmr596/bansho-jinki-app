@@ -31,7 +31,7 @@ import type { Card, ElementType, Faction, Formation, Rarity, SkillKind } from "@
 import { useGame } from "@/game/store";
 import { CardFace, CloseButton } from "./pieces";
 
-type Tab = "cards" | "factions" | "formations";
+type Tab = "cards" | "factions" | "skillKinds" | "formations";
 
 type Draft = {
   id: string;
@@ -316,6 +316,9 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
   const [factionDraft, setFactionDraft] = useState<Record<Faction, string>>(() => ({
     ...FACTION_LABEL,
   }));
+  const [skillKindDraft, setSkillKindDraft] = useState<Record<SkillKind, string>>(() => ({
+    ...SKILL_KIND_LABEL,
+  }));
   const [selectedFormId, setSelectedFormId] = useState<string>(() => FORMATION_IDS[0] ?? "basic");
   const [formDraft, setFormDraft] = useState<FormationDraft>(() => {
     const f = FORMATIONS[FORMATION_IDS[0] ?? "basic"] ?? FORMATIONS.basic;
@@ -375,12 +378,14 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
   const persist = (
     heroesList: Card[],
     factions: Record<Faction, string>,
+    skillKinds: Record<SkillKind, string>,
     formations?: Record<string, Formation>,
   ) => {
     const n = applyCatalog(
       {
         chars: heroesList,
         factions,
+        skillKinds,
         formations: formations ?? currentFormationsPayload(),
         replaceAll: true,
       },
@@ -411,7 +416,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
         setMsg("IDは半角英数・_・-のみ。");
         return;
       }
-      const n = persist(buildHeroList("save-draft"), factionDraft);
+      const n = persist(buildHeroList("save-draft"), factionDraft, skillKindDraft);
       setSelectedId(id);
       const saved = HERO_CARDS.find((c) => c.id === id);
       if (saved) setDraft(toDraft(saved));
@@ -445,7 +450,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
         setMsg("これ以上削除できない。");
         return;
       }
-      const n = persist(heroesList, factionDraft);
+      const n = persist(heroesList, factionDraft, skillKindDraft);
       const next = HERO_CARDS[0];
       if (next) {
         setSelectedId(next.id);
@@ -466,10 +471,28 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
       const n = persist(
         HERO_CARDS.map((c) => ({ ...c })),
         factionDraft,
+        skillKindDraft,
       );
       setMsg(`陣営名を端末に保存した（カード ${n}人）。`);
     } catch {
       setMsg("陣営の保存に失敗した。");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onSaveSkillKinds = () => {
+    setBusy(true);
+    setMsg("");
+    try {
+      const n = persist(
+        HERO_CARDS.map((c) => ({ ...c })),
+        factionDraft,
+        skillKindDraft,
+      );
+      setMsg(`スキル種類名を端末に保存した（カード ${n}人）。`);
+    } catch {
+      setMsg("スキル種類の保存に失敗した。");
     } finally {
       setBusy(false);
     }
@@ -532,7 +555,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
         ...c,
         formation: c.formation === id ? "basic" : c.formation,
       }));
-      const n = persist(heroesList, factionDraft, next);
+      const n = persist(heroesList, factionDraft, skillKindDraft, next);
       const fallbackId = FORMATION_IDS.includes("basic") ? "basic" : FORMATION_IDS[0]!;
       setSelectedFormId(fallbackId);
       const f = FORMATIONS[fallbackId];
@@ -572,7 +595,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
         }
         return copy;
       });
-      const n = persist(heroesList, factionDraft, next);
+      const n = persist(heroesList, factionDraft, skillKindDraft, next);
       setSelectedFormId(parsed.id);
       const saved = FORMATIONS[parsed.id];
       if (saved) setFormDraft(toFormationDraft(saved, true));
@@ -632,6 +655,13 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
             </button>
             <button
               type="button"
+              className={`h-9 rounded px-3 text-sm ${tab === "skillKinds" ? "bg-panel text-brass" : "text-muted"}`}
+              onClick={() => setTab("skillKinds")}
+            >
+              スキル種類
+            </button>
+            <button
+              type="button"
               className={`h-9 rounded px-3 text-sm ${tab === "formations" ? "bg-panel text-brass" : "text-muted"}`}
               onClick={() => setTab("formations")}
             >
@@ -647,6 +677,15 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                 className="h-9 shrink-0 rounded-md bg-brass px-3 text-sm font-medium text-bg disabled:opacity-40"
               >
                 陣営名を保存
+              </button>
+            ) : tab === "skillKinds" ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onSaveSkillKinds}
+                className="h-9 shrink-0 rounded-md bg-brass px-3 text-sm font-medium text-bg disabled:opacity-40"
+              >
+                スキル種類名を保存
               </button>
             ) : tab === "formations" ? (
               <button
@@ -689,6 +728,22 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                       value={factionDraft[id]}
                       onChange={(e) =>
                         setFactionDraft((f) => ({ ...f, [id]: e.target.value }))
+                      }
+                    />
+                  </Field>
+                ))}
+              </div>
+            </div>
+          ) : tab === "skillKinds" ? (
+            <div className="stage-scroll min-h-0 flex-1 pr-1">
+              <div className="flex flex-col gap-2 pb-2">
+                {SKILL_KIND_IDS.map((id) => (
+                  <Field key={id} label={id}>
+                    <input
+                      className={inputCls}
+                      value={skillKindDraft[id]}
+                      onChange={(e) =>
+                        setSkillKindDraft((f) => ({ ...f, [id]: e.target.value }))
                       }
                     />
                   </Field>
@@ -977,7 +1032,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                   <Field label="攻撃方法（スキル種別）">
                     <select className={inputCls} value={draft.skillKind} onChange={(e) => patch("skillKind", e.target.value as SkillKind)}>
                       {SKILL_KIND_IDS.map((id) => (
-                        <option key={id} value={id}>{SKILL_KIND_LABEL[id]}（{id}）</option>
+                        <option key={id} value={id}>{skillKindDraft[id] || SKILL_KIND_LABEL[id]}（{id}）</option>
                       ))}
                     </select>
                   </Field>

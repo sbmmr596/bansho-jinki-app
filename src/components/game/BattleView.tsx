@@ -5,6 +5,7 @@ import { ATB_PER_SEC, atbRate, advanceGauges, GAUGE_MAX, affinityLabel } from "@
 import { activeTrial, pumpTrial } from "@/game/trial";
 import { BATTLE_PRELOAD_TIMEOUT_MS, preloadImages } from "@/game/preload";
 import { useGame } from "@/game/store";
+import { SKILL_KIND_LABEL } from "@/game/skillNames";
 import type { BattleEvent, BattleLog, ElementType, FieldKind, Side, SkillKind, Unit } from "@/game/types";
 import { nextBattleSpeed } from "@/game/types";
 import { CharSprite, charSrc, CloseButton } from "./pieces";
@@ -700,24 +701,7 @@ export function BattleView() {
 }
 
 function kindLabel(kind: SkillKind): string {
-  switch (kind) {
-    case "front":
-      return "単体";
-    case "pierce":
-      return "横一列";
-    case "sweep":
-      return "縦一列";
-    case "random":
-      return "乱撃";
-    case "all":
-      return "全体";
-    case "heal":
-      return "回復";
-    case "haste":
-      return "加速";
-    case "slow":
-      return "減速";
-  }
+  return SKILL_KIND_LABEL[kind];
 }
 
 function visOf(slot: number, side: Side) {
