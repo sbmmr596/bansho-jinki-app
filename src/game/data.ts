@@ -89,7 +89,7 @@ export const COUNTER_OF: Record<ElementType, ElementType[]> = {
 };
 
 /** Open slot count per formation must be 3–5 (inclusive). No 6+ layouts. */
-export const FORMATIONS: Record<string, Formation> = {
+const DEFAULT_FORMATIONS: Record<string, Formation> = {
   cross: {
     id: "cross",
     name: "十字五皇陣",
@@ -155,14 +155,114 @@ export const FORMATIONS: Record<string, Formation> = {
   },
 };
 
-for (const f of Object.values(FORMATIONS)) {
+for (const f of Object.values(DEFAULT_FORMATIONS)) {
   const open = f.slots.filter(Boolean).length;
   if (open < 3 || open > 5) {
     throw new Error(`Formation "${f.id}" has ${open} open slots; must be 3–5`);
   }
 }
 
-export const FORMATION_IDS = Object.keys(FORMATIONS);
+function cloneFormations(src: Record<string, Formation>): Record<string, Formation> {
+  const out: Record<string, Formation> = {};
+  for (const [id, f] of Object.entries(src)) {
+    out[id] = {
+      id: f.id,
+      name: f.name,
+      desc: f.desc,
+      slots: [...f.slots],
+      bonus: { ...f.bonus },
+    };
+  }
+  return out;
+}
+
+/** Mutable formations — user catalog may override via `formations` in payload. */
+export const FORMATIONS: Record<string, Formation> = cloneFormations(DEFAULT_FORMATIONS);
+
+/** Live list of formation ids; recomputed when FORMATIONS mutates. */
+export let FORMATION_IDS: string[] = Object.keys(FORMATIONS);
+
+function syncFormationIds() {
+  FORMATION_IDS = Object.keys(FORMATIONS);
+}
+
+const BONUS_KEYS = ["hp", "atk", "def", "spd", "frontAtk"] as const;
+
+export function parseFormation(raw: unknown): Formation | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const id = typeof r.id === "string" ? r.id.trim() : "";
+  if (!id || !/^[a-zA-Z0-9_-]+$/.test(id)) return null;
+  const name = typeof r.name === "string" && r.name.trim() ? r.name.trim() : id;
+  const desc = typeof r.desc === "string" ? r.desc.trim() : "";
+  if (!Array.isArray(r.slots) || r.slots.length !== 9) return null;
+  const slots = r.slots.map((s) => !!s);
+  const open = slots.filter(Boolean).length;
+  if (open < 3 || open > 5) return null;
+  const bonus: Formation["bonus"] = {};
+  if (r.bonus && typeof r.bonus === "object") {
+    const b = r.bonus as Record<string, unknown>;
+    for (const k of BONUS_KEYS) {
+      const v = b[k];
+      if (typeof v === "number" && Number.isFinite(v)) bonus[k] = v;
+    }
+  }
+  return { id, name, slots, bonus, desc };
+}
+
+function parseFormationsMap(raw: unknown): Record<string, Formation> | null {
+  if (!raw) return null;
+  const entries: unknown[] = Array.isArray(raw)
+    ? raw
+    : typeof raw === "object"
+      ? Object.entries(raw as Record<string, unknown>).map(([id, v]) =>
+          v && typeof v === "object" ? { ...(v as object), id: (v as { id?: unknown }).id ?? id } : null,
+        )
+      : [];
+  const out: Record<string, Formation> = {};
+  for (const item of entries) {
+    const f = parseFormation(item);
+    if (f) out[f.id] = f;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+/** Merge or replace validated formations. Invalid entries are skipped. */
+export function applyFormations(raw: unknown, opts?: { replaceAll?: boolean }): number {
+  const parsed = parseFormationsMap(raw);
+  if (!parsed) return 0;
+  if (opts?.replaceAll) {
+    for (const k of Object.keys(FORMATIONS)) delete FORMATIONS[k];
+    Object.assign(FORMATIONS, parsed);
+  } else {
+    Object.assign(FORMATIONS, parsed);
+  }
+  // Ensure at least one formation remains (fallback to basic default).
+  if (!Object.keys(FORMATIONS).length) {
+    FORMATIONS.basic = cloneFormations(DEFAULT_FORMATIONS).basic!;
+  }
+  if (!FORMATIONS.basic) {
+    FORMATIONS.basic = cloneFormations(DEFAULT_FORMATIONS).basic!;
+  }
+  syncFormationIds();
+  return Object.keys(parsed).length;
+}
+
+export function resetFormations() {
+  for (const k of Object.keys(FORMATIONS)) delete FORMATIONS[k];
+  Object.assign(FORMATIONS, cloneFormations(DEFAULT_FORMATIONS));
+  syncFormationIds();
+}
+
+export function serializeFormation(f: Formation): Record<string, unknown> {
+  return {
+    id: f.id,
+    name: f.name,
+    slots: [...f.slots],
+    bonus: { ...f.bonus },
+    desc: f.desc,
+  };
+}
 
 
 const FALLBACK_HEROES: Card[] = [
@@ -1156,6 +1256,8 @@ export function resetFactionLabels() {
 export type CatalogPayload = {
   chars: Array<Record<string, unknown>>;
   factions: Record<Faction, string>;
+  /** Optional; when present on apply, merges/replaces formation definitions. */
+  formations?: Record<string, Formation>;
   replaceAll?: boolean;
 };
 
@@ -1190,9 +1292,15 @@ function serializeHero(card: Card): Record<string, unknown> {
 
 /** Snapshot current hero catalog + faction labels for local/cloud persistence. */
 export function exportCatalogPayload(): CatalogPayload {
+  const formations: Record<string, Formation> = {};
+  for (const id of FORMATION_IDS) {
+    const f = FORMATIONS[id];
+    if (f) formations[id] = { id: f.id, name: f.name, desc: f.desc, slots: [...f.slots], bonus: { ...f.bonus } };
+  }
   return {
     chars: HERO_CARDS.map(serializeHero),
     factions: { ...FACTION_LABEL },
+    formations,
     replaceAll: true,
   };
 }
@@ -1206,6 +1314,9 @@ export function applyCatalog(raw: unknown, opts?: { replaceAll?: boolean }): num
   if (raw && typeof raw === "object" && (raw as { factions?: unknown }).factions) {
     applyFactionLabels((raw as { factions: unknown }).factions);
   }
+  if (raw && typeof raw === "object" && (raw as { formations?: unknown }).formations) {
+    applyFormations((raw as { formations: unknown }).formations, { replaceAll });
+  }
   const list = Array.isArray(raw)
     ? raw
     : raw && typeof raw === "object" && Array.isArray((raw as { chars?: unknown }).chars)
@@ -1218,6 +1329,7 @@ export function applyCatalog(raw: unknown, opts?: { replaceAll?: boolean }): num
 
 export function resetCatalog() {
   resetFactionLabels();
+  resetFormations();
   rebuildCatalog(FALLBACK_HEROES);
 }
 
