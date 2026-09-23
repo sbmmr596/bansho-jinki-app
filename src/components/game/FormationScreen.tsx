@@ -1,8 +1,32 @@
-import { CARD_BY_ID, FACTION_LABEL, FORMATIONS, scaledStat } from "@/game/data";
+import { useMemo, useState } from "react";
+import {
+  CARD_BY_ID,
+  FACTION_IDS,
+  FACTION_LABEL,
+  FORMATIONS,
+  scaledStat,
+  TYPE_IDS,
+  TYPE_LABEL,
+} from "@/game/data";
 import { formationOfLeader } from "@/game/combat";
+import type { ElementType, Faction, Rarity } from "@/game/types";
 import { currentCostCap, partyCost, useGame } from "@/game/store";
-import { CardFace, CostHex, GoldChip, PrimaryButton, Shell, TypeHex } from "./pieces";
+import { CardFace, CostHex, GoldChip, PrimaryButton, Shell, StatRow, TypeHex } from "./pieces";
 import { cn } from "@/lib/utils";
+
+type SortKey = "costDesc" | "costAsc" | "lvDesc" | "lvAsc" | "name" | "rarity" | "statDesc";
+
+const SORT_OPTIONS: { id: SortKey; label: string }[] = [
+  { id: "costDesc", label: "コスト↓" },
+  { id: "costAsc", label: "コスト↑" },
+  { id: "lvDesc", label: "Lv↓" },
+  { id: "lvAsc", label: "Lv↑" },
+  { id: "name", label: "名前" },
+  { id: "rarity", label: "レア" },
+  { id: "statDesc", label: "ステ合計↓" },
+];
+
+const RARITY_RANK: Record<Rarity, number> = { SP: 4, H: 3, S: 2, N: 1 };
 
 export function FormationScreen() {
   const party = useGame((s) => s.party);
@@ -16,6 +40,11 @@ export function FormationScreen() {
   const setLeader = useGame((s) => s.setLeader);
   const setSelected = useGame((s) => s.setSelected);
 
+  const [faction, setFaction] = useState<Faction | "all">("all");
+  const [elType, setElType] = useState<ElementType | "all">("all");
+  const [hideFodder, setHideFodder] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>("costDesc");
+
   // Empty party: preview selected non-fodder card's formation on the 3×3 before place.
   // Once a leader exists, keep that formation until 「リーダーにする」.
   const previewLeaderId =
@@ -27,12 +56,61 @@ export function FormationScreen() {
   const over = cost > cap;
   const costPct = cap > 0 ? Math.min(100, (cost / cap) * 100) : 0;
   const inParty = new Set(party.filter(Boolean) as string[]);
-  const tray = Object.keys(owned)
-    .map((id) => CARD_BY_ID[id])
-    .filter((c): c is NonNullable<typeof c> => !!c)
-    .sort((a, b) => Number(!!a.fodder) - Number(!!b.fodder) || b.cost - a.cost || a.name.localeCompare(b.name, "ja"));
+
+  const tray = useMemo(() => {
+    const cards = Object.keys(owned)
+      .map((id) => CARD_BY_ID[id])
+      .filter((c): c is NonNullable<typeof c> => !!c)
+      .filter((c) => (faction === "all" || c.faction === faction) && (elType === "all" || c.type === elType))
+      .filter((c) => !(hideFodder && c.fodder));
+
+    const levelOf = (id: string) => owned[id]?.level ?? 1;
+    const statSum = (c: (typeof cards)[number]) => {
+      const lv = levelOf(c.id);
+      return scaledStat(c.hp, lv) + scaledStat(c.atk, lv) + scaledStat(c.def, lv) + scaledStat(c.spd, lv);
+    };
+
+    cards.sort((a, b) => {
+      // Keep fodder after non-fodder unless sorting by name only.
+      if (sortKey !== "name") {
+        const fodderDiff = Number(!!a.fodder) - Number(!!b.fodder);
+        if (fodderDiff !== 0) return fodderDiff;
+      }
+
+      let primary = 0;
+      switch (sortKey) {
+        case "costDesc":
+          primary = b.cost - a.cost;
+          break;
+        case "costAsc":
+          primary = a.cost - b.cost;
+          break;
+        case "lvDesc":
+          primary = levelOf(b.id) - levelOf(a.id);
+          break;
+        case "lvAsc":
+          primary = levelOf(a.id) - levelOf(b.id);
+          break;
+        case "name":
+          primary = a.name.localeCompare(b.name, "ja");
+          break;
+        case "rarity":
+          primary = RARITY_RANK[b.rarity] - RARITY_RANK[a.rarity];
+          break;
+        case "statDesc":
+          primary = statSum(b) - statSum(a);
+          break;
+      }
+      if (primary !== 0) return primary;
+      // Stable secondary: cost↓ then name
+      return b.cost - a.cost || a.name.localeCompare(b.name, "ja");
+    });
+
+    return cards;
+  }, [owned, faction, elType, hideFodder, sortKey]);
 
   const focus = selected ? CARD_BY_ID[selected] : null;
+  const focusOwn = focus ? owned[focus.id] : null;
 
   const totals = (() => {
     let count = 0;
@@ -86,33 +164,78 @@ export function FormationScreen() {
             カードかマスを選んで置きたいマスへ。同じマスでもう一度で外す。リーダーを外すと全員解除。
           </p>
 
+          <div className="flex shrink-0 flex-col gap-1">
+            <div className="flex gap-1 overflow-x-auto pb-0.5">
+              <FilterChip active={faction === "all"} onClick={() => setFaction("all")}>
+                全
+              </FilterChip>
+              {FACTION_IDS.map((f) => (
+                <FilterChip key={f} active={faction === f} onClick={() => setFaction(f)}>
+                  {FACTION_LABEL[f]}
+                </FilterChip>
+              ))}
+            </div>
+            <div className="flex gap-1 overflow-x-auto pb-0.5">
+              <FilterChip active={elType === "all"} onClick={() => setElType("all")}>
+                全属性
+              </FilterChip>
+              {TYPE_IDS.map((t) => (
+                <FilterChip key={t} active={elType === t} onClick={() => setElType(t)}>
+                  {TYPE_LABEL[t]}
+                </FilterChip>
+              ))}
+              <FilterChip active={hideFodder} onClick={() => setHideFodder((v) => !v)}>
+                素材を隠す
+              </FilterChip>
+            </div>
+            <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
+              <span className="shrink-0 text-[12px] text-faint">並び</span>
+              {SORT_OPTIONS.map((opt) => (
+                <FilterChip key={opt.id} active={sortKey === opt.id} onClick={() => setSortKey(opt.id)}>
+                  {opt.label}
+                </FilterChip>
+              ))}
+            </div>
+          </div>
+
           {focus ? (
-            <div className="panel flex shrink-0 items-center gap-2 rounded-md px-2 py-1.5">
-              <TypeHex type={focus.type} className="h-6 w-7 shrink-0 text-xs" />
-              <CostHex cost={focus.cost} className="h-6 w-7 shrink-0 text-xs" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-display text-xs leading-tight text-fg">{focus.name}</p>
-                <p className="truncate text-[12px] leading-tight text-muted">
-                  {FACTION_LABEL[focus.faction]}　{focus.title}
-                </p>
+            <div className="panel flex shrink-0 flex-col gap-1 rounded-md px-2 py-1.5">
+              <div className="flex items-center gap-2">
+                <TypeHex type={focus.type} className="h-6 w-7 shrink-0 text-xs" />
+                <CostHex cost={focus.cost} className="h-6 w-7 shrink-0 text-xs" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-display text-xs leading-tight text-fg">{focus.name}</p>
+                  <p className="truncate text-[12px] leading-tight text-muted">
+                    {FACTION_LABEL[focus.faction]}　{focus.title}
+                    <span className="ml-1 text-brass">{focus.rarity}</span>
+                  </p>
+                </div>
+                {focus.fodder ? (
+                  <span className="shrink-0 rounded-sm bg-crimson/20 px-1.5 py-0.5 text-[12px] text-crimson">
+                    素材専用
+                  </span>
+                ) : null}
+                {inParty.has(focus.id) && !focus.fodder ? (
+                  <button
+                    type="button"
+                    onClick={() => setLeader(focus.id)}
+                    className={cn(
+                      "h-7 shrink-0 rounded-sm px-2 text-[12px]",
+                      leaderId === focus.id ? "bg-brass text-bg" : "bg-raised text-muted",
+                    )}
+                  >
+                    {leaderId === focus.id ? "LEADER" : "リーダーにする"}
+                  </button>
+                ) : null}
               </div>
-              {focus.fodder ? (
-                <span className="shrink-0 rounded-sm bg-crimson/20 px-1.5 py-0.5 text-[12px] text-crimson">
-                  素材専用
-                </span>
-              ) : null}
-              {inParty.has(focus.id) && !focus.fodder ? (
-                <button
-                  type="button"
-                  onClick={() => setLeader(focus.id)}
-                  className={cn(
-                    "h-7 shrink-0 rounded-sm px-2 text-[12px]",
-                    leaderId === focus.id ? "bg-brass text-bg" : "bg-raised text-muted",
-                  )}
-                >
-                  {leaderId === focus.id ? "LEADER" : "リーダーにする"}
-                </button>
-              ) : null}
+              {/* Compact landscape: StatRow under header; denser via max-h scroll if needed */}
+              <div className="max-h-[7.5rem] overflow-y-auto border-t border-fg/10 pt-1">
+                <StatRow
+                  card={focus}
+                  level={focusOwn?.level ?? 1}
+                  skill1Lv={focusOwn?.skill1Lv ?? 1}
+                />
+              </div>
             </div>
           ) : null}
 
@@ -196,6 +319,29 @@ export function FormationScreen() {
         </aside>
       </div>
     </Shell>
+  );
+}
+
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        "inline-flex h-7 min-h-7 shrink-0 items-center justify-center rounded-full px-2.5 text-[12px] " +
+        (active ? "bg-brass text-bg" : "bg-surface text-muted hairline")
+      }
+    >
+      {children}
+    </button>
   );
 }
 
