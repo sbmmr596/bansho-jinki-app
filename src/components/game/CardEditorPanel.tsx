@@ -28,7 +28,7 @@ import {
 import { SKILL_KIND_LABEL } from "@/game/skillNames";
 import type { Card, ElementType, Faction, Rarity, SkillKind } from "@/game/types";
 import { useGame } from "@/game/store";
-import { CloseButton } from "./pieces";
+import { CardFace, CloseButton } from "./pieces";
 
 type Tab = "cards" | "factions";
 
@@ -166,7 +166,7 @@ function knownFile(name: string, list: readonly string[]) {
   return list.includes(n);
 }
 
-/** Live art/bust thumbnail for the editor draft (visual only). */
+/** Plain image thumbnail (bust /cards only; no CardFace compositing). */
 function DraftImgPreview({
   label,
   src,
@@ -199,6 +199,23 @@ function DraftImgPreview({
         ) : (
           <span className="text-[10px] text-faint">なし</span>
         )}
+      </div>
+    </div>
+  );
+}
+
+/** Live art preview: faction bg + name plate (+ rarity) via CardFace; uses /chars art. */
+function DraftArtPreview({ draft }: { draft: Draft }) {
+  const previewCard = useMemo(() => draftToCard(draft), [draft]);
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <span className="text-[10px] text-muted">art</span>
+      <div className="flex justify-center overflow-hidden rounded-md bg-raised/40 px-1 py-2 hairline">
+        <CardFace
+          card={previewCard}
+          size="lg"
+          className="pointer-events-none !w-[11rem] max-w-full"
+        />
       </div>
     </div>
   );
@@ -421,16 +438,13 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 gap-2 overflow-hidden">
-              <div className="stage-scroll flex w-[9.5rem] shrink-0 flex-col gap-2 pr-0.5">
-                <DraftImgPreview
-                  label="art"
-                  src={draft.art.trim() ? charArtPath(draft.art.trim()) : ""}
-                  boxClassName="h-40 w-full"
-                />
+              <div className="stage-scroll flex w-[12.5rem] shrink-0 flex-col gap-2 pr-0.5">
+                <DraftArtPreview draft={draft} />
                 <DraftImgPreview
                   label="bust"
                   src={draft.bust.trim() ? cardArtPath(draft.bust.trim()) : ""}
-                  boxClassName="aspect-[2/3] w-full"
+                  className="items-center"
+                  boxClassName="aspect-[2/3] w-[7.5rem]"
                 />
               </div>
 
