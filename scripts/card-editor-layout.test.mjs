@@ -22,7 +22,9 @@ describe("card editor panel layout (stage scroll)", () => {
   it("keeps header chrome shrink-0 and body min-h-0 flex-1", () => {
     assert.match(panel, /shrink-0 items-center justify-between/);
     assert.match(panel, /flex min-h-0 flex-1 flex-col overflow-hidden/);
-    assert.match(panel, /flex w-\[38%\] min-h-0 min-w-0 flex-col/);
+    // Three-column cards tab: left art/bust rail + list + form
+    assert.match(panel, /flex w-\[32%\] min-h-0 min-w-0 flex-col/);
+    assert.match(panel, /stage-scroll flex w-\[12\.5rem\] shrink-0 flex-col/);
   });
 
   it("uses stage-scroll on list and form bodies", () => {
@@ -41,5 +43,16 @@ describe("card editor panel layout (stage scroll)", () => {
     const footerIdx = panel.indexOf("border-t border-white/10 pt-2");
     const saveIdx = panel.indexOf("このカードを保存");
     assert.ok(footerIdx > 0 && saveIdx > footerIdx);
+  });
+
+  it("composites art with CardFace and keeps bust as plain /cards image", () => {
+    assert.match(panel, /function DraftArtPreview/);
+    assert.match(panel, /<CardFace[\s\S]*?size="lg"/);
+    assert.match(panel, /DraftArtPreview draft=\{draft\}/);
+    // Bust must remain a plain img preview (no CardFace)
+    assert.match(panel, /label="bust"/);
+    assert.match(panel, /cardArtPath\(draft\.bust/);
+    const bustBlock = panel.slice(panel.indexOf('label="bust"'));
+    assert.doesNotMatch(bustBlock.slice(0, 400), /CardFace/);
   });
 });
