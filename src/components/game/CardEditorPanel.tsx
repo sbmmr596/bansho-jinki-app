@@ -28,7 +28,7 @@ import {
 import { SKILL_KIND_LABEL } from "@/game/skillNames";
 import type { Card, ElementType, Faction, Rarity, SkillKind } from "@/game/types";
 import { useGame } from "@/game/store";
-import { CloseButton } from "./pieces";
+import { CardFace, CloseButton } from "./pieces";
 
 type Tab = "cards" | "factions";
 
@@ -166,7 +166,7 @@ function knownFile(name: string, list: readonly string[]) {
   return list.includes(n);
 }
 
-/** Live art/bust thumbnail for the editor draft (visual only). */
+/** Live full-body art thumbnail for the editor draft (visual only). */
 function DraftImgPreview({
   label,
   src,
@@ -199,6 +199,23 @@ function DraftImgPreview({
         ) : (
           <span className="text-[10px] text-faint">なし</span>
         )}
+      </div>
+    </div>
+  );
+}
+
+/** Card-style bust preview: faction bg + name plate + rarity prism via CardFace. */
+function DraftBustPreview({ draft }: { draft: Draft }) {
+  const previewCard = useMemo(() => {
+    const c = draftToCard(draft);
+    // CardFace prefers `art`; point it at bust so the rail mirrors the card face image.
+    return { ...c, art: c.bust || c.art };
+  }, [draft]);
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <span className="text-[10px] text-muted">bust</span>
+      <div className="flex justify-center overflow-hidden rounded-md bg-raised/40 px-1 py-1.5 hairline">
+        <CardFace card={previewCard} size="sm" className="pointer-events-none" />
       </div>
     </div>
   );
@@ -373,7 +390,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
       className="absolute inset-0 z-[80] flex items-center justify-center bg-bg/70 p-2"
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <div className="panel flex max-h-[92%] min-h-0 w-full max-w-3xl flex-col overflow-hidden rounded-xl p-3">
+      <div className="panel flex max-h-[92%] min-h-0 w-[min(96vw,72rem)] max-w-6xl flex-col overflow-hidden rounded-xl p-3">
         <div className="mb-2 flex shrink-0 items-center justify-between gap-3">
           <p className="font-display text-sm text-fg">カード編集</p>
           <CloseButton onClick={onClose} />
@@ -421,21 +438,16 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 gap-2 overflow-hidden">
-              <div className="flex w-[38%] min-h-0 min-w-0 flex-col gap-2">
-                <div className="flex shrink-0 gap-1.5">
-                  <DraftImgPreview
-                    label="art"
-                    src={draft.art.trim() ? charArtPath(draft.art.trim()) : ""}
-                    className="min-w-0 flex-1"
-                    boxClassName="h-[5.5rem] w-full"
-                  />
-                  <DraftImgPreview
-                    label="bust"
-                    src={draft.bust.trim() ? cardArtPath(draft.bust.trim()) : ""}
-                    className="w-[3.75rem] shrink-0"
-                    boxClassName="aspect-[2/3] w-full"
-                  />
-                </div>
+              <div className="stage-scroll flex w-[9.5rem] shrink-0 flex-col gap-2 pr-0.5">
+                <DraftImgPreview
+                  label="art"
+                  src={draft.art.trim() ? charArtPath(draft.art.trim()) : ""}
+                  boxClassName="h-40 w-full"
+                />
+                <DraftBustPreview draft={draft} />
+              </div>
+
+              <div className="flex w-[32%] min-h-0 min-w-0 flex-col gap-2">
                 <input
                   className={`${inputCls} shrink-0`}
                   placeholder="検索（名前 / ID）"
@@ -485,7 +497,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                 </div>
               </div>
 
-              <div className="stage-scroll min-h-0 flex-1 pr-1">
+              <div className="stage-scroll min-h-0 min-w-0 flex-1 pr-1">
                 <div className="grid grid-cols-2 gap-2 pb-2">
                   <Field label="ID">
                     <input className={inputCls} value={draft.id} onChange={(e) => patch("id", e.target.value)} />
