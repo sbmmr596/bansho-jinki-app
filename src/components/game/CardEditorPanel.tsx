@@ -28,7 +28,7 @@ import {
 import { SKILL_KIND_LABEL } from "@/game/skillNames";
 import type { Card, ElementType, Faction, Rarity, SkillKind } from "@/game/types";
 import { useGame } from "@/game/store";
-import { CardFace, CloseButton } from "./pieces";
+import { CloseButton } from "./pieces";
 
 type Tab = "cards" | "factions";
 
@@ -166,7 +166,7 @@ function knownFile(name: string, list: readonly string[]) {
   return list.includes(n);
 }
 
-/** Live full-body art thumbnail for the editor draft (visual only). */
+/** Live art/bust thumbnail for the editor draft (visual only). */
 function DraftImgPreview({
   label,
   src,
@@ -199,23 +199,6 @@ function DraftImgPreview({
         ) : (
           <span className="text-[10px] text-faint">なし</span>
         )}
-      </div>
-    </div>
-  );
-}
-
-/** Card-style bust preview: faction bg + name plate + rarity prism via CardFace. */
-function DraftBustPreview({ draft }: { draft: Draft }) {
-  const previewCard = useMemo(() => {
-    const c = draftToCard(draft);
-    // CardFace prefers `art`; point it at bust so the rail mirrors the card face image.
-    return { ...c, art: c.bust || c.art };
-  }, [draft]);
-  return (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="text-[10px] text-muted">bust</span>
-      <div className="flex justify-center overflow-hidden rounded-md bg-raised/40 px-1 py-1.5 hairline">
-        <CardFace card={previewCard} size="sm" className="pointer-events-none" />
       </div>
     </div>
   );
@@ -444,7 +427,11 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                   src={draft.art.trim() ? charArtPath(draft.art.trim()) : ""}
                   boxClassName="h-40 w-full"
                 />
-                <DraftBustPreview draft={draft} />
+                <DraftImgPreview
+                  label="bust"
+                  src={draft.bust.trim() ? cardArtPath(draft.bust.trim()) : ""}
+                  boxClassName="aspect-[2/3] w-full"
+                />
               </div>
 
               <div className="flex w-[32%] min-h-0 min-w-0 flex-col gap-2">
