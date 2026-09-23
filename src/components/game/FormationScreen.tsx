@@ -28,6 +28,9 @@ const SORT_OPTIONS: { id: SortKey; label: string }[] = [
 
 const RARITY_RANK: Record<Rarity, number> = { SP: 4, H: 3, S: 2, N: 1 };
 
+const selectCls =
+  "h-7 min-h-7 min-w-0 flex-1 rounded-sm bg-surface px-1.5 text-xs text-fg hairline outline-none focus:ring-1 focus:ring-brass/50";
+
 export function FormationScreen() {
   const party = useGame((s) => s.party);
   const owned = useGame((s) => s.owned);
@@ -164,78 +167,84 @@ export function FormationScreen() {
             カードかマスを選んで置きたいマスへ。同じマスでもう一度で外す。リーダーを外すと全員解除。
           </p>
 
-          <div className="flex shrink-0 flex-col gap-1">
-            <div className="flex gap-1 overflow-x-auto pb-0.5">
-              <FilterChip active={faction === "all"} onClick={() => setFaction("all")}>
-                全
-              </FilterChip>
+          <div className="flex shrink-0 flex-wrap items-center gap-1">
+            <select
+              aria-label="勢力"
+              className={selectCls}
+              value={faction}
+              onChange={(e) => setFaction(e.target.value as Faction | "all")}
+            >
+              <option value="all">勢力：全</option>
               {FACTION_IDS.map((f) => (
-                <FilterChip key={f} active={faction === f} onClick={() => setFaction(f)}>
+                <option key={f} value={f}>
                   {FACTION_LABEL[f]}
-                </FilterChip>
+                </option>
               ))}
-            </div>
-            <div className="flex gap-1 overflow-x-auto pb-0.5">
-              <FilterChip active={elType === "all"} onClick={() => setElType("all")}>
-                全属性
-              </FilterChip>
+            </select>
+            <select
+              aria-label="属性"
+              className={selectCls}
+              value={elType}
+              onChange={(e) => setElType(e.target.value as ElementType | "all")}
+            >
+              <option value="all">属性：全</option>
               {TYPE_IDS.map((t) => (
-                <FilterChip key={t} active={elType === t} onClick={() => setElType(t)}>
+                <option key={t} value={t}>
                   {TYPE_LABEL[t]}
-                </FilterChip>
+                </option>
               ))}
-              <FilterChip active={hideFodder} onClick={() => setHideFodder((v) => !v)}>
-                素材を隠す
-              </FilterChip>
-            </div>
-            <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
-              <span className="shrink-0 text-[12px] text-faint">並び</span>
+            </select>
+            <select
+              aria-label="並び"
+              className={selectCls}
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value as SortKey)}
+            >
               {SORT_OPTIONS.map((opt) => (
-                <FilterChip key={opt.id} active={sortKey === opt.id} onClick={() => setSortKey(opt.id)}>
-                  {opt.label}
-                </FilterChip>
+                <option key={opt.id} value={opt.id}>
+                  並び：{opt.label}
+                </option>
               ))}
-            </div>
+            </select>
+            <label className="inline-flex h-7 min-h-7 shrink-0 cursor-pointer items-center gap-1 rounded-sm bg-surface px-1.5 text-xs text-muted hairline">
+              <input
+                type="checkbox"
+                checked={hideFodder}
+                onChange={(e) => setHideFodder(e.target.checked)}
+                className="h-3.5 w-3.5 accent-brass"
+              />
+              素材を隠す
+            </label>
           </div>
 
           {focus ? (
-            <div className="panel flex shrink-0 flex-col gap-1 rounded-md px-2 py-1.5">
-              <div className="flex items-center gap-2">
-                <TypeHex type={focus.type} className="h-6 w-7 shrink-0 text-xs" />
-                <CostHex cost={focus.cost} className="h-6 w-7 shrink-0 text-xs" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-display text-xs leading-tight text-fg">{focus.name}</p>
-                  <p className="truncate text-[12px] leading-tight text-muted">
-                    {FACTION_LABEL[focus.faction]}　{focus.title}
-                    <span className="ml-1 text-brass">{focus.rarity}</span>
-                  </p>
-                </div>
-                {focus.fodder ? (
-                  <span className="shrink-0 rounded-sm bg-crimson/20 px-1.5 py-0.5 text-[12px] text-crimson">
-                    素材専用
-                  </span>
-                ) : null}
-                {inParty.has(focus.id) && !focus.fodder ? (
-                  <button
-                    type="button"
-                    onClick={() => setLeader(focus.id)}
-                    className={cn(
-                      "h-7 shrink-0 rounded-sm px-2 text-[12px]",
-                      leaderId === focus.id ? "bg-brass text-bg" : "bg-raised text-muted",
-                    )}
-                  >
-                    {leaderId === focus.id ? "LEADER" : "リーダーにする"}
-                  </button>
-                ) : null}
+            <div className="panel flex shrink-0 items-center gap-2 rounded-md px-2 py-1">
+              <TypeHex type={focus.type} className="h-6 w-7 shrink-0 text-xs" />
+              <CostHex cost={focus.cost} className="h-6 w-7 shrink-0 text-xs" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-display text-xs leading-tight text-fg">{focus.name}</p>
+                <p className="truncate text-[12px] leading-tight text-muted">
+                  {FACTION_LABEL[focus.faction]}　{focus.title}
+                  <span className="ml-1 text-brass">{focus.rarity}</span>
+                </p>
               </div>
-              {/* Compact landscape: StatRow under header; denser via max-h scroll if needed */}
-              <div className="max-h-[7.5rem] overflow-y-auto border-t border-fg/10 pt-1">
-                <StatRow
-                  card={focus}
-                  level={focusOwn?.level ?? 1}
-                  skill1Lv={focusOwn?.skill1Lv ?? 1}
-                />
-              </div>
+              {focus.fodder ? (
+                <span className="shrink-0 rounded-sm bg-crimson/20 px-1.5 py-0.5 text-[12px] text-crimson">
+                  素材専用
+                </span>
+              ) : null}
+              {inParty.has(focus.id) && !focus.fodder ? (
+                <button
+                  type="button"
+                  onClick={() => setLeader(focus.id)}
+                  className={cn(
+                    "h-7 shrink-0 rounded-sm px-2 text-[12px]",
+                    leaderId === focus.id ? "bg-brass text-bg" : "bg-raised text-muted",
+                  )}
+                >
+                  {leaderId === focus.id ? "LEADER" : "リーダーにする"}
+                </button>
+              ) : null}
             </div>
           ) : null}
 
@@ -287,7 +296,7 @@ export function FormationScreen() {
             />
 
             <div className="flex w-[132px] shrink-0 flex-col gap-1.5 overflow-y-auto @sm:w-[148px]">
-              <div className="min-w-0">
+              <div className="min-w-0 shrink-0">
                 <p className="font-display text-sm leading-tight text-fg">
                   {form.name}
                   {!leaderId && previewLeaderId ? (
@@ -296,6 +305,43 @@ export function FormationScreen() {
                 </p>
                 <p className="mt-0.5 text-[12px] leading-snug text-muted">{form.desc}</p>
               </div>
+
+              {focus ? (
+                <div className="shrink-0 space-y-1 rounded-sm bg-bg/40 px-1.5 py-1.5">
+                  <div className="flex items-center gap-1">
+                    <TypeHex type={focus.type} className="h-5 w-6 shrink-0 text-[10px]" />
+                    <CostHex cost={focus.cost} className="h-5 w-6 shrink-0 text-[10px]" />
+                    <p className="min-w-0 flex-1 truncate font-display text-[12px] leading-tight text-fg">
+                      {focus.name}
+                    </p>
+                  </div>
+                  <p className="truncate text-[11px] leading-tight text-muted">
+                    {FACTION_LABEL[focus.faction]}　{focus.rarity}
+                  </p>
+                  {focus.fodder ? (
+                    <span className="inline-block rounded-sm bg-crimson/20 px-1 py-0.5 text-[11px] text-crimson">
+                      素材専用
+                    </span>
+                  ) : null}
+                  <StatRow
+                    card={focus}
+                    level={focusOwn?.level ?? 1}
+                    skill1Lv={focusOwn?.skill1Lv ?? 1}
+                  />
+                  {inParty.has(focus.id) && !focus.fodder ? (
+                    <button
+                      type="button"
+                      onClick={() => setLeader(focus.id)}
+                      className={cn(
+                        "mt-0.5 h-7 w-full shrink-0 rounded-sm px-1.5 text-[11px]",
+                        leaderId === focus.id ? "bg-brass text-bg" : "bg-raised text-muted",
+                      )}
+                    >
+                      {leaderId === focus.id ? "LEADER" : "リーダーにする"}
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div className="mt-auto space-y-0.5 rounded-sm bg-bg/40 px-1.5 py-1.5 text-[13px]">
                 <p className="mb-1 text-[12px] text-faint">
@@ -319,29 +365,6 @@ export function FormationScreen() {
         </aside>
       </div>
     </Shell>
-  );
-}
-
-function FilterChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={
-        "inline-flex h-7 min-h-7 shrink-0 items-center justify-center rounded-full px-2.5 text-[12px] " +
-        (active ? "bg-brass text-bg" : "bg-surface text-muted hairline")
-      }
-    >
-      {children}
-    </button>
   );
 }
 
