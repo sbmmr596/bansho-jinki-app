@@ -185,6 +185,11 @@ export function GameApp() {
       frame.style.top = `${oy}px`;
       frame.style.width = `${Math.floor(vw)}px`;
       frame.style.height = `${Math.floor(vh)}px`;
+      // Clear inset/right/bottom so width/height are not stretched against right:0/bottom:0
+      // (CSS inset:0 leftover conflicts with visualViewport offsetLeft/offsetTop outside FS).
+      frame.style.right = "auto";
+      frame.style.bottom = "auto";
+      frame.style.inset = "";
 
       // Safe-area padding on outer letterbox only (stage stays full design size).
       const padL = cssPx("--sal");
@@ -214,10 +219,14 @@ export function GameApp() {
     window.addEventListener("resize", fit);
     window.visualViewport?.addEventListener("resize", fit);
     window.visualViewport?.addEventListener("scroll", fit);
+    document.addEventListener("fullscreenchange", fit);
+    document.addEventListener("webkitfullscreenchange", fit);
     return () => {
       window.removeEventListener("resize", fit);
       window.visualViewport?.removeEventListener("resize", fit);
       window.visualViewport?.removeEventListener("scroll", fit);
+      document.removeEventListener("fullscreenchange", fit);
+      document.removeEventListener("webkitfullscreenchange", fit);
     };
   }, [hydrated]);
 
