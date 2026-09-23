@@ -133,14 +133,17 @@ export function ArenaScreen() {
             ) : null}
           </div>
         </div>
-        <div className="mx-auto flex w-full max-w-2xl shrink-0 justify-center gap-3 border-t border-white/10 bg-ink/80 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] backdrop-blur-sm">
-          <GhostButton onClick={() => setScreen("palace")} className="min-w-28">
+        <div className="mx-auto flex w-full max-w-2xl shrink-0 justify-center gap-2 border-t border-white/10 bg-ink/80 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] backdrop-blur-sm @sm:gap-3">
+          <GhostButton onClick={() => setScreen("palace")} className="min-w-24 @sm:min-w-28">
             本拠へ
+          </GhostButton>
+          <GhostButton onClick={() => setScreen("formation")} className="min-w-24 @sm:min-w-28">
+            編成
           </GhostButton>
           <PrimaryButton
             onClick={onConfirm}
             disabled={!canFight || !canPay}
-            className="min-w-40"
+            className="min-w-36 @sm:min-w-40"
           >
             {canFight ? (canPay ? `闘気${cost}で挑戦` : "闘気が足りない") : "編成が必要"}
           </PrimaryButton>
