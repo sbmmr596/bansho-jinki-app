@@ -252,19 +252,17 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
         >
           GitHubから読む
         </button>
-        {user ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              setCatalogOpen(false);
-              setCardEditorOpen(true);
-            }}
-            className="mt-3 h-11 w-full rounded-md bg-raised text-sm text-fg hairline disabled:opacity-40"
-          >
-            カード編集を開く
-          </button>
-        ) : null}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            setCatalogOpen(false);
+            setCardEditorOpen(true);
+          }}
+          className="mt-3 h-11 w-full rounded-md bg-raised text-sm text-fg hairline disabled:opacity-40"
+        >
+          カード編集を開く
+        </button>
         {loginUrl ? (
           <button
             type="button"
