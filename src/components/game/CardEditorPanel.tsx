@@ -402,21 +402,52 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
         </p>
         {msg ? <p className="mb-2 shrink-0 text-xs text-brass">{msg}</p> : null}
 
-        <div className="mb-2 flex shrink-0 gap-1 rounded-md bg-raised p-1 hairline">
-          <button
-            type="button"
-            className={`h-11 flex-1 rounded text-sm ${tab === "cards" ? "bg-panel text-brass" : "text-muted"}`}
-            onClick={() => setTab("cards")}
-          >
-            カード
-          </button>
-          <button
-            type="button"
-            className={`h-11 flex-1 rounded text-sm ${tab === "factions" ? "bg-panel text-brass" : "text-muted"}`}
-            onClick={() => setTab("factions")}
-          >
-            陣営
-          </button>
+        <div className="mb-2 flex shrink-0 flex-wrap items-center gap-1.5">
+          <div className="inline-flex min-w-0 gap-0.5 rounded-md bg-raised p-0.5 hairline">
+            <button
+              type="button"
+              className={`h-8 rounded px-3 text-xs ${tab === "cards" ? "bg-panel text-brass" : "text-muted"}`}
+              onClick={() => setTab("cards")}
+            >
+              カード
+            </button>
+            <button
+              type="button"
+              className={`h-8 rounded px-3 text-xs ${tab === "factions" ? "bg-panel text-brass" : "text-muted"}`}
+              onClick={() => setTab("factions")}
+            >
+              陣営
+            </button>
+          </div>
+          <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5">
+            {tab === "factions" ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onSaveFactions}
+                className="h-8 shrink-0 rounded-md bg-brass px-3 text-xs font-medium text-bg disabled:opacity-40"
+              >
+                陣営名を保存
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onSaveCard}
+                className="h-8 shrink-0 rounded-md bg-brass px-3 text-xs font-medium text-bg disabled:opacity-40"
+              >
+                このカードを保存
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onExportJson}
+              className="h-8 shrink-0 rounded-md bg-raised px-3 text-xs text-fg hairline disabled:opacity-40"
+            >
+              JSONを書き出す
+            </button>
+          </div>
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -609,36 +640,6 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           )}
-        </div>
-
-        <div className="mt-2 flex shrink-0 flex-col gap-1 border-t border-white/10 pt-2">
-          {tab === "factions" ? (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={onSaveFactions}
-              className="h-11 w-full rounded-md bg-brass text-sm font-medium text-bg disabled:opacity-40"
-            >
-              陣営名を保存
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={onSaveCard}
-              className="h-11 w-full rounded-md bg-brass text-sm font-medium text-bg disabled:opacity-40"
-            >
-              このカードを保存
-            </button>
-          )}
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onExportJson}
-            className="h-11 w-full rounded-md bg-raised text-sm text-fg hairline disabled:opacity-40"
-          >
-            JSONを書き出す
-          </button>
         </div>
       </div>
     </div>
