@@ -129,8 +129,14 @@ body {
 }
 
 .game-frame {
+  /* JS fit() owns left/top/width/height (+ right/bottom:auto). Avoid inset:0 —
+   * residual right/bottom:0 + explicit size desyncs hit targets when visualViewport
+   * has non-zero offset (common outside fullscreen). */
   position: fixed;
-  inset: 0;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   background: #0b0907;
 }
