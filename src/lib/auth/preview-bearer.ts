@@ -15,3 +15,30 @@ export const PREVIEW_BEARER_STORAGE_KEY = "grok-auth.bearer-token";
  * the token landed but the session atom has not yet.
  */
 export const PREVIEW_BEARER_GATE_GRACE_MS = 10_000;
+
+/** Snapshot shape for `useSyncExternalStore` gate grace. */
+export type PreviewBearerMeta = {
+  hasBearer: boolean;
+  appliedAt: number | null;
+};
+
+/** Stable server/SSR snapshot — never allocate a fresh object in getServerSnapshot. */
+export const EMPTY_PREVIEW_BEARER_META: PreviewBearerMeta = {
+  hasBearer: false,
+  appliedAt: null,
+};
+
+/**
+ * Return the previous snapshot reference when values are unchanged.
+ * `useSyncExternalStore` compares snapshots with `Object.is`; allocating a new
+ * `{ hasBearer, appliedAt }` on every getSnapshot call causes
+ * "Maximum update depth exceeded".
+ */
+export function nextPreviewBearerMeta(
+  prev: PreviewBearerMeta,
+  hasBearer: boolean,
+  appliedAt: number | null,
+): PreviewBearerMeta {
+  if (prev.hasBearer === hasBearer && prev.appliedAt === appliedAt) return prev;
+  return { hasBearer, appliedAt };
+}

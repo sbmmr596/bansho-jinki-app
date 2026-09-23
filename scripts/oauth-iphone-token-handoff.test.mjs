@@ -58,4 +58,28 @@ describe("iPhone OAuth bearer handoff", () => {
     const gates = readFileSync(join(root, "src/lib/auth/gates.tsx"), "utf8");
     assert.match(gates, /hasPreviewBearer:\s*bearerMeta\.hasBearer/);
   });
+
+  it("getPreviewBearerMeta caches snapshot for useSyncExternalStore", () => {
+    const client = readFileSync(join(root, "src/lib/auth/client.ts"), "utf8");
+    assert.match(client, /nextPreviewBearerMeta/);
+    assert.match(client, /bearerMetaSnapshot/);
+    assert.match(client, /getServerPreviewBearerMeta/);
+    // Must not allocate a fresh object literal inside getPreviewBearerMeta body.
+    const fnStart = client.indexOf("export function getPreviewBearerMeta");
+    assert.ok(fnStart > 0, "expected getPreviewBearerMeta");
+    const fnBody = client.slice(fnStart, fnStart + 280);
+    assert.doesNotMatch(
+      fnBody,
+      /return\s*\{\s*hasBearer:/,
+      "getPreviewBearerMeta must not return a fresh object literal (Maximum update depth)",
+    );
+    const panel = readFileSync(
+      join(root, "src/components/game/CardEditorPanel.tsx"),
+      "utf8",
+    );
+    assert.match(panel, /getServerPreviewBearerMeta/);
+    const gates = readFileSync(join(root, "src/lib/auth/gates.tsx"), "utf8");
+    assert.match(gates, /getServerPreviewBearerMeta/);
+  });
+
 });

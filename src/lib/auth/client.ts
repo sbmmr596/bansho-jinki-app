@@ -2,7 +2,12 @@ import { genericOAuthClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { runPreSignInSignOut, runSignOut } from "../../../scripts/sign-out-plan.mjs";
 import { GROK_PROVIDERS } from "./providers";
-import { PREVIEW_BEARER_STORAGE_KEY } from "./preview-bearer";
+import {
+  EMPTY_PREVIEW_BEARER_META,
+  PREVIEW_BEARER_STORAGE_KEY,
+  nextPreviewBearerMeta,
+  type PreviewBearerMeta,
+} from "./preview-bearer";
 import { SESSION_REFETCH_TIMEOUT_MS, withTimeout } from "./session-resolve";
 
 /**
@@ -60,7 +65,20 @@ let bearerAppliedAt: number | null = null;
 
 const bearerListeners = new Set<() => void>();
 
+/** Cached snapshot — must stay referentially stable for useSyncExternalStore. */
+let bearerMetaSnapshot: PreviewBearerMeta = EMPTY_PREVIEW_BEARER_META;
+
+function syncBearerMetaSnapshot(): PreviewBearerMeta {
+  bearerMetaSnapshot = nextPreviewBearerMeta(
+    bearerMetaSnapshot,
+    Boolean(getBearerToken()),
+    bearerAppliedAt,
+  );
+  return bearerMetaSnapshot;
+}
+
 function notifyBearerListeners(): void {
+  syncBearerMetaSnapshot();
   for (const listener of bearerListeners) listener();
 }
 
@@ -72,15 +90,17 @@ export function subscribePreviewBearer(listener: () => void): () => void {
   };
 }
 
-/** Snapshot for gates: token present + when it was applied. */
-export function getPreviewBearerMeta(): {
-  hasBearer: boolean;
-  appliedAt: number | null;
-} {
-  return {
-    hasBearer: Boolean(getBearerToken()),
-    appliedAt: bearerAppliedAt,
-  };
+/**
+ * Snapshot for gates: token present + when it was applied.
+ * Returns a cached object; only replaces it when hasBearer/appliedAt change.
+ */
+export function getPreviewBearerMeta(): PreviewBearerMeta {
+  return syncBearerMetaSnapshot();
+}
+
+/** Stable getServerSnapshot for useSyncExternalStore (SSR / hydration). */
+export function getServerPreviewBearerMeta(): PreviewBearerMeta {
+  return EMPTY_PREVIEW_BEARER_META;
 }
 
 function readBearerFromStorage(): string | null {
