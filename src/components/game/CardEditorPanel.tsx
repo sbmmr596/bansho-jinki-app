@@ -1029,24 +1029,24 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                       </select>
                     </Field>
                   ) : null}
-                  <Field label="攻撃方法（スキル種別）">
+                  <Field label="必殺技1 攻撃方法">
                     <select className={inputCls} value={draft.skillKind} onChange={(e) => patch("skillKind", e.target.value as SkillKind)}>
                       {SKILL_KIND_IDS.map((id) => (
                         <option key={id} value={id}>{skillKindDraft[id] || SKILL_KIND_LABEL[id]}（{id}）</option>
                       ))}
                     </select>
                   </Field>
-                  <Field label="スキル名">
+                  <Field label="必殺技1 名前">
                     <input className={inputCls} value={draft.skillName} onChange={(e) => patch("skillName", e.target.value)} />
                   </Field>
-                  <Field label="スキル威力">
+                  <Field label="必殺技1 威力">
                     <input type="number" step="0.01" className={inputCls} value={draft.skillPower} onChange={(e) => patch("skillPower", Number(e.target.value))} />
                   </Field>
-                  <Field label="ヒット数（空欄可）">
+                  <Field label="必殺技1 ヒット数（空欄可）">
                     <input className={inputCls} value={draft.skillHits} onChange={(e) => patch("skillHits", e.target.value)} />
                   </Field>
                   <div className="col-span-2">
-                    <Field label="スキル説明">
+                    <Field label="必殺技1 説明">
                       <input className={inputCls} value={draft.skillDesc} onChange={(e) => patch("skillDesc", e.target.value)} />
                     </Field>
                   </div>
