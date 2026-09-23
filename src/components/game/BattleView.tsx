@@ -3,8 +3,9 @@ import { sfx } from "@/game/audio";
 import { CARD_BY_ID, NODE_BY_ID } from "@/game/data";
 import { ATB_PER_SEC, atbRate, advanceGauges, GAUGE_MAX, affinityLabel } from "@/game/combat";
 import { activeTrial, pumpTrial } from "@/game/trial";
+import { BATTLE_PRELOAD_TIMEOUT_MS, preloadImages } from "@/game/preload";
 import { useGame } from "@/game/store";
-import type { BattleEvent, ElementType, FieldKind, Side, SkillKind, Unit } from "@/game/types";
+import type { BattleEvent, BattleLog, ElementType, FieldKind, Side, SkillKind, Unit } from "@/game/types";
 import { nextBattleSpeed } from "@/game/types";
 import { CharSprite, charSrc, CloseButton } from "./pieces";
 import { AffinityDiagram } from "./AffinityDiagram";
@@ -46,6 +47,26 @@ const FIELD_LABEL: Record<FieldKind, string> = {
   forest: "森林",
   waste: "荒野",
 };
+
+
+function collectBattleImageUrls(battle: BattleLog, field: FieldKind): string[] {
+  const urls = new Set<string>();
+  urls.add(FIELD_SRC[field]);
+  const addCard = (cardId: string, bust?: boolean) => {
+    const card = CARD_BY_ID[cardId];
+    if (!card) return;
+    // Same path CharSprite / charSrc would use for battle sprites.
+    const sprite = charSrc(card, !!bust);
+    if (sprite) urls.add(sprite);
+    // ATB rail thumbnails for non-fodder units.
+    if (!card.fodder) urls.add(`/cards/${card.id}.jpg`);
+  };
+  for (const u of battle.units) addCard(u.cardId, u.bust);
+  for (const ev of battle.events) {
+    if (ev.kind === "spawn") addCard(ev.unit.cardId, ev.unit.bust);
+  }
+  return [...urls];
+}
 
 type SkillFxState = {
   key: number;
@@ -105,13 +126,44 @@ export function BattleView() {
   /** Index of event already stepEvent'd at start of its DUR (skill early-present). */
   const presentedIdxRef = useRef(-1);
   const unitsRef = useRef(units);
+  const [assetsReady, setAssetsReady] = useState(false);
+  const [loadDone, setLoadDone] = useState(0);
+  const [loadTotal, setLoadTotal] = useState(0);
 
   useEffect(() => {
     unitsRef.current = units;
   }, [units]);
 
+  // Preload field BG + char sprites before playback (all entry paths go through BattleView).
   useEffect(() => {
-    if (!battle) return;
+    if (!battle) {
+      setAssetsReady(false);
+      return;
+    }
+    const node = scoutNodeId ? NODE_BY_ID[scoutNodeId] : null;
+    const field: FieldKind = trial?.field ?? node?.field ?? "waste";
+    const urls = collectBattleImageUrls(battle, field);
+    let cancelled = false;
+    setAssetsReady(false);
+    setLoadDone(0);
+    setLoadTotal(urls.length);
+    void preloadImages(urls, {
+      timeoutMs: BATTLE_PRELOAD_TIMEOUT_MS,
+      onProgress: (done, total) => {
+        if (cancelled) return;
+        setLoadDone(done);
+        setLoadTotal(total);
+      },
+    }).then(() => {
+      if (!cancelled) setAssetsReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [battle, trial?.field, scoutNodeId]);
+
+  useEffect(() => {
+    if (!battle || !assetsReady) return;
     setUnits(battle.units.map((u) => ({ ...u })));
     setFloat(null);
     setActing(null);
@@ -508,7 +560,7 @@ export function BattleView() {
         bannerTimerRef.current = null;
       }
     };
-  }, [battle, finishBattle]);
+  }, [battle, assetsReady, finishBattle]);
 
   if (!battle) return null;
   const player = units.filter((u) => u.side === "player");
@@ -526,6 +578,22 @@ export function BattleView() {
       />
       <div className="absolute inset-0 bg-gradient-to-t from-bg/55 via-transparent to-bg/30" />
       {flash ? <div className="fx-screen-flash pointer-events-none absolute inset-0 z-40" /> : null}
+      {!assetsReady ? (
+        <div
+          className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-2 bg-bg/75"
+          aria-busy
+          aria-live="polite"
+        >
+          <p className="font-display text-lg tracking-[0.18em] text-fg">準備中…</p>
+          {loadTotal > 0 ? (
+            <p className="tabular text-xs text-muted">
+              {Math.min(loadDone, loadTotal)} / {loadTotal}
+            </p>
+          ) : (
+            <p className="text-xs text-muted">画像を読み込み中</p>
+          )}
+        </div>
+      ) : null}
       <div className={cn("relative flex h-full min-h-0 w-full flex-col", shake && "anim-shake")}>
         <div className="absolute right-3 top-2 z-20 flex h-8 items-center gap-2 text-xs text-muted">
           <span className="font-display tracking-wider text-fg">
