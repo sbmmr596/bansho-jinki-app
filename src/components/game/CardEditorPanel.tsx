@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   applyCatalog,
   exportCatalogPayload,
@@ -164,6 +164,44 @@ const inputCls =
 function knownFile(name: string, list: readonly string[]) {
   const n = name.trim().replace(/^\/+/, "").split("/").pop() ?? "";
   return list.includes(n);
+}
+
+/** Live art/bust thumbnail for the editor draft (visual only). */
+function DraftImgPreview({
+  label,
+  src,
+  className,
+  boxClassName,
+}: {
+  label: string;
+  src: string;
+  className?: string;
+  boxClassName?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+  const show = Boolean(src) && !failed;
+  return (
+    <div className={`flex min-w-0 flex-col gap-0.5 ${className ?? ""}`}>
+      <span className="text-[10px] text-muted">{label}</span>
+      <div
+        className={`flex items-center justify-center overflow-hidden rounded-md bg-raised/40 hairline ${boxClassName ?? ""}`}
+      >
+        {show ? (
+          <img
+            src={src}
+            alt=""
+            className="h-full w-full object-contain"
+            onError={() => setFailed(true)}
+          />
+        ) : (
+          <span className="text-[10px] text-faint">なし</span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function CardEditorPanel({ onClose }: { onClose: () => void }) {
@@ -384,6 +422,20 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
           ) : (
             <div className="flex min-h-0 flex-1 gap-2 overflow-hidden">
               <div className="flex w-[38%] min-h-0 min-w-0 flex-col gap-2">
+                <div className="flex shrink-0 gap-1.5">
+                  <DraftImgPreview
+                    label="art"
+                    src={draft.art.trim() ? charArtPath(draft.art.trim()) : ""}
+                    className="min-w-0 flex-1"
+                    boxClassName="h-[5.5rem] w-full"
+                  />
+                  <DraftImgPreview
+                    label="bust"
+                    src={draft.bust.trim() ? cardArtPath(draft.bust.trim()) : ""}
+                    className="w-[3.75rem] shrink-0"
+                    boxClassName="aspect-[2/3] w-full"
+                  />
+                </div>
                 <input
                   className={`${inputCls} shrink-0`}
                   placeholder="検索（名前 / ID）"
