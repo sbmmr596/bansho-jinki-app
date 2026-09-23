@@ -10,6 +10,11 @@ import type {
   Skill,
   SkillKind,
 } from "./types";
+import {
+  applySkillKindLabels,
+  resetSkillKindLabels,
+  SKILL_KIND_LABEL,
+} from "./skillNames";
 
 export const TYPE_LABEL: Record<ElementType, string> = {
   power: "力",
@@ -1256,6 +1261,8 @@ export function resetFactionLabels() {
 export type CatalogPayload = {
   chars: Array<Record<string, unknown>>;
   factions: Record<Faction, string>;
+  /** Optional display names for the 8 fixed SkillKind ids; unknown keys ignored. */
+  skillKinds?: Record<string, string>;
   /** Optional; when present on apply, merges/replaces formation definitions. */
   formations?: Record<string, Formation>;
   replaceAll?: boolean;
@@ -1300,6 +1307,7 @@ export function exportCatalogPayload(): CatalogPayload {
   return {
     chars: HERO_CARDS.map(serializeHero),
     factions: { ...FACTION_LABEL },
+    skillKinds: { ...SKILL_KIND_LABEL },
     formations,
     replaceAll: true,
   };
@@ -1313,6 +1321,9 @@ export function applyCatalog(raw: unknown, opts?: { replaceAll?: boolean }): num
       (raw as { replaceAll?: unknown }).replaceAll === true);
   if (raw && typeof raw === "object" && (raw as { factions?: unknown }).factions) {
     applyFactionLabels((raw as { factions: unknown }).factions);
+  }
+  if (raw && typeof raw === "object" && (raw as { skillKinds?: unknown }).skillKinds) {
+    applySkillKindLabels((raw as { skillKinds: unknown }).skillKinds);
   }
   if (raw && typeof raw === "object" && (raw as { formations?: unknown }).formations) {
     applyFormations((raw as { formations: unknown }).formations, { replaceAll });
@@ -1329,6 +1340,7 @@ export function applyCatalog(raw: unknown, opts?: { replaceAll?: boolean }): num
 
 export function resetCatalog() {
   resetFactionLabels();
+  resetSkillKindLabels();
   resetFormations();
   rebuildCatalog(FALLBACK_HEROES);
 }

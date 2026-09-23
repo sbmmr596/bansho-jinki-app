@@ -27,8 +27,18 @@ export const RARITY_SUFFIX: Record<Rarity, string> = {
   SP: "極",
 };
 
-/** Short kind labels for material picker / detail (e.g. 渾身の一撃・序（正面）). */
-export const SKILL_KIND_LABEL: Record<SkillKind, string> = {
+const SKILL_KIND_IDS = [
+  "front",
+  "pierce",
+  "sweep",
+  "random",
+  "all",
+  "heal",
+  "haste",
+  "slow",
+] as const satisfies readonly SkillKind[];
+
+const DEFAULT_SKILL_KIND_LABEL: Record<SkillKind, string> = {
   front: "正面",
   pierce: "貫通",
   sweep: "薙ぎ",
@@ -38,6 +48,23 @@ export const SKILL_KIND_LABEL: Record<SkillKind, string> = {
   haste: "加速",
   slow: "減速",
 };
+
+/** Mutable labels — user catalog may override via `skillKinds` in payload. */
+export const SKILL_KIND_LABEL: Record<SkillKind, string> = { ...DEFAULT_SKILL_KIND_LABEL };
+
+/** Apply known SkillKind keys only; invalid/unknown keys ignored; missing keep current. */
+export function applySkillKindLabels(raw: unknown) {
+  if (!raw || typeof raw !== "object") return;
+  const r = raw as Record<string, unknown>;
+  for (const id of SKILL_KIND_IDS) {
+    const v = r[id];
+    if (typeof v === "string" && v.trim()) SKILL_KIND_LABEL[id] = v.trim();
+  }
+}
+
+export function resetSkillKindLabels() {
+  for (const id of SKILL_KIND_IDS) SKILL_KIND_LABEL[id] = DEFAULT_SKILL_KIND_LABEL[id];
+}
 
 /** Common granted name with rarity suffix, e.g. 渾身の一撃・序 */
 export function commonSkillName(skill: Skill | SkillKind, rarity: Rarity): string {
