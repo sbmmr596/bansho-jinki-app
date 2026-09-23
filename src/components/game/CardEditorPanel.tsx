@@ -3,6 +3,7 @@ import { SignInButtons, UserButton } from "@/lib/auth/gates";
 import {
   authEnabled,
   getPreviewBearerMeta,
+  getServerPreviewBearerMeta,
   subscribePreviewBearer,
 } from "@/lib/auth/client";
 import { resolveSignInGateState } from "@/lib/auth/sign-in-gate";
@@ -187,7 +188,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
   const bearerMeta = useSyncExternalStore(
     subscribePreviewBearer,
     getPreviewBearerMeta,
-    () => ({ hasBearer: false, appliedAt: null }),
+    getServerPreviewBearerMeta,
   );
   const gateState = resolveSignInGateState({
     isPending,

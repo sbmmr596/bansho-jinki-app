@@ -4,6 +4,7 @@ import {
   GROK_PROVIDERS,
   authEnabled,
   getPreviewBearerMeta,
+  getServerPreviewBearerMeta,
   signIn,
   signOut,
   subscribePreviewBearer,
@@ -67,7 +68,7 @@ export function SignInGate({
   const bearerMeta = useSyncExternalStore(
     subscribePreviewBearer,
     getPreviewBearerMeta,
-    () => ({ hasBearer: false, appliedAt: null }),
+    getServerPreviewBearerMeta,
   );
   const state = resolveSignInGateState({
     isPending,
