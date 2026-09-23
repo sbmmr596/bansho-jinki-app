@@ -1,13 +1,4 @@
-import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
-import { SignInButtons, UserButton } from "@/lib/auth/gates";
-import {
-  authEnabled,
-  getPreviewBearerMeta,
-  getServerPreviewBearerMeta,
-  subscribePreviewBearer,
-} from "@/lib/auth/client";
-import { resolveSignInGateState } from "@/lib/auth/sign-in-gate";
-import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   applyCatalog,
   exportCatalogPayload,
@@ -23,7 +14,11 @@ import {
   TYPE_IDS,
   TYPE_LABEL,
 } from "@/game/data";
-import { CATALOG_KEY, saveUserCatalog } from "@/game/catalog-api";
+import { CATALOG_KEY } from "@/game/catalog-api";
+import {
+  CATALOG_DOWNLOAD_FILENAME,
+  downloadCatalogJson,
+} from "@/game/catalog-download";
 import {
   CARD_ART_FILES,
   cardArtPath,
@@ -167,7 +162,6 @@ function knownFile(name: string, list: readonly string[]) {
 }
 
 export function CardEditorPanel({ onClose }: { onClose: () => void }) {
-  const { user, isPending, sessionResolveTimedOut } = useCurrentUserState();
   const setCatalogSource = useGame((s) => s.setCatalogSource);
   const bumpCatalog = useGame((s) => s.bumpCatalog);
   const catalogEpoch = useGame((s) => s.catalogEpoch);
@@ -184,20 +178,6 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState("");
-
-  const bearerMeta = useSyncExternalStore(
-    subscribePreviewBearer,
-    getPreviewBearerMeta,
-    getServerPreviewBearerMeta,
-  );
-  const gateState = resolveSignInGateState({
-    isPending,
-    hasUser: user !== null,
-    hasPreviewBearer: bearerMeta.hasBearer,
-    previewBearerAppliedAt: bearerMeta.appliedAt,
-  });
-  const signedIn = gateState === "signed_in";
-  const canEdit = signedIn;
 
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -234,7 +214,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
     return withoutOld;
   };
 
-  const persist = async (heroesList: Card[], factions: Record<Faction, string>) => {
+  const persist = (heroesList: Card[], factions: Record<Faction, string>) => {
     const n = applyCatalog(
       {
         chars: heroesList,
@@ -252,18 +232,10 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
     }
     setCatalogSource("custom");
     bumpCatalog();
-    if (user) {
-      try {
-        await saveUserCatalog({ data: text });
-      } catch {
-        /* local keep */
-      }
-    }
     return n;
   };
 
-  const onSaveCard = async () => {
-    if (!canEdit) return;
+  const onSaveCard = () => {
     setBusy(true);
     setMsg("");
     try {
@@ -276,11 +248,11 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
         setMsg("IDは半角英数・_・-のみ。");
         return;
       }
-      const n = await persist(buildHeroList("save-draft"), factionDraft);
+      const n = persist(buildHeroList("save-draft"), factionDraft);
       setSelectedId(id);
       const saved = HERO_CARDS.find((c) => c.id === id);
       if (saved) setDraft(toDraft(saved));
-      setMsg(`${n}人を保存した（このアカウントの上書き）。`);
+      setMsg(`${n}人を端末に保存した。ドライブへは「JSONを書き出す」で chars.json を置いてね。`);
     } catch {
       setMsg("保存に失敗した。入力を確認してね。");
     } finally {
@@ -289,7 +261,6 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
   };
 
   const onAdd = () => {
-    if (!canEdit) return;
     const d = blankDraft(HERO_CARDS.length + 1);
     setSelectedId(d.id);
     setDraft(d);
@@ -297,8 +268,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
     setMsg("新規カード — 内容を入れて保存してね。");
   };
 
-  const onDelete = async () => {
-    if (!canEdit) return;
+  const onDelete = () => {
     if ((STARTER_IDS as readonly string[]).includes(selectedId)) {
       setMsg("初期メンバーは削除できない。");
       return;
@@ -312,13 +282,13 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
         setMsg("これ以上削除できない。");
         return;
       }
-      const n = await persist(heroesList, factionDraft);
+      const n = persist(heroesList, factionDraft);
       const next = HERO_CARDS[0];
       if (next) {
         setSelectedId(next.id);
         setDraft(toDraft(next));
       }
-      setMsg(`${n}人に更新（削除済み）。`);
+      setMsg(`${n}人に更新（削除済み・端末に保存）。`);
     } catch {
       setMsg("削除に失敗した。");
     } finally {
@@ -326,20 +296,32 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const onSaveFactions = async () => {
-    if (!canEdit) return;
+  const onSaveFactions = () => {
     setBusy(true);
     setMsg("");
     try {
-      const n = await persist(
+      const n = persist(
         HERO_CARDS.map((c) => ({ ...c })),
         factionDraft,
       );
-      setMsg(`陣営名を保存した（カード ${n}人）。`);
+      setMsg(`陣営名を端末に保存した（カード ${n}人）。`);
     } catch {
       setMsg("陣営の保存に失敗した。");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const onExportJson = () => {
+    try {
+      // Prefer in-memory catalog after any unsaved draft? Spec: export current loaded catalog.
+      // If user edited draft without saving, export still reflects last persist — note that.
+      downloadCatalogJson();
+      setMsg(
+        `「${CATALOG_DOWNLOAD_FILENAME}」を書き出した。万象陣記フォルダに置き、マイデータの「ドライブから読む」で読み直せるよ。`,
+      );
+    } catch {
+      setMsg("JSONの書き出しに失敗した。");
     }
   };
 
@@ -354,258 +336,222 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
           <CloseButton onClick={onClose} />
         </div>
 
-        <div className="mb-2 min-h-8 shrink-0">
-          {gateState === "pending" ? (
-            <p className="text-xs text-muted">接続中…</p>
+        <p className="mb-2 shrink-0 text-[11px] leading-relaxed text-faint">
+          いま読み込んでいるカタログ（標準・ドライブ・ファイル・端末）を編集する。保存は端末のみ。ドライブへは「JSONを書き出す」→ 万象陣記/chars.json
+          → マイデータの「ドライブから読む」。グラフィックは既存ファイル名を参照（アップロードなし）。
+        </p>
+        {msg ? <p className="mb-2 shrink-0 text-xs text-brass">{msg}</p> : null}
+
+        <div className="mb-2 flex shrink-0 gap-1 rounded-md bg-raised p-1 hairline">
+          <button
+            type="button"
+            className={`h-11 flex-1 rounded text-sm ${tab === "cards" ? "bg-panel text-brass" : "text-muted"}`}
+            onClick={() => setTab("cards")}
+          >
+            カード
+          </button>
+          <button
+            type="button"
+            className={`h-11 flex-1 rounded text-sm ${tab === "factions" ? "bg-panel text-brass" : "text-muted"}`}
+            onClick={() => setTab("factions")}
+          >
+            陣営
+          </button>
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {tab === "factions" ? (
+            <div className="stage-scroll min-h-0 flex-1 pr-1">
+              <div className="flex flex-col gap-2 pb-2">
+                {FACTION_IDS.map((id) => (
+                  <Field key={id} label={id}>
+                    <input
+                      className={inputCls}
+                      value={factionDraft[id]}
+                      onChange={(e) =>
+                        setFactionDraft((f) => ({ ...f, [id]: e.target.value }))
+                      }
+                    />
+                  </Field>
+                ))}
+              </div>
+            </div>
           ) : (
-            <UserButton />
+            <div className="flex min-h-0 flex-1 gap-2 overflow-hidden">
+              <div className="flex w-[38%] min-h-0 min-w-0 flex-col gap-2">
+                <input
+                  className={`${inputCls} shrink-0`}
+                  placeholder="検索（名前 / ID）"
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                />
+                <div className="flex shrink-0 gap-1">
+                  <button
+                    type="button"
+                    onClick={onAdd}
+                    className="h-10 flex-1 rounded-md bg-brass text-xs font-medium text-bg"
+                  >
+                    追加
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={onDelete}
+                    className="h-10 flex-1 rounded-md bg-raised text-xs text-fg hairline disabled:opacity-40"
+                  >
+                    削除
+                  </button>
+                </div>
+                <div className="stage-scroll min-h-0 flex-1 rounded-md bg-raised/40 hairline">
+                  {filtered.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => selectCard(c.id)}
+                      className={`flex w-full flex-col items-start gap-0.5 border-b border-white/5 px-2 py-2.5 text-left ${
+                        c.id === selectedId ? "bg-brass/20" : ""
+                      }`}
+                    >
+                      <span className="truncate text-xs text-fg">{c.name}</span>
+                      <span className="truncate text-[10px] text-faint tabular">
+                        {c.id} · {FACTION_LABEL[c.faction]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="stage-scroll min-h-0 flex-1 pr-1">
+                <div className="grid grid-cols-2 gap-2 pb-2">
+                  <Field label="ID">
+                    <input className={inputCls} value={draft.id} onChange={(e) => patch("id", e.target.value)} />
+                  </Field>
+                  <Field label="名称">
+                    <input className={inputCls} value={draft.name} onChange={(e) => patch("name", e.target.value)} />
+                  </Field>
+                  <div className="col-span-2">
+                    <Field label="称号">
+                      <input className={inputCls} value={draft.title} onChange={(e) => patch("title", e.target.value)} />
+                    </Field>
+                  </div>
+                  <Field label="陣営">
+                    <select className={inputCls} value={draft.faction} onChange={(e) => patch("faction", e.target.value as Faction)}>
+                      {FACTION_IDS.map((id) => (
+                        <option key={id} value={id}>{factionDraft[id] || FACTION_LABEL[id]}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="属性">
+                    <select className={inputCls} value={draft.type} onChange={(e) => patch("type", e.target.value as ElementType)}>
+                      {TYPE_IDS.map((id) => (
+                        <option key={id} value={id}>{TYPE_LABEL[id]}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="レア">
+                    <select className={inputCls} value={draft.rarity} onChange={(e) => patch("rarity", e.target.value as Rarity)}>
+                      {RARITY_IDS.map((id) => (
+                        <option key={id} value={id}>{RARITY_LABEL[id]}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="コスト">
+                    <input type="number" className={inputCls} value={draft.cost} onChange={(e) => patch("cost", Number(e.target.value))} />
+                  </Field>
+                  <Field label="HP">
+                    <input type="number" className={inputCls} value={draft.hp} onChange={(e) => patch("hp", Number(e.target.value))} />
+                  </Field>
+                  <Field label="攻撃">
+                    <input type="number" className={inputCls} value={draft.atk} onChange={(e) => patch("atk", Number(e.target.value))} />
+                  </Field>
+                  <Field label="防御">
+                    <input type="number" className={inputCls} value={draft.def} onChange={(e) => patch("def", Number(e.target.value))} />
+                  </Field>
+                  <Field label="速度">
+                    <input type="number" className={inputCls} value={draft.spd} onChange={(e) => patch("spd", Number(e.target.value))} />
+                  </Field>
+                  <Field label="陣形">
+                    <select className={inputCls} value={draft.formation} onChange={(e) => patch("formation", e.target.value)}>
+                      {FORMATION_IDS.map((id) => (
+                        <option key={id} value={id}>{FORMATIONS[id]?.name ?? id}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="攻撃方法（スキル種別）">
+                    <select className={inputCls} value={draft.skillKind} onChange={(e) => patch("skillKind", e.target.value as SkillKind)}>
+                      {SKILL_KIND_IDS.map((id) => (
+                        <option key={id} value={id}>{SKILL_KIND_LABEL[id]}（{id}）</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="スキル名">
+                    <input className={inputCls} value={draft.skillName} onChange={(e) => patch("skillName", e.target.value)} />
+                  </Field>
+                  <Field label="スキル威力">
+                    <input type="number" step="0.01" className={inputCls} value={draft.skillPower} onChange={(e) => patch("skillPower", Number(e.target.value))} />
+                  </Field>
+                  <Field label="ヒット数（空欄可）">
+                    <input className={inputCls} value={draft.skillHits} onChange={(e) => patch("skillHits", e.target.value)} />
+                  </Field>
+                  <div className="col-span-2">
+                    <Field label="スキル説明">
+                      <input className={inputCls} value={draft.skillDesc} onChange={(e) => patch("skillDesc", e.target.value)} />
+                    </Field>
+                  </div>
+                  <Field label="portrait">
+                    <input className={inputCls} value={draft.portrait} onChange={(e) => patch("portrait", e.target.value)} />
+                  </Field>
+                  <Field label={`art /chars/ ${knownFile(draft.art, CHAR_ART_FILES) ? "✓" : "⚠"}`}>
+                    <input list="char-art-files" className={inputCls} value={draft.art} onChange={(e) => patch("art", e.target.value)} />
+                  </Field>
+                  <Field label={`bust /cards/ ${knownFile(draft.bust, CARD_ART_FILES) ? "✓" : "⚠"}`}>
+                    <input list="card-art-files" className={inputCls} value={draft.bust} onChange={(e) => patch("bust", e.target.value)} />
+                  </Field>
+                </div>
+                <datalist id="char-art-files">
+                  {CHAR_ART_FILES.map((f) => (
+                    <option key={f} value={f} />
+                  ))}
+                </datalist>
+                <datalist id="card-art-files">
+                  {CARD_ART_FILES.map((f) => (
+                    <option key={f} value={f} />
+                  ))}
+                </datalist>
+              </div>
+            </div>
           )}
         </div>
 
-        {gateState === "pending" ? (
-          <div className="stage-scroll min-h-0 flex-1 space-y-3 p-2">
-            <p className="text-xs text-brass">接続中…</p>
-            <p className="text-xs text-muted">セッションを確認しています…</p>
+        <div className="mt-2 flex shrink-0 flex-col gap-1 border-t border-white/10 pt-2">
+          {tab === "factions" ? (
             <button
               type="button"
-              onClick={onClose}
-              className="h-11 rounded-md bg-raised px-4 text-sm text-fg hairline"
+              disabled={busy}
+              onClick={onSaveFactions}
+              className="h-11 w-full rounded-md bg-brass text-sm font-medium text-bg disabled:opacity-40"
             >
-              元に戻る
+              陣営名を保存
             </button>
-          </div>
-        ) : gateState === "signed_out" ? (
-          <div className="stage-scroll min-h-0 flex-1 space-y-3 p-2">
-            {sessionResolveTimedOut ? (
-              <p className="text-xs leading-relaxed text-red-400">
-                セッション確認がタイムアウトしました。通信やポップアップを確認して、もう一度サインインしてね。
-              </p>
-            ) : (
-              <p className="text-xs leading-relaxed text-muted">
-                Googleアカウントでサインインすると、カード内容・陣営をこのアカウント専用に編集・保存できるよ。サインアウト時は標準カタログのまま。
-              </p>
-            )}
-            {authEnabled ? <SignInButtons /> : null}
+          ) : (
             <button
               type="button"
-              onClick={onClose}
-              className="h-11 rounded-md bg-raised px-4 text-sm text-fg hairline"
+              disabled={busy}
+              onClick={onSaveCard}
+              className="h-11 w-full rounded-md bg-brass text-sm font-medium text-bg disabled:opacity-40"
             >
-              元に戻る
+              このカードを保存
             </button>
-          </div>
-        ) : (
-          <>
-            <p className="mb-2 shrink-0 text-[11px] leading-relaxed text-faint">
-              変更はこのアカウントの上書きのみ。未サインイン／他ユーザーは標準データを使う。グラフィックは既存ファイル名を参照（アップロードなし）。
-            </p>
-            {msg ? <p className="mb-2 shrink-0 text-xs text-brass">{msg}</p> : null}
-
-            <div className="mb-2 flex shrink-0 gap-1 rounded-md bg-raised p-1 hairline">
-              <button
-                type="button"
-                className={`h-11 flex-1 rounded text-sm ${tab === "cards" ? "bg-panel text-brass" : "text-muted"}`}
-                onClick={() => setTab("cards")}
-              >
-                カード
-              </button>
-              <button
-                type="button"
-                className={`h-11 flex-1 rounded text-sm ${tab === "factions" ? "bg-panel text-brass" : "text-muted"}`}
-                onClick={() => setTab("factions")}
-              >
-                陣営
-              </button>
-            </div>
-
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              {tab === "factions" ? (
-                <div className="stage-scroll min-h-0 flex-1 pr-1">
-                  <div className="flex flex-col gap-2 pb-2">
-                    {FACTION_IDS.map((id) => (
-                      <Field key={id} label={id}>
-                        <input
-                          className={inputCls}
-                          value={factionDraft[id]}
-                          onChange={(e) =>
-                            setFactionDraft((f) => ({ ...f, [id]: e.target.value }))
-                          }
-                        />
-                      </Field>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex min-h-0 flex-1 gap-2 overflow-hidden">
-                  <div className="flex w-[38%] min-h-0 min-w-0 flex-col gap-2">
-                    <input
-                      className={`${inputCls} shrink-0`}
-                      placeholder="検索（名前 / ID）"
-                      value={filter}
-                      onChange={(e) => setFilter(e.target.value)}
-                    />
-                    <div className="flex shrink-0 gap-1">
-                      <button
-                        type="button"
-                        disabled={!canEdit}
-                        onClick={onAdd}
-                        className="h-10 flex-1 rounded-md bg-brass text-xs font-medium text-bg disabled:opacity-40"
-                      >
-                        追加
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busy || !canEdit}
-                        onClick={() => void onDelete()}
-                        className="h-10 flex-1 rounded-md bg-raised text-xs text-fg hairline disabled:opacity-40"
-                      >
-                        削除
-                      </button>
-                    </div>
-                    <div className="stage-scroll min-h-0 flex-1 rounded-md bg-raised/40 hairline">
-                      {filtered.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => selectCard(c.id)}
-                          className={`flex w-full flex-col items-start gap-0.5 border-b border-white/5 px-2 py-2.5 text-left ${
-                            c.id === selectedId ? "bg-brass/20" : ""
-                          }`}
-                        >
-                          <span className="truncate text-xs text-fg">{c.name}</span>
-                          <span className="truncate text-[10px] text-faint tabular">
-                            {c.id} · {FACTION_LABEL[c.faction]}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="stage-scroll min-h-0 flex-1 pr-1">
-                    <div className="grid grid-cols-2 gap-2 pb-2">
-                      <Field label="ID">
-                        <input className={inputCls} value={draft.id} onChange={(e) => patch("id", e.target.value)} />
-                      </Field>
-                      <Field label="名称">
-                        <input className={inputCls} value={draft.name} onChange={(e) => patch("name", e.target.value)} />
-                      </Field>
-                      <div className="col-span-2">
-                        <Field label="称号">
-                          <input className={inputCls} value={draft.title} onChange={(e) => patch("title", e.target.value)} />
-                        </Field>
-                      </div>
-                      <Field label="陣営">
-                        <select className={inputCls} value={draft.faction} onChange={(e) => patch("faction", e.target.value as Faction)}>
-                          {FACTION_IDS.map((id) => (
-                            <option key={id} value={id}>{factionDraft[id] || FACTION_LABEL[id]}</option>
-                          ))}
-                        </select>
-                      </Field>
-                      <Field label="属性">
-                        <select className={inputCls} value={draft.type} onChange={(e) => patch("type", e.target.value as ElementType)}>
-                          {TYPE_IDS.map((id) => (
-                            <option key={id} value={id}>{TYPE_LABEL[id]}</option>
-                          ))}
-                        </select>
-                      </Field>
-                      <Field label="レア">
-                        <select className={inputCls} value={draft.rarity} onChange={(e) => patch("rarity", e.target.value as Rarity)}>
-                          {RARITY_IDS.map((id) => (
-                            <option key={id} value={id}>{RARITY_LABEL[id]}</option>
-                          ))}
-                        </select>
-                      </Field>
-                      <Field label="コスト">
-                        <input type="number" className={inputCls} value={draft.cost} onChange={(e) => patch("cost", Number(e.target.value))} />
-                      </Field>
-                      <Field label="HP">
-                        <input type="number" className={inputCls} value={draft.hp} onChange={(e) => patch("hp", Number(e.target.value))} />
-                      </Field>
-                      <Field label="攻撃">
-                        <input type="number" className={inputCls} value={draft.atk} onChange={(e) => patch("atk", Number(e.target.value))} />
-                      </Field>
-                      <Field label="防御">
-                        <input type="number" className={inputCls} value={draft.def} onChange={(e) => patch("def", Number(e.target.value))} />
-                      </Field>
-                      <Field label="速度">
-                        <input type="number" className={inputCls} value={draft.spd} onChange={(e) => patch("spd", Number(e.target.value))} />
-                      </Field>
-                      <Field label="陣形">
-                        <select className={inputCls} value={draft.formation} onChange={(e) => patch("formation", e.target.value)}>
-                          {FORMATION_IDS.map((id) => (
-                            <option key={id} value={id}>{FORMATIONS[id]?.name ?? id}</option>
-                          ))}
-                        </select>
-                      </Field>
-                      <Field label="攻撃方法（スキル種別）">
-                        <select className={inputCls} value={draft.skillKind} onChange={(e) => patch("skillKind", e.target.value as SkillKind)}>
-                          {SKILL_KIND_IDS.map((id) => (
-                            <option key={id} value={id}>{SKILL_KIND_LABEL[id]}（{id}）</option>
-                          ))}
-                        </select>
-                      </Field>
-                      <Field label="スキル名">
-                        <input className={inputCls} value={draft.skillName} onChange={(e) => patch("skillName", e.target.value)} />
-                      </Field>
-                      <Field label="スキル威力">
-                        <input type="number" step="0.01" className={inputCls} value={draft.skillPower} onChange={(e) => patch("skillPower", Number(e.target.value))} />
-                      </Field>
-                      <Field label="ヒット数（空欄可）">
-                        <input className={inputCls} value={draft.skillHits} onChange={(e) => patch("skillHits", e.target.value)} />
-                      </Field>
-                      <div className="col-span-2">
-                        <Field label="スキル説明">
-                          <input className={inputCls} value={draft.skillDesc} onChange={(e) => patch("skillDesc", e.target.value)} />
-                        </Field>
-                      </div>
-                      <Field label="portrait">
-                        <input className={inputCls} value={draft.portrait} onChange={(e) => patch("portrait", e.target.value)} />
-                      </Field>
-                      <Field label={`art /chars/ ${knownFile(draft.art, CHAR_ART_FILES) ? "✓" : "⚠"}`}>
-                        <input list="char-art-files" className={inputCls} value={draft.art} onChange={(e) => patch("art", e.target.value)} />
-                      </Field>
-                      <Field label={`bust /cards/ ${knownFile(draft.bust, CARD_ART_FILES) ? "✓" : "⚠"}`}>
-                        <input list="card-art-files" className={inputCls} value={draft.bust} onChange={(e) => patch("bust", e.target.value)} />
-                      </Field>
-                    </div>
-                    <datalist id="char-art-files">
-                      {CHAR_ART_FILES.map((f) => (
-                        <option key={f} value={f} />
-                      ))}
-                    </datalist>
-                    <datalist id="card-art-files">
-                      {CARD_ART_FILES.map((f) => (
-                        <option key={f} value={f} />
-                      ))}
-                    </datalist>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-2 flex shrink-0 flex-col gap-1 border-t border-white/10 pt-2">
-              {tab === "factions" ? (
-                <button
-                  type="button"
-                  disabled={busy || !canEdit}
-                  onClick={() => void onSaveFactions()}
-                  className="h-11 w-full rounded-md bg-brass text-sm font-medium text-bg disabled:opacity-40"
-                >
-                  陣営名を保存
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={busy || !canEdit}
-                  onClick={() => void onSaveCard()}
-                  className="h-11 w-full rounded-md bg-brass text-sm font-medium text-bg disabled:opacity-40"
-                >
-                  このカードを保存
-                </button>
-              )}
-            </div>
-          </>
-        )}
+          )}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onExportJson}
+            className="h-11 w-full rounded-md bg-raised text-sm text-fg hairline disabled:opacity-40"
+          >
+            JSONを書き出す
+          </button>
+        </div>
       </div>
     </div>
   );

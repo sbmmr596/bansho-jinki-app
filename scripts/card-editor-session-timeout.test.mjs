@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-describe("card editor session resolve timeout", () => {
+describe("card editor session resolve timeout (auth still elsewhere)", () => {
   it("useCurrentUserState bounds pending via session-resolve", () => {
     const src = readFileSync(join(root, "src/lib/auth/use-current-user.ts"), "utf8");
     assert.match(src, /SESSION_RESOLVE_TIMEOUT_MS/);
@@ -24,18 +24,10 @@ describe("card editor session resolve timeout", () => {
     assert.ok(clearIdx > listenIdx);
   });
 
-  it("card editor shows connecting + session check + back, and timeout error", () => {
-    const src = readFileSync(
-      join(root, "src/components/game/CardEditorPanel.tsx"),
-      "utf8",
-    );
-    assert.match(src, /接続中/);
-    assert.match(src, /セッションを確認しています/);
-    assert.match(src, /元に戻る/);
-    assert.match(src, /sessionResolveTimedOut/);
-    assert.match(src, /セッション確認がタイムアウトしました/);
-    // Keep #88: pending → loading, not editor
-    assert.match(src, /gateState === "pending"/);
-    assert.match(src, /resolveSignInGateState/);
+  it("preview bearer snapshot stays referentially stable (#94)", () => {
+    const src = readFileSync(join(root, "src/lib/auth/preview-bearer.ts"), "utf8");
+    assert.match(src, /nextPreviewBearerMeta/);
+    assert.match(src, /EMPTY_PREVIEW_BEARER_META/);
+    assert.match(src, /Object\.is/);
   });
 });
