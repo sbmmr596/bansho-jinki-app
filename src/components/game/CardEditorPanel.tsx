@@ -45,6 +45,7 @@ type Draft = {
   def: number;
   spd: number;
   formation: string;
+  fodder: boolean;
   skillName: string;
   skillKind: SkillKind;
   skillPower: number;
@@ -76,6 +77,7 @@ function toDraft(card: Card): Draft {
     def: card.def,
     spd: card.spd,
     formation: card.formation,
+    fodder: !!card.fodder,
     skillName: card.skill.name,
     skillKind: card.skill.kind,
     skillPower: card.skill.power,
@@ -102,6 +104,7 @@ function blankDraft(seed = 1): Draft {
     def: 150,
     spd: 100,
     formation: "basic",
+    fodder: false,
     skillName: "攻撃",
     skillKind: "front",
     skillPower: 1,
@@ -130,7 +133,8 @@ function draftToCard(d: Draft): Card {
     atk: Math.max(1, Math.round(d.atk) || 1),
     def: Math.max(0, Math.round(d.def) || 0),
     spd: Math.max(1, Math.round(d.spd) || 1),
-    formation: FORMATIONS[d.formation] ? d.formation : "basic",
+    // Material-only cards never lead; keep a harmless default formation.
+    formation: d.fodder ? "basic" : FORMATIONS[d.formation] ? d.formation : "basic",
     skill: {
       name: d.skillName.trim() || "攻撃",
       kind: d.skillKind,
@@ -141,6 +145,7 @@ function draftToCard(d: Draft): Card {
     portrait: d.portrait.trim() || d.id.trim(),
     art: charArtPath(artName),
     bust: cardArtPath(bustName),
+    ...(d.fodder ? { fodder: true as const } : {}),
   };
 }
 
@@ -412,7 +417,14 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                         c.id === selectedId ? "bg-brass/20" : ""
                       }`}
                     >
-                      <span className="truncate text-xs text-fg">{c.name}</span>
+                      <span className="flex w-full items-center gap-1 truncate text-xs text-fg">
+                        <span className="truncate">{c.name}</span>
+                        {c.fodder ? (
+                          <span className="shrink-0 rounded-sm bg-crimson/80 px-1 text-[9px] font-semibold text-fg">
+                            素材
+                          </span>
+                        ) : null}
+                      </span>
                       <span className="truncate text-[10px] text-faint tabular">
                         {c.id} · {FACTION_LABEL[c.faction]}
                       </span>
@@ -470,13 +482,24 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                   <Field label="速度">
                     <input type="number" className={inputCls} value={draft.spd} onChange={(e) => patch("spd", Number(e.target.value))} />
                   </Field>
-                  <Field label="陣形">
-                    <select className={inputCls} value={draft.formation} onChange={(e) => patch("formation", e.target.value)}>
-                      {FORMATION_IDS.map((id) => (
-                        <option key={id} value={id}>{FORMATIONS[id]?.name ?? id}</option>
-                      ))}
-                    </select>
-                  </Field>
+                  <label className="col-span-2 flex h-10 items-center gap-2 rounded-md bg-raised px-2.5 text-sm text-fg hairline">
+                    <input
+                      type="checkbox"
+                      checked={draft.fodder}
+                      onChange={(e) => patch("fodder", e.target.checked)}
+                      className="h-4 w-4 accent-brass"
+                    />
+                    <span>素材用（編成・陣形に参加しない）</span>
+                  </label>
+                  {!draft.fodder ? (
+                    <Field label="陣形">
+                      <select className={inputCls} value={draft.formation} onChange={(e) => patch("formation", e.target.value)}>
+                        {FORMATION_IDS.map((id) => (
+                          <option key={id} value={id}>{FORMATIONS[id]?.name ?? id}</option>
+                        ))}
+                      </select>
+                    </Field>
+                  ) : null}
                   <Field label="攻撃方法（スキル種別）">
                     <select className={inputCls} value={draft.skillKind} onChange={(e) => patch("skillKind", e.target.value as SkillKind)}>
                       {SKILL_KIND_IDS.map((id) => (
