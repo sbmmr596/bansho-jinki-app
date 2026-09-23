@@ -7,6 +7,7 @@ import {
   FORMATION_IDS,
   FORMATIONS,
   HERO_CARDS,
+  parseFormation,
   RARITY_IDS,
   RARITY_LABEL,
   SKILL_KIND_IDS,
@@ -26,11 +27,11 @@ import {
   charArtPath,
 } from "@/game/art-assets";
 import { SKILL_KIND_LABEL } from "@/game/skillNames";
-import type { Card, ElementType, Faction, Rarity, SkillKind } from "@/game/types";
+import type { Card, ElementType, Faction, Formation, Rarity, SkillKind } from "@/game/types";
 import { useGame } from "@/game/store";
 import { CardFace, CloseButton } from "./pieces";
 
-type Tab = "cards" | "factions";
+type Tab = "cards" | "factions" | "formations";
 
 type Draft = {
   id: string;
@@ -149,6 +150,85 @@ function draftToCard(d: Draft): Card {
   };
 }
 
+
+type FormationDraft = {
+  id: string;
+  name: string;
+  desc: string;
+  slots: boolean[];
+  hp: string;
+  atk: string;
+  def: string;
+  spd: string;
+  frontAtk: string;
+  /** When true, id field is locked (existing formation). */
+  idLocked: boolean;
+};
+
+function pctFromBonus(v: number | undefined): string {
+  if (v == null || !Number.isFinite(v)) return "";
+  return String(Math.round(v * 1000) / 10);
+}
+
+function bonusFromPct(raw: string): number | undefined {
+  const t = raw.trim();
+  if (!t) return undefined;
+  const n = Number(t);
+  if (!Number.isFinite(n)) return undefined;
+  return n / 100;
+}
+
+function toFormationDraft(f: Formation, idLocked = true): FormationDraft {
+  return {
+    id: f.id,
+    name: f.name,
+    desc: f.desc,
+    slots: [...f.slots],
+    hp: pctFromBonus(f.bonus.hp),
+    atk: pctFromBonus(f.bonus.atk),
+    def: pctFromBonus(f.bonus.def),
+    spd: pctFromBonus(f.bonus.spd),
+    frontAtk: pctFromBonus(f.bonus.frontAtk),
+    idLocked,
+  };
+}
+
+function blankFormationDraft(): FormationDraft {
+  return {
+    id: `form_${Date.now().toString(36)}`,
+    name: "新規陣形",
+    desc: "",
+    slots: [false, true, true, false, true, true, false, true, false],
+    hp: "",
+    atk: "",
+    def: "",
+    spd: "",
+    frontAtk: "",
+    idLocked: false,
+  };
+}
+
+function draftToFormation(d: FormationDraft): Formation | null {
+  const bonus: Formation["bonus"] = {};
+  const hp = bonusFromPct(d.hp);
+  const atk = bonusFromPct(d.atk);
+  const def = bonusFromPct(d.def);
+  const spd = bonusFromPct(d.spd);
+  const frontAtk = bonusFromPct(d.frontAtk);
+  if (hp != null) bonus.hp = hp;
+  if (atk != null) bonus.atk = atk;
+  if (def != null) bonus.def = def;
+  if (spd != null) bonus.spd = spd;
+  if (frontAtk != null) bonus.frontAtk = frontAtk;
+  return parseFormation({
+    id: d.id,
+    name: d.name,
+    desc: d.desc,
+    slots: d.slots,
+    bonus,
+  });
+}
+
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="flex min-w-0 flex-col gap-0.5 text-[11px] text-muted">
@@ -227,6 +307,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
   const catalogEpoch = useGame((s) => s.catalogEpoch);
 
   const heroes = useMemo(() => HERO_CARDS.slice(), [catalogEpoch]);
+  const formationList = useMemo(() => FORMATION_IDS.map((id) => FORMATIONS[id]!).filter(Boolean), [catalogEpoch]);
   const [tab, setTab] = useState<Tab>("cards");
   const [selectedId, setSelectedId] = useState<string>(() => heroes[0]?.id ?? "");
   const [draft, setDraft] = useState<Draft>(() =>
@@ -235,6 +316,11 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
   const [factionDraft, setFactionDraft] = useState<Record<Faction, string>>(() => ({
     ...FACTION_LABEL,
   }));
+  const [selectedFormId, setSelectedFormId] = useState<string>(() => FORMATION_IDS[0] ?? "basic");
+  const [formDraft, setFormDraft] = useState<FormationDraft>(() => {
+    const f = FORMATIONS[FORMATION_IDS[0] ?? "basic"] ?? FORMATIONS.basic;
+    return f ? toFormationDraft(f) : blankFormationDraft();
+  });
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState("");
@@ -274,11 +360,28 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
     return withoutOld;
   };
 
-  const persist = (heroesList: Card[], factions: Record<Faction, string>) => {
+  const openSlotCount = formDraft.slots.filter(Boolean).length;
+  const formSlotsValid = openSlotCount >= 3 && openSlotCount <= 5;
+
+  const currentFormationsPayload = (): Record<string, Formation> => {
+    const out: Record<string, Formation> = {};
+    for (const id of FORMATION_IDS) {
+      const f = FORMATIONS[id];
+      if (f) out[id] = { id: f.id, name: f.name, desc: f.desc, slots: [...f.slots], bonus: { ...f.bonus } };
+    }
+    return out;
+  };
+
+  const persist = (
+    heroesList: Card[],
+    factions: Record<Faction, string>,
+    formations?: Record<string, Formation>,
+  ) => {
     const n = applyCatalog(
       {
         chars: heroesList,
         factions,
+        formations: formations ?? currentFormationsPayload(),
         replaceAll: true,
       },
       { replaceAll: true },
@@ -372,6 +475,115 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const selectFormation = (id: string) => {
+    const f = FORMATIONS[id];
+    if (!f) return;
+    setSelectedFormId(id);
+    setFormDraft(toFormationDraft(f, true));
+    setMsg("");
+  };
+
+  const patchForm = <K extends keyof FormationDraft>(key: K, value: FormationDraft[K]) => {
+    setFormDraft((d) => ({ ...d, [key]: value }));
+  };
+
+  const toggleFormSlot = (idx: number) => {
+    setFormDraft((d) => {
+      const slots = [...d.slots];
+      slots[idx] = !slots[idx];
+      return { ...d, slots };
+    });
+  };
+
+  const onAddFormation = () => {
+    const d = blankFormationDraft();
+    setSelectedFormId(d.id);
+    setFormDraft(d);
+    setTab("formations");
+    setMsg("新規陣形 — スロット3〜5を開けて保存してね。");
+  };
+
+  const onDeleteFormation = () => {
+    const id = formDraft.idLocked ? selectedFormId : formDraft.id.trim();
+    if (id === "basic") {
+      setMsg("均衡陣（basic）は削除できない。");
+      return;
+    }
+    if (!FORMATIONS[id]) {
+      setMsg("未保存の新規なので削除ではなく破棄してね。");
+      return;
+    }
+    if (FORMATION_IDS.length <= 1) {
+      setMsg("これ以上削除できない。");
+      return;
+    }
+    if (!window.confirm(`陣形「${formDraft.name}」(${id}) を削除する？`)) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      const next = currentFormationsPayload();
+      delete next[id];
+      if (!Object.keys(next).length) {
+        setMsg("これ以上削除できない。");
+        return;
+      }
+      // Remap cards that pointed at the deleted formation.
+      const heroesList = HERO_CARDS.map((c) => ({
+        ...c,
+        formation: c.formation === id ? "basic" : c.formation,
+      }));
+      const n = persist(heroesList, factionDraft, next);
+      const fallbackId = FORMATION_IDS.includes("basic") ? "basic" : FORMATION_IDS[0]!;
+      setSelectedFormId(fallbackId);
+      const f = FORMATIONS[fallbackId];
+      if (f) setFormDraft(toFormationDraft(f, true));
+      setMsg(`陣形を削除した（カード ${n}人・端末に保存）。`);
+    } catch {
+      setMsg("陣形の削除に失敗した。");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onSaveFormations = () => {
+    setBusy(true);
+    setMsg("");
+    try {
+      if (!formSlotsValid) {
+        setMsg("開放スロットは3〜5にしてね。");
+        return;
+      }
+      const parsed = draftToFormation(formDraft);
+      if (!parsed) {
+        setMsg("陣形の入力が不正（ID・スロットを確認）。");
+        return;
+      }
+      const prevId = formDraft.idLocked ? selectedFormId : null;
+      const next = currentFormationsPayload();
+      if (prevId && prevId !== parsed.id) {
+        delete next[prevId];
+      }
+      next[parsed.id] = parsed;
+      // Remap cards if id changed
+      const heroesList = HERO_CARDS.map((c) => {
+        const copy = { ...c };
+        if (prevId && prevId !== parsed.id && copy.formation === prevId) {
+          copy.formation = parsed.id;
+        }
+        return copy;
+      });
+      const n = persist(heroesList, factionDraft, next);
+      setSelectedFormId(parsed.id);
+      const saved = FORMATIONS[parsed.id];
+      if (saved) setFormDraft(toFormationDraft(saved, true));
+      setMsg(`陣形を端末に保存した（カード ${n}人）。`);
+    } catch {
+      setMsg("陣形の保存に失敗した。");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const onExportJson = () => {
     try {
       // Prefer in-memory catalog after any unsaved draft? Spec: export current loaded catalog.
@@ -406,17 +618,24 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
           <div className="inline-flex min-w-0 gap-0.5 rounded-md bg-raised p-0.5 hairline">
             <button
               type="button"
-              className={`h-8 rounded px-3 text-xs ${tab === "cards" ? "bg-panel text-brass" : "text-muted"}`}
+              className={`h-9 rounded px-3 text-sm ${tab === "cards" ? "bg-panel text-brass" : "text-muted"}`}
               onClick={() => setTab("cards")}
             >
               カード
             </button>
             <button
               type="button"
-              className={`h-8 rounded px-3 text-xs ${tab === "factions" ? "bg-panel text-brass" : "text-muted"}`}
+              className={`h-9 rounded px-3 text-sm ${tab === "factions" ? "bg-panel text-brass" : "text-muted"}`}
               onClick={() => setTab("factions")}
             >
               陣営
+            </button>
+            <button
+              type="button"
+              className={`h-9 rounded px-3 text-sm ${tab === "formations" ? "bg-panel text-brass" : "text-muted"}`}
+              onClick={() => setTab("formations")}
+            >
+              陣形
             </button>
           </div>
           <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5">
@@ -425,16 +644,25 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                 type="button"
                 disabled={busy}
                 onClick={onSaveFactions}
-                className="h-8 shrink-0 rounded-md bg-brass px-3 text-xs font-medium text-bg disabled:opacity-40"
+                className="h-9 shrink-0 rounded-md bg-brass px-3 text-sm font-medium text-bg disabled:opacity-40"
               >
                 陣営名を保存
+              </button>
+            ) : tab === "formations" ? (
+              <button
+                type="button"
+                disabled={busy || !formSlotsValid}
+                onClick={onSaveFormations}
+                className="h-9 shrink-0 rounded-md bg-brass px-3 text-sm font-medium text-bg disabled:opacity-40"
+              >
+                陣形を保存
               </button>
             ) : (
               <button
                 type="button"
                 disabled={busy}
                 onClick={onSaveCard}
-                className="h-8 shrink-0 rounded-md bg-brass px-3 text-xs font-medium text-bg disabled:opacity-40"
+                className="h-9 shrink-0 rounded-md bg-brass px-3 text-sm font-medium text-bg disabled:opacity-40"
               >
                 このカードを保存
               </button>
@@ -443,7 +671,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
               type="button"
               disabled={busy}
               onClick={onExportJson}
-              className="h-8 shrink-0 rounded-md bg-raised px-3 text-xs text-fg hairline disabled:opacity-40"
+              className="h-9 shrink-0 rounded-md bg-raised px-3 text-sm text-fg hairline disabled:opacity-40"
             >
               JSONを書き出す
             </button>
@@ -467,6 +695,156 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                 ))}
               </div>
             </div>
+          ) : tab === "formations" ? (
+            <div className="flex min-h-0 flex-1 gap-2 overflow-hidden">
+              <div className="flex w-[22%] min-h-0 min-w-0 flex-col gap-2">
+                <div className="flex shrink-0 gap-1">
+                  <button
+                    type="button"
+                    onClick={onAddFormation}
+                    className="h-10 flex-1 rounded-md bg-brass text-xs font-medium text-bg"
+                  >
+                    追加
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={onDeleteFormation}
+                    className="h-10 flex-1 rounded-md bg-raised text-xs text-fg hairline disabled:opacity-40"
+                  >
+                    削除
+                  </button>
+                </div>
+                <div className="stage-scroll min-h-0 flex-1 rounded-md bg-raised/40 hairline">
+                  {formationList.map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => selectFormation(f.id)}
+                      className={`flex w-full flex-col items-start gap-0.5 border-b border-white/5 px-2 py-2.5 text-left ${
+                        f.id === selectedFormId ? "bg-brass/20" : ""
+                      }`}
+                    >
+                      <span className="truncate text-sm text-fg">{f.name}</span>
+                      <span className="truncate text-[10px] text-faint tabular">
+                        {f.id} · 開放{f.slots.filter(Boolean).length}
+                      </span>
+                    </button>
+                  ))}
+                  {!formDraft.idLocked && !FORMATIONS[formDraft.id] ? (
+                    <button
+                      type="button"
+                      className="flex w-full flex-col items-start gap-0.5 border-b border-white/5 bg-brass/20 px-2 py-2.5 text-left"
+                    >
+                      <span className="truncate text-sm text-fg">{formDraft.name}</span>
+                      <span className="truncate text-[10px] text-faint tabular">新規 · 未保存</span>
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              <div className="stage-scroll min-h-0 min-w-0 flex-1 pr-1">
+                <div className="grid grid-cols-2 gap-2 pb-2">
+                  <Field label="ID（英数・_・-）">
+                    <input
+                      className={inputCls}
+                      value={formDraft.id}
+                      disabled={formDraft.idLocked}
+                      onChange={(e) => patchForm("id", e.target.value)}
+                    />
+                  </Field>
+                  <Field label="名称">
+                    <input
+                      className={inputCls}
+                      value={formDraft.name}
+                      onChange={(e) => patchForm("name", e.target.value)}
+                    />
+                  </Field>
+                  <div className="col-span-2">
+                    <Field label="説明">
+                      <input
+                        className={inputCls}
+                        value={formDraft.desc}
+                        onChange={(e) => patchForm("desc", e.target.value)}
+                      />
+                    </Field>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="mb-1 text-[11px] text-muted">
+                      スロット（タップで開閉）・開放{" "}
+                      <span className={formSlotsValid ? "text-brass" : "text-crimson"}>
+                        {openSlotCount}
+                      </span>
+                      /3〜5
+                    </p>
+                    <div className="grid w-fit grid-cols-3 gap-1.5">
+                      {formDraft.slots.map((open, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => toggleFormSlot(i)}
+                          className={`flex h-12 w-12 items-center justify-center rounded-md text-xs hairline ${
+                            open ? "bg-brass/30 text-brass" : "bg-raised/60 text-faint"
+                          }`}
+                          aria-label={`slot ${i + 1} ${open ? "open" : "closed"}`}
+                        >
+                          {open ? "開" : "閉"}
+                        </button>
+                      ))}
+                    </div>
+                    {!formSlotsValid ? (
+                      <p className="mt-1 text-[11px] text-crimson">開放スロットは3〜5必須</p>
+                    ) : null}
+                  </div>
+                  <Field label="HPボーナス（%）">
+                    <input
+                      type="number"
+                      step="0.1"
+                      className={inputCls}
+                      value={formDraft.hp}
+                      onChange={(e) => patchForm("hp", e.target.value)}
+                      placeholder="例: 12"
+                    />
+                  </Field>
+                  <Field label="攻ボーナス（%）">
+                    <input
+                      type="number"
+                      step="0.1"
+                      className={inputCls}
+                      value={formDraft.atk}
+                      onChange={(e) => patchForm("atk", e.target.value)}
+                      placeholder="例: 10"
+                    />
+                  </Field>
+                  <Field label="防ボーナス（%）">
+                    <input
+                      type="number"
+                      step="0.1"
+                      className={inputCls}
+                      value={formDraft.def}
+                      onChange={(e) => patchForm("def", e.target.value)}
+                    />
+                  </Field>
+                  <Field label="速ボーナス（%）">
+                    <input
+                      type="number"
+                      step="0.1"
+                      className={inputCls}
+                      value={formDraft.spd}
+                      onChange={(e) => patchForm("spd", e.target.value)}
+                    />
+                  </Field>
+                  <Field label="前列攻ボーナス（%）">
+                    <input
+                      type="number"
+                      step="0.1"
+                      className={inputCls}
+                      value={formDraft.frontAtk}
+                      onChange={(e) => patchForm("frontAtk", e.target.value)}
+                    />
+                  </Field>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="flex min-h-0 flex-1 gap-2 overflow-hidden">
               <div className="stage-scroll flex w-[12.5rem] shrink-0 flex-col gap-2 pr-0.5">
@@ -479,7 +857,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                 />
               </div>
 
-              <div className="flex w-[32%] min-h-0 min-w-0 flex-col gap-2">
+              <div className="flex w-[22%] min-h-0 min-w-0 flex-col gap-2">
                 <input
                   className={`${inputCls} shrink-0`}
                   placeholder="検索（名前 / ID）"
@@ -513,7 +891,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                         c.id === selectedId ? "bg-brass/20" : ""
                       }`}
                     >
-                      <span className="flex w-full items-center gap-1 truncate text-xs text-fg">
+                      <span className="flex w-full items-center gap-1 truncate text-sm text-fg">
                         <span className="truncate">{c.name}</span>
                         {c.fodder ? (
                           <span className="shrink-0 rounded-sm bg-crimson/80 px-1 text-[9px] font-semibold text-fg">
