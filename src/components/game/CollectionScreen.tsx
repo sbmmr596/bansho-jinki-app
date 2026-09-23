@@ -88,14 +88,16 @@ export function CollectionScreen() {
 
             {/* Fill remaining panel height like original detail: formation + skill */}
             <div className="flex min-h-0 flex-1 flex-col gap-1.5 border-t border-fg/10 pt-1.5">
-              <div className="flex items-start gap-2 rounded-md bg-raised/50 p-1.5 hairline">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[12px] tracking-wide text-faint">リーダー陣形</p>
-                  <p className="font-display text-sm leading-snug text-fg">{form?.name ?? "—"}</p>
-                  <p className="mt-0.5 text-[13px] leading-snug text-muted">{form?.desc}</p>
+              {!card.fodder ? (
+                <div className="flex items-start gap-2 rounded-md bg-raised/50 p-1.5 hairline">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12px] tracking-wide text-faint">リーダー陣形</p>
+                    <p className="font-display text-sm leading-snug text-fg">{form?.name ?? "—"}</p>
+                    <p className="mt-0.5 text-[13px] leading-snug text-muted">{form?.desc}</p>
+                  </div>
+                  {form ? <FormationPreview slots={form.slots} /> : null}
                 </div>
-                {form ? <FormationPreview slots={form.slots} /> : null}
-              </div>
+              ) : null}
 
               <div className="flex min-h-0 flex-1 flex-col gap-1">
                 {/* 基本技は折りたたみ1行表示 — 必殺技2が初期ビューに収まるように */}

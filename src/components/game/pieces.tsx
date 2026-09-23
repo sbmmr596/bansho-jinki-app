@@ -427,7 +427,7 @@ export function ArtZoom() {
             </div>
           </div>
 
-          {form ? (
+          {form && !card.fodder ? (
             <div className="flex shrink-0 items-start gap-2 rounded-md bg-raised/40 p-2 text-[12px] hairline">
               <div className="min-w-0 flex-1">
                 <p className="text-faint">リーダー陣形</p>

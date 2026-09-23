@@ -1112,6 +1112,7 @@ function parseHero(raw: unknown): Card | null {
     portrait: typeof r.portrait === "string" && r.portrait.trim() ? r.portrait.trim() : id,
     art,
     bust,
+    ...(r.fodder === true ? { fodder: true as const } : {}),
   };
 }
 
@@ -1183,6 +1184,7 @@ function serializeHero(card: Card): Record<string, unknown> {
   };
   if (card.art) row.art = card.art;
   if (card.bust) row.bust = card.bust;
+  if (card.fodder) row.fodder = true;
   return row;
 }
 

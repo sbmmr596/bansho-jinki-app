@@ -248,7 +248,7 @@ export function TrainScreen() {
                 </PrimaryButton>
               )}
 
-              {form ? (
+              {form && !card.fodder ? (
                 <div className="rounded-md bg-raised/40 p-2 text-[12px] hairline">
                   <p className="text-faint">リーダー陣形</p>
                   <p className="font-display text-xs text-fg">{form.name}</p>
