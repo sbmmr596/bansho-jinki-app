@@ -655,7 +655,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
       className="absolute inset-0 z-[80] flex items-center justify-center bg-bg/70 p-2"
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <div className="panel flex max-h-[92%] min-h-0 w-[min(96vw,72rem)] max-w-6xl flex-col overflow-hidden rounded-xl p-3">
+      <div className="panel flex max-h-[92%] min-h-0 w-[96%] max-w-6xl flex-col overflow-hidden rounded-xl p-3">
         <div className="mb-2 flex shrink-0 items-center justify-between gap-3">
           <p className="font-display text-sm text-fg">カード編集</p>
           <CloseButton onClick={onClose} />
