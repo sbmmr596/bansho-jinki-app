@@ -1,4 +1,4 @@
-import { BASIC_SKILL, CARD_BY_ID, FORMATIONS, scaledStat, skillPowerScale } from "./data";
+import { CARD_BY_ID, FORMATIONS, cardBasicSkill, scaledStat, skillPowerScale } from "./data";
 import { commonSkillName } from "./skillNames";
 import type {
   BattleEvent,
@@ -106,10 +106,10 @@ function lowestHpAlly(units: Unit[], side: Side): Unit | null {
   return ls.sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
 }
 
-function selectTargets(actor: Unit, units: Unit[]): Unit[] {
+function selectTargets(actor: Unit, units: Unit[], skill: Skill): Unit[] {
   const foe: Side = actor.side === "player" ? "enemy" : "player";
   const row = rowOf(actor.slot);
-  switch (actor.skill.kind) {
+  switch (skill.kind) {
     case "front": {
       const same = frontmostInRow(units, foe, row);
       if (same) return [same];
@@ -124,7 +124,7 @@ function selectTargets(actor: Unit, units: Unit[]): Unit[] {
     case "sweep":
       return sweepFront(units, foe);
     case "random":
-      return pickRandom(units, foe, actor.skill.hits ?? 2);
+      return pickRandom(units, foe, skill.hits ?? 2);
     case "all":
       return living(units, foe);
     case "heal": {
@@ -166,7 +166,8 @@ export interface PickedActionSkill {
  *              s1Lv10+s2Lv10 → min(45%, 38%+0.135)=45%
  * 2) If special fires and skill2 exists →
  *      p(s1) = skill1Lv / (skill1Lv + skill2Lv), else s1 100%
- * 3) Else basic (通常攻撃 / BASIC_SKILL at skillLv 1, no power scale)
+ * 3) Else the card's basicSkill (or shared 通常攻撃 when unset),
+ *    at skillLv 1 with no power scale
  */
 export function specialRate(skill1Lv: number, skill2Lv?: number): number {
   const s1 = Math.max(1, skill1Lv);
@@ -195,7 +196,7 @@ export function pickActionSkill(actor: Unit): PickedActionSkill {
 
   // Step 1: special vs basic
   if (Math.random() >= rate) {
-    return { skill: BASIC_SKILL, skillLv: 1, slot: "basic" };
+    return { skill: cardBasicSkill(actor), skillLv: 1, slot: "basic" };
   }
   // Step 2: which special (weight by levels when skill2 equipped)
   if (hasS2 && s2Lv != null) {
@@ -273,6 +274,7 @@ export function buildUnits(
       faction: card.faction,
       skill: card.skill,
       skillLv: skill1Lv,
+      ...(card.basicSkill ? { basicSkill: card.basicSkill } : {}),
       skill2,
       hp,
       maxHp: hp,
@@ -300,15 +302,20 @@ export function enemyToMembers(enemy: EnemyUnit[], difficulty: Difficulty = "nor
 
 export function performAction(actor: Unit, units: Unit[]): BattleEvent[] {
   const { skill, skillLv, slot } = pickActionSkill(actor);
-  // Temporarily bind chosen skill so selectTargets reads actor.skill.kind
-  const prev = actor.skill;
-  actor.skill = skill;
   const events: BattleEvent[] = [
-    { kind: "skill", actorUid: actor.uid, skillName: slot === "s2" && actor.skill2 ? commonSkillName(skill, actor.skill2.rarity) : skill.name, side: actor.side, slot },
+    {
+      kind: "skill",
+      actorUid: actor.uid,
+      skillName: slot === "s2" && actor.skill2 ? commonSkillName(skill, actor.skill2.rarity) : skill.name,
+      side: actor.side,
+      slot,
+      skillKind: skill.kind,
+    },
   ];
-  let targets = selectTargets(actor, units);
-  if (skill.kind === "heal") {
-    targets = targets.filter((t) => t.side === actor.side);
+  let targets = selectTargets(actor, units, skill);
+  // haste buffs allies; slow and damage hit foes. (Previously haste was filtered out.)
+  if (skill.kind === "heal" || skill.kind === "haste") {
+    targets = targets.filter((t) => t.side === actor.side && t.alive);
   } else {
     targets = targets.filter((t) => t.side !== actor.side && t.alive);
   }
@@ -328,7 +335,6 @@ export function performAction(actor: Unit, units: Unit[]): BattleEvent[] {
         hpAfter: t.hp,
       });
     }
-    actor.skill = prev;
     return events;
   }
   if (skill.kind === "haste" || skill.kind === "slow") {
@@ -337,7 +343,6 @@ export function performAction(actor: Unit, units: Unit[]): BattleEvent[] {
       t.haste = Math.max(0.5, Math.min(2, (t.haste ?? 1) * mul));
     }
     events.push({ kind: "buff", actorUid: actor.uid, mode: skill.kind });
-    actor.skill = prev;
     return events;
   }
   for (const t of targets) {
@@ -357,7 +362,6 @@ export function performAction(actor: Unit, units: Unit[]): BattleEvent[] {
       events.push({ kind: "ko", uid: t.uid, wasLeader: t.isLeader });
     }
   }
-  actor.skill = prev;
   return events;
 }
 

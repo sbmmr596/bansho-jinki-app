@@ -235,9 +235,10 @@ export function BattleView() {
           setSkillBanner(null);
         }
         if (u) {
+          const kind = ev.skillKind;
           const slots: number[] = [];
           let targetSide: Side =
-            u.skill.kind === "heal" || u.skill.kind === "haste"
+            kind === "heal" || kind === "haste"
               ? u.side
               : u.side === "player"
                 ? "enemy"
@@ -248,12 +249,12 @@ export function BattleView() {
               const tu =
                 unitsRef.current.find((x) => x.uid === ne.targetUid) ??
                 activeTrial()?.units.find((x) => x.uid === ne.targetUid);
-              if (tu && (u.skill.kind === "heal" || tu.side !== u.side)) {
+              if (tu && (kind === "heal" || tu.side !== u.side)) {
                 slots.push(tu.slot);
                 targetSide = tu.side;
               }
             } else if (ne.kind === "buff") {
-              const side = u.skill.kind === "haste" ? u.side : targetSide;
+              const side = kind === "haste" ? u.side : targetSide;
               for (const tu of unitsRef.current) {
                 if (tu.alive && tu.side === side) slots.push(tu.slot);
               }
@@ -262,14 +263,14 @@ export function BattleView() {
           }
           setFx({
             key: idxRef.current,
-            kind: u.skill.kind,
+            kind,
             type: u.type,
             targetSide,
             slots,
             actorSlot: u.slot,
             actorSide: u.side,
           });
-          const dest = lungePos(u, slots, targetSide);
+          const dest = lungePos(u, slots, targetSide, kind);
           setLunge({ uid: u.uid, x: dest.x, y: dest.y });
         }
       } else if (ev.kind === "hit") {
@@ -313,6 +314,22 @@ export function BattleView() {
               return lu ? { ...u, haste: lu.haste } : u;
             }),
           );
+        } else {
+          // Playback snapshot starts at haste 1; mirror the sim multiplier so ATB bars follow.
+          const mul = ev.mode === "haste" ? 1.15 : 0.85;
+          const actor = unitsRef.current.find((x) => x.uid === ev.actorUid);
+          if (actor) {
+            setUnits((prev) => {
+              const next = prev.map((u) => {
+                if (!u.alive) return u;
+                const affected = ev.mode === "haste" ? u.side === actor.side : u.side !== actor.side;
+                if (!affected) return u;
+                return { ...u, haste: Math.max(0.5, Math.min(2, (u.haste ?? 1) * mul)) };
+              });
+              unitsRef.current = next;
+              return next;
+            });
+          }
         }
         setLog((l) => [ev.mode === "haste" ? "ヘイスト" : "スロウ", ...l].slice(0, 6));
         sfx("heal");
@@ -712,11 +729,10 @@ function visOf(slot: number, side: Side) {
   return { x, y, row, col };
 }
 
-function lungePos(actor: Unit, slots: number[], targetSide: Side) {
+function lungePos(actor: Unit, slots: number[], targetSide: Side, kind: SkillKind = actor.skill.kind) {
   const home = visOf(actor.slot, actor.side);
   if (!slots.length) return home;
   const tp = visOf(slots[0], targetSide);
-  const kind = actor.skill.kind;
   if (kind === "front") {
     const dx = targetSide === "enemy" ? 4 : -4;
     return { x: tp.x + dx, y: tp.y };

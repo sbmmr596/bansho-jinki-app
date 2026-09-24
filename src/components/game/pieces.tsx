@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import {
-  BASIC_SKILL,
   CARD_BY_ID,
+  cardBasicSkill,
   FORMATIONS,
   MAX_LEVEL,
   TYPE_LABEL,
@@ -441,9 +441,9 @@ export function ArtZoom() {
           <div className="flex min-h-0 flex-1 flex-col gap-2">
             <SkillSlot
               label="基本技"
-              name={BASIC_SKILL.name}
-              desc={BASIC_SKILL.desc}
-              power={BASIC_SKILL.power}
+              name={cardBasicSkill(card).name}
+              desc={cardBasicSkill(card).desc}
+              power={cardBasicSkill(card).power}
               tone="basic"
               className="flex-1"
             />
