@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  BASIC_SKILL,
   applyCatalog,
+  cardBasicSkill,
   exportCatalogPayload,
   FACTION_IDS,
   FACTION_LABEL,
@@ -47,6 +49,11 @@ type Draft = {
   spd: number;
   formation: string;
   fodder: boolean;
+  basicName: string;
+  basicKind: SkillKind;
+  basicPower: number;
+  basicHits: string;
+  basicDesc: string;
   skillName: string;
   skillKind: SkillKind;
   skillPower: number;
@@ -65,6 +72,7 @@ function fileNameOf(path: string | undefined, fallback: string): string {
 }
 
 function toDraft(card: Card): Draft {
+  const basic = cardBasicSkill(card);
   return {
     id: card.id,
     name: card.name,
@@ -79,6 +87,11 @@ function toDraft(card: Card): Draft {
     spd: card.spd,
     formation: card.formation,
     fodder: !!card.fodder,
+    basicName: basic.name,
+    basicKind: basic.kind,
+    basicPower: basic.power,
+    basicHits: basic.hits != null ? String(basic.hits) : "",
+    basicDesc: basic.desc,
     skillName: card.skill.name,
     skillKind: card.skill.kind,
     skillPower: card.skill.power,
@@ -106,6 +119,11 @@ function blankDraft(seed = 1): Draft {
     spd: 100,
     formation: "basic",
     fodder: false,
+    basicName: BASIC_SKILL.name,
+    basicKind: BASIC_SKILL.kind,
+    basicPower: BASIC_SKILL.power,
+    basicHits: "",
+    basicDesc: BASIC_SKILL.desc,
     skillName: "攻撃",
     skillKind: "front",
     skillPower: 1,
@@ -117,9 +135,14 @@ function blankDraft(seed = 1): Draft {
   };
 }
 
+function hitsFromDraft(raw: string): number | undefined {
+  const hitsRaw = raw.trim();
+  return hitsRaw ? Math.max(1, Math.round(Number(hitsRaw)) || 1) : undefined;
+}
+
 function draftToCard(d: Draft): Card {
-  const hitsRaw = d.skillHits.trim();
-  const hits = hitsRaw ? Math.max(1, Math.round(Number(hitsRaw)) || 1) : undefined;
+  const hits = hitsFromDraft(d.skillHits);
+  const basicHits = hitsFromDraft(d.basicHits);
   const artName = d.art.trim() || `${d.id}.png`;
   const bustName = d.bust.trim() || `${d.id}.jpg`;
   return {
@@ -136,6 +159,13 @@ function draftToCard(d: Draft): Card {
     spd: Math.max(1, Math.round(d.spd) || 1),
     // Material-only cards never lead; keep a harmless default formation.
     formation: d.fodder ? "basic" : FORMATIONS[d.formation] ? d.formation : "basic",
+    basicSkill: {
+      name: d.basicName.trim() || BASIC_SKILL.name,
+      kind: d.basicKind,
+      power: Number.isFinite(d.basicPower) ? d.basicPower : BASIC_SKILL.power,
+      ...(basicHits != null ? { hits: basicHits } : {}),
+      desc: d.basicDesc.trim(),
+    },
     skill: {
       name: d.skillName.trim() || "攻撃",
       kind: d.skillKind,
@@ -1029,6 +1059,30 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                       </select>
                     </Field>
                   ) : null}
+                  <p className="col-span-2 text-[11px] leading-snug text-muted">
+                    基本技は行動抽選の基本枠。回復・加速・減速はダメージなし（加速と減速はATB）。未設定の古いデータは通常攻撃。
+                  </p>
+                  <Field label="基本技 攻撃方法">
+                    <select className={inputCls} value={draft.basicKind} onChange={(e) => patch("basicKind", e.target.value as SkillKind)}>
+                      {SKILL_KIND_IDS.map((id) => (
+                        <option key={id} value={id}>{skillKindDraft[id] || SKILL_KIND_LABEL[id]}（{id}）</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="基本技 名前">
+                    <input className={inputCls} value={draft.basicName} onChange={(e) => patch("basicName", e.target.value)} />
+                  </Field>
+                  <Field label="基本技 威力">
+                    <input type="number" step="0.01" className={inputCls} value={draft.basicPower} onChange={(e) => patch("basicPower", Number(e.target.value))} />
+                  </Field>
+                  <Field label="基本技 ヒット数（空欄可）">
+                    <input className={inputCls} value={draft.basicHits} onChange={(e) => patch("basicHits", e.target.value)} />
+                  </Field>
+                  <div className="col-span-2">
+                    <Field label="基本技 説明">
+                      <input className={inputCls} value={draft.basicDesc} onChange={(e) => patch("basicDesc", e.target.value)} />
+                    </Field>
+                  </div>
                   <Field label="必殺技1 攻撃方法">
                     <select className={inputCls} value={draft.skillKind} onChange={(e) => patch("skillKind", e.target.value as SkillKind)}>
                       {SKILL_KIND_IDS.map((id) => (

@@ -300,6 +300,7 @@ const FALLBACK_HEROES: Card[] = [
     def: 360,
     spd: 104,
     formation: "lone",
+    basicSkill: { name: "慈光", kind: "heal", power: 1.0, desc: "傷つく味方を癒す" },
     skill: { name: "金鱗の祈り", kind: "heal", power: 1.15, desc: "最も傷つく味方を癒す" },
     portrait: "mirei",
   },
@@ -460,6 +461,7 @@ const FALLBACK_HEROES: Card[] = [
     def: 150,
     spd: 118,
     formation: "basic",
+    basicSkill: { name: "そよ風", kind: "heal", power: 0.95, desc: "味方を少し癒す" },
     skill: { name: "風の歌", kind: "heal", power: 1.05, desc: "味方を癒す" },
     portrait: "rin",
   },
@@ -588,6 +590,7 @@ const FALLBACK_HEROES: Card[] = [
     def: 160,
     spd: 108,
     formation: "basic",
+    basicSkill: { name: "狐の息", kind: "heal", power: 0.9, desc: "味方を少し癒す" },
     skill: { name: "狐火", kind: "heal", power: 1.0, desc: "味方を癒す" },
     portrait: "kon",
   },
@@ -716,6 +719,7 @@ const FALLBACK_HEROES: Card[] = [
     def: 170,
     spd: 108,
     formation: "basic",
+    basicSkill: { name: "鱗息", kind: "heal", power: 0.9, desc: "味方を少し癒す" },
     skill: { name: "癒鱗", kind: "heal", power: 1.0, desc: "味方を癒す" },
     portrait: "mirei",
   },
@@ -828,6 +832,7 @@ const FALLBACK_HEROES: Card[] = [
     def: 145,
     spd: 122,
     formation: "basic",
+    basicSkill: { name: "追い風", kind: "haste", power: 0, desc: "味方の速度を速める" },
     skill: { name: "疾風", kind: "haste", power: 0, desc: "味方の速度を速める" },
     portrait: "rin",
   },
@@ -956,6 +961,7 @@ const FALLBACK_HEROES: Card[] = [
     def: 155,
     spd: 110,
     formation: "basic",
+    basicSkill: { name: "獣息", kind: "heal", power: 0.95, desc: "味方を少し癒す" },
     skill: { name: "獣癒", kind: "heal", power: 1.02, desc: "味方を癒す" },
     portrait: "kon",
   },
@@ -972,6 +978,7 @@ const FALLBACK_HEROES: Card[] = [
     def: 180,
     spd: 114,
     formation: "crane",
+    basicSkill: { name: "足枷", kind: "slow", power: 0, desc: "敵の速度を遅らせる" },
     skill: { name: "鈍牙", kind: "slow", power: 0, desc: "敵の速度を遅らせる" },
     portrait: "yuki",
   },
@@ -1020,6 +1027,7 @@ const FALLBACK_HEROES: Card[] = [
     def: 150,
     spd: 112,
     formation: "basic",
+    basicSkill: { name: "月雫", kind: "heal", power: 0.9, desc: "味方を少し癒す" },
     skill: { name: "月癒", kind: "heal", power: 1.0, desc: "味方を癒す" },
     portrait: "mizuki",
   },
@@ -1087,6 +1095,14 @@ function fodderSkillFor(factionIdx: number, elementIdx: number): Card["skill"] {
   return { ...skill, hits: skill.hits };
 }
 
+/** Support fodder keep a non-damaging 基本技 so trial waves don't fall back to 通常攻撃. */
+function fodderBasicSkill(skill: Skill): Skill | undefined {
+  if (skill.kind === "heal") return { name: "手当", kind: "heal", power: 0.85, desc: "味方を少し癒す" };
+  if (skill.kind === "haste") return { name: "足慣らし", kind: "haste", power: 0, desc: "味方の速度を速める" };
+  if (skill.kind === "slow") return { name: "足留め", kind: "slow", power: 0, desc: "敵の速度を遅らせる" };
+  return undefined;
+}
+
 function buildFodder(): Card[] {
   const out: Card[] = [];
   for (let fi = 0; fi < FACTION_IDS.length; fi++) {
@@ -1094,6 +1110,7 @@ function buildFodder(): Card[] {
     for (let ei = 0; ei < ELEMENTS.length; ei++) {
       const type = ELEMENTS[ei];
       const skill = fodderSkillFor(fi, ei);
+      const basicSkill = fodderBasicSkill(skill);
       out.push({
         id: `z_${faction}_${type}`,
         name: `${FODDER_JOB[faction]}${FODDER_ROLE_BY_KIND[skill.kind]}`,
@@ -1107,6 +1124,7 @@ function buildFodder(): Card[] {
         def: 2,
         spd: 68,
         formation: "basic",
+        ...(basicSkill ? { basicSkill } : {}),
         skill,
         portrait: `z_${type}`,
         fodder: true,
@@ -1132,6 +1150,7 @@ export const SPECIAL_FODDER: Card[] = [
     def: 2,
     spd: 76,
     formation: "basic",
+    basicSkill: { name: "急ぎ足", kind: "haste", power: 0, desc: "味方の速度を速める" },
     skill: { name: "ヘイスト", kind: "haste", power: 0, desc: "味方の速度を15%速める" },
     portrait: "z_heaven",
     fodder: true,
@@ -1149,6 +1168,7 @@ export const SPECIAL_FODDER: Card[] = [
     def: 2,
     spd: 72,
     formation: "basic",
+    basicSkill: { name: "鈍足", kind: "slow", power: 0, desc: "敵の速度を遅らせる" },
     skill: { name: "スロウ", kind: "slow", power: 0, desc: "敵の速度を15%遅らせる" },
     portrait: "z_void",
     fodder: true,
@@ -1179,6 +1199,38 @@ function num(v: unknown, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+const DEFAULT_SPECIAL: Skill = { name: "攻撃", kind: "front", power: 1, desc: "" };
+
+function parseSkill(raw: unknown, fallback: Skill): Skill {
+  const sk = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const kind =
+    typeof sk.kind === "string" && SKILL_KINDS.has(sk.kind) ? (sk.kind as SkillKind) : fallback.kind;
+  const hits =
+    sk.hits != null && sk.hits !== "" ? Math.max(1, Math.round(num(sk.hits, 1))) : undefined;
+  return {
+    name: typeof sk.name === "string" && sk.name.trim() ? sk.name.trim() : fallback.name,
+    kind,
+    power: num(sk.power, fallback.power),
+    ...(hits != null ? { hits } : {}),
+    desc: typeof sk.desc === "string" ? sk.desc : fallback.desc,
+  };
+}
+
+/** Absent or unusable basicSkill → undefined (combat uses 通常攻撃). */
+function parseBasicSkill(raw: unknown): Skill | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const sk = raw as Record<string, unknown>;
+  const kindOk = typeof sk.kind === "string" && SKILL_KINDS.has(sk.kind);
+  const nameOk = typeof sk.name === "string" && sk.name.trim().length > 0;
+  if (!kindOk || !nameOk) return undefined;
+  return parseSkill(raw, {
+    name: (sk.name as string).trim(),
+    kind: sk.kind as SkillKind,
+    power: sk.kind === "heal" ? 1 : 0,
+    desc: "",
+  });
+}
+
 function parseHero(raw: unknown): Card | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
@@ -1190,10 +1242,9 @@ function parseHero(raw: unknown): Card | null {
   const rarity = typeof r.rarity === "string" ? r.rarity : "N";
   const formation = typeof r.formation === "string" && FORMATIONS[r.formation] ? r.formation : "basic";
   if (!FACTIONS.has(faction) || !TYPES.has(type) || !RARITIES.has(rarity)) return null;
-  const sk = r.skill && typeof r.skill === "object" ? (r.skill as Record<string, unknown>) : {};
-  const kind = typeof sk.kind === "string" && SKILL_KINDS.has(sk.kind) ? sk.kind : "front";
   const art = asSrc(r.art);
   const bust = asSrc(r.bust);
+  const basicSkill = parseBasicSkill(r.basicSkill);
   return {
     id,
     name,
@@ -1207,13 +1258,8 @@ function parseHero(raw: unknown): Card | null {
     def: Math.max(0, Math.round(num(r.def, 150))),
     spd: Math.max(1, Math.round(num(r.spd, 100))),
     formation,
-    skill: {
-      name: typeof sk.name === "string" && sk.name.trim() ? sk.name : "攻撃",
-      kind: kind as Card["skill"]["kind"],
-      power: num(sk.power, 1),
-      hits: sk.hits != null ? Math.max(1, Math.round(num(sk.hits, 1))) : undefined,
-      desc: typeof sk.desc === "string" ? sk.desc : "",
-    },
+    skill: parseSkill(r.skill, DEFAULT_SPECIAL),
+    ...(basicSkill ? { basicSkill } : {}),
     portrait: typeof r.portrait === "string" && r.portrait.trim() ? r.portrait.trim() : id,
     art,
     bust,
@@ -1268,6 +1314,16 @@ export type CatalogPayload = {
   replaceAll?: boolean;
 };
 
+function serializeSkill(skill: Skill): Record<string, unknown> {
+  return {
+    name: skill.name,
+    kind: skill.kind,
+    power: skill.power,
+    desc: skill.desc,
+    ...(skill.hits != null ? { hits: skill.hits } : {}),
+  };
+}
+
 function serializeHero(card: Card): Record<string, unknown> {
   const row: Record<string, unknown> = {
     id: card.id,
@@ -1282,13 +1338,8 @@ function serializeHero(card: Card): Record<string, unknown> {
     def: card.def,
     spd: card.spd,
     formation: card.formation,
-    skill: {
-      name: card.skill.name,
-      kind: card.skill.kind,
-      power: card.skill.power,
-      desc: card.skill.desc,
-      ...(card.skill.hits != null ? { hits: card.skill.hits } : {}),
-    },
+    ...(card.basicSkill ? { basicSkill: serializeSkill(card.basicSkill) } : {}),
+    skill: serializeSkill(card.skill),
     portrait: card.portrait ?? card.id,
   };
   if (card.art) row.art = card.art;
@@ -1368,13 +1419,18 @@ export const MAX_LEVEL = 50;
 export const MAX_RANK = 99;
 export const MAX_SKILL_LV = 10;
 
-/** Shared basic attack used by every unit in combat (not card.skill). */
+/** Fallback 基本技 when a card has no basicSkill (legacy skill-only data). */
 export const BASIC_SKILL: Skill = {
   name: "通常攻撃",
   kind: "front",
   power: 1.0,
   desc: "正面の敵を攻撃する",
 };
+
+/** Card's 基本技, or the shared 通常攻撃 when basicSkill was never set. */
+export function cardBasicSkill(card: { basicSkill?: Skill } | null | undefined): Skill {
+  return card?.basicSkill ?? BASIC_SKILL;
+}
 
 export function trainCost(level: number): number {
   const lv = Math.max(1, level);

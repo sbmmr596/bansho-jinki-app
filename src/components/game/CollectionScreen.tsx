@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { BASIC_SKILL, CARDS, CARD_BY_ID, FACTION_LABEL, FORMATIONS, TYPE_LABEL, skillPowerScale } from "@/game/data";
+import { CARDS, CARD_BY_ID, FACTION_LABEL, FORMATIONS, TYPE_LABEL, cardBasicSkill, skillPowerScale } from "@/game/data";
 import { commonSkillName, SKILL_KIND_LABEL } from "@/game/skillNames";
 import type { Faction } from "@/game/types";
 import { useGame } from "@/game/store";
@@ -104,9 +104,9 @@ export function CollectionScreen() {
                 <div className="flex items-baseline justify-between gap-2 rounded-md bg-raised/50 px-2 py-1 hairline">
                   <p className="min-w-0 truncate text-[13px] text-muted">
                     <span className="text-[12px] tracking-wide text-faint">基本技</span>{" "}
-                    <span className="text-fg">{BASIC_SKILL.name}</span>
+                    <span className="text-fg">{cardBasicSkill(card).name}</span>
                   </p>
-                  <span className="shrink-0 text-[12px] text-brass">威力:{BASIC_SKILL.power}</span>
+                  <span className="shrink-0 text-[12px] text-brass">威力:{cardBasicSkill(card).power}</span>
                 </div>
                 <DetailSkill
                   label="必殺技1"

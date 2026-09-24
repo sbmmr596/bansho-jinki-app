@@ -1,5 +1,5 @@
 {
-  "note": "art / bust はローカルパス（/chars/kaien.png）か https:// のURL。skill.kind は front / pierce / sweep / random / all / heal / haste / slow。faction は koryu tekki tensho metsujin reiju yukei。type は power skill magic void heaven earth。rarity は N / S / H / SP（フロンティア式）。",
+  "note": "art / bust はローカルパス（/chars/kaien.png）か https:// のURL。skill は必殺技1。任意の basicSkill は同じ形の基本技（無いカードは通常攻撃）。kind は front / pierce / sweep / random / all / heal / haste / slow。faction は koryu tekki tensho metsujin reiju yukei。type は power skill magic void heaven earth。rarity は N / S / H / SP（フロンティア式）。",
   "chars": [
     {
       "id": "kaien",
@@ -36,6 +36,12 @@
       "def": 360,
       "spd": 104,
       "formation": "lone",
+      "basicSkill": {
+        "name": "慈光",
+        "kind": "heal",
+        "power": 1.0,
+        "desc": "傷つく味方を癒す"
+      },
       "skill": {
         "name": "金鱗の祈り",
         "kind": "heal",
@@ -258,6 +264,12 @@
       "def": 150,
       "spd": 118,
       "formation": "basic",
+      "basicSkill": {
+        "name": "そよ風",
+        "kind": "heal",
+        "power": 0.95,
+        "desc": "味方を少し癒す"
+      },
       "skill": {
         "name": "風の歌",
         "kind": "heal",
@@ -435,6 +447,12 @@
       "def": 160,
       "spd": 108,
       "formation": "basic",
+      "basicSkill": {
+        "name": "狐の息",
+        "kind": "heal",
+        "power": 0.9,
+        "desc": "味方を少し癒す"
+      },
       "skill": {
         "name": "狐火",
         "kind": "heal",
@@ -612,6 +630,12 @@
       "def": 170,
       "spd": 108,
       "formation": "basic",
+      "basicSkill": {
+        "name": "鱗息",
+        "kind": "heal",
+        "power": 0.9,
+        "desc": "味方を少し癒す"
+      },
       "skill": {
         "name": "癒鱗",
         "kind": "heal",
@@ -767,6 +791,12 @@
       "def": 145,
       "spd": 122,
       "formation": "basic",
+      "basicSkill": {
+        "name": "追い風",
+        "kind": "haste",
+        "power": 0,
+        "desc": "味方の速度を速める"
+      },
       "skill": {
         "name": "疾風",
         "kind": "haste",
@@ -944,6 +974,12 @@
       "def": 155,
       "spd": 110,
       "formation": "basic",
+      "basicSkill": {
+        "name": "獣息",
+        "kind": "heal",
+        "power": 0.95,
+        "desc": "味方を少し癒す"
+      },
       "skill": {
         "name": "獣癒",
         "kind": "heal",
@@ -966,6 +1002,12 @@
       "def": 180,
       "spd": 114,
       "formation": "crane",
+      "basicSkill": {
+        "name": "足枷",
+        "kind": "slow",
+        "power": 0,
+        "desc": "敵の速度を遅らせる"
+      },
       "skill": {
         "name": "鈍牙",
         "kind": "slow",
@@ -1032,6 +1074,12 @@
       "def": 150,
       "spd": 112,
       "formation": "basic",
+      "basicSkill": {
+        "name": "月雫",
+        "kind": "heal",
+        "power": 0.9,
+        "desc": "味方を少し癒す"
+      },
       "skill": {
         "name": "月癒",
         "kind": "heal",

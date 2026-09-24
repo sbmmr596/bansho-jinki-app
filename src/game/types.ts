@@ -56,7 +56,13 @@ export interface Card {
   def: number;
   spd: number;
   formation: string;
+  /** 必殺技1. Legacy catalogs that only set this field keep working. */
   skill: Skill;
+  /**
+   * 基本技. Omitted on old data — combat falls back to the shared 通常攻撃.
+   * Support cards may use heal / haste / slow here (no damage).
+   */
+  basicSkill?: Skill;
   portrait?: string;
   art?: string;
   bust?: string;
@@ -118,8 +124,11 @@ export interface Unit {
   isLeader: boolean;
   type: ElementType;
   faction: Faction;
+  /** 必殺技1 */
   skill: Skill;
   skillLv: number;
+  /** 基本技. Missing → shared 通常攻撃 at action time. */
+  basicSkill?: Skill;
   skill2?: { skill: Skill; lv: number; rarity: Rarity };
   hp: number;
   maxHp: number;
@@ -135,7 +144,15 @@ export interface Unit {
 
 export type BattleEvent =
   | { kind: "round"; n: number }
-  | { kind: "skill"; actorUid: string; skillName: string; side: Side; slot: "basic" | "s1" | "s2" }
+  | {
+      kind: "skill";
+      actorUid: string;
+      skillName: string;
+      side: Side;
+      slot: "basic" | "s1" | "s2";
+      /** Kind actually used this action (basic and special can differ). */
+      skillKind: SkillKind;
+    }
   | {
       kind: "hit";
       actorUid: string;
