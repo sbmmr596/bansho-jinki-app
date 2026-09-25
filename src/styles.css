@@ -21,9 +21,9 @@
   --card-w-md: 120px;
   --card-w-lg: 160px;
   /* Base font ladder (logical px). .game-stage multiplies by --text-scale. */
-  --font-caption: 12px;
-  --font-body: 14px;
-  --font-ui: 16px;
+  --font-caption: 14px;
+  --font-body: 16px;
+  --font-ui: 18px;
   --font-title: 24px;
   --font-display-min: 38px;
   --font-display-max: 46px;
@@ -64,6 +64,15 @@
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-xl: 22px;
+  /* UI type, +2px from the Tailwind defaults. Display sizes (xl+) stay put. */
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.35;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.4;
+  --text-base: 1.125rem;
+  --text-base--line-height: 1.4;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.35;
 }
 
 html,
@@ -159,9 +168,9 @@ body {
    * ~0.35 → ~1.29; max 1.35. Layout stays on the 8px grid.
    */
   --text-scale: clamp(1, calc(1.45 - 0.45 * min(var(--stage-scale, 1), 1)), 1.35);
-  --font-caption: calc(12px * var(--text-scale));
-  --font-body: calc(14px * var(--text-scale));
-  --font-ui: calc(16px * var(--text-scale));
+  --font-caption: calc(14px * var(--text-scale));
+  --font-body: calc(16px * var(--text-scale));
+  --font-ui: calc(18px * var(--text-scale));
   --font-title: calc(24px * var(--text-scale));
   --font-display-min: calc(38px * var(--text-scale));
   --font-display-max: calc(46px * var(--text-scale));
@@ -206,7 +215,7 @@ body {
   border: 1px solid color-mix(in oklab, var(--color-brass) 40%, transparent);
   background: color-mix(in oklab, var(--color-ink) 88%, transparent);
   padding: 0.4rem 0.9rem;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   letter-spacing: 0.12em;
   color: var(--color-brass);
@@ -215,6 +224,21 @@ body {
 
 .debug-hit {
   min-height: var(--touch-min);
+}
+
+/* Press targets: chrome controls at least 44px. Card faces keep their art size. */
+.game-stage button:not(.card-face),
+.game-stage select,
+.game-stage textarea,
+.game-stage input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]) {
+  min-height: var(--touch-min);
+}
+.game-stage input[type="checkbox"],
+.game-stage input[type="radio"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  min-width: 1.25rem;
+  min-height: 1.25rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -284,7 +308,7 @@ body {
 .battle-float-num {
   top: -0.35em;
   font-family: var(--font-display);
-  font-size: calc(17px * var(--text-scale, 1));
+  font-size: calc(19px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1;
@@ -322,7 +346,7 @@ body {
 }
 .battle-affinity {
   font-family: var(--font-display);
-  font-size: calc(14px * var(--text-scale, 1));
+  font-size: calc(16px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.06em;
   line-height: 1;
@@ -383,7 +407,7 @@ body {
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-size: 0.85rem;
+  font-size: 1rem;
   color: var(--color-ok);
   mix-blend-mode: normal;
   box-shadow: none;

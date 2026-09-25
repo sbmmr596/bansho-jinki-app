@@ -613,13 +613,13 @@ export function BattleView() {
         </div>
       ) : null}
       <div className={cn("relative flex h-full min-h-0 w-full flex-col", shake && "anim-shake")}>
-        <div className="absolute right-3 top-2 z-20 flex h-8 items-center gap-2 text-xs text-muted">
+        <div className="absolute right-3 top-2 z-20 flex h-9 max-w-[calc(100%-1.5rem)] items-center gap-2 overflow-hidden text-xs text-muted">
           <span className="font-display tracking-wider text-fg">
             {trial ? "試し撃ち" : "合戦"}
           </span>
           <span className="text-brass">{FIELD_LABEL[field]}</span>
           {trial ? <span className="tabular text-muted">撃破 {trial.kills}</span> : null}
-          {log[0] ? <span className="text-fg">{log[0]}</span> : null}
+          {log[0] ? <span className="min-w-0 truncate text-fg">{log[0]}</span> : null}
           {fx ? <span className="font-display text-brass">{kindLabel(fx.kind)}</span> : null}
         </div>
 
@@ -677,18 +677,18 @@ export function BattleView() {
           </div>
         ) : null}
 
-        <div className="relative z-20 flex h-8 shrink-0 items-center justify-end gap-2 bg-[#0a0e18] px-3">
+        <div className="relative z-20 flex h-12 shrink-0 items-center justify-end gap-2 bg-[#0a0e18] px-3">
           <button
             type="button"
             onClick={() => setShowAffinity((v) => !v)}
-            className="flex h-6 items-center rounded-sm bg-[#1c4a8a] px-2 text-[13px] tracking-wide text-white"
+            className="flex h-11 items-center rounded-sm bg-[#1c4a8a] px-3 text-[15px] tracking-wide text-white"
           >
             {showAffinity ? "相性隠す" : "相性"}
           </button>
           <button
             type="button"
             onClick={() => setBattleSpeed(nextBattleSpeed(battleSpeed))}
-            className="flex h-6 items-center rounded-sm bg-[#1c4a8a] px-2 text-[13px] tracking-wide text-white"
+            className="flex h-11 items-center rounded-sm bg-[#1c4a8a] px-3 text-[15px] tracking-wide text-white"
           >
             ◂ SPEED ×{battleSpeed} ▸
           </button>
@@ -696,7 +696,7 @@ export function BattleView() {
             <button
               type="button"
               onClick={() => endTrial()}
-              className="flex h-6 items-center rounded-sm bg-[#1c4a8a] px-3 text-[13px] text-white"
+              className="flex h-11 items-center rounded-sm bg-[#1c4a8a] px-3 text-[15px] text-white"
             >
               終了
             </button>
@@ -706,7 +706,7 @@ export function BattleView() {
               onClick={() => {
                 skipRef.current = true;
               }}
-              className="flex h-6 items-center rounded-sm bg-[#1c4a8a] px-3 text-[13px] text-white"
+              className="flex h-11 items-center rounded-sm bg-[#1c4a8a] px-3 text-[15px] text-white"
             >
               結果へ
             </button>

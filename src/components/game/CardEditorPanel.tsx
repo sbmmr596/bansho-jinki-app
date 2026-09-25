@@ -261,7 +261,7 @@ function draftToFormation(d: FormationDraft): Formation | null {
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex min-w-0 flex-col gap-0.5 text-[11px] text-muted">
+    <label className="flex min-w-0 flex-col gap-0.5 text-[13px] text-muted">
       <span>{label}</span>
       {children}
     </label>
@@ -269,7 +269,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 }
 
 const inputCls =
-  "h-10 w-full rounded-md bg-raised px-2.5 text-sm text-fg hairline outline-none focus:ring-1 focus:ring-brass/60";
+  "h-11 w-full rounded-md bg-raised px-2.5 text-sm text-fg hairline outline-none focus:ring-1 focus:ring-brass/60";
 
 function knownFile(name: string, list: readonly string[]) {
   const n = name.trim().replace(/^\/+/, "").split("/").pop() ?? "";
@@ -295,7 +295,7 @@ function DraftImgPreview({
   const show = Boolean(src) && !failed;
   return (
     <div className={`flex min-w-0 flex-col gap-0.5 ${className ?? ""}`}>
-      <span className="text-[10px] text-muted">{label}</span>
+      <span className="text-[12px] text-muted">{label}</span>
       <div
         className={`flex items-center justify-center overflow-hidden rounded-md bg-raised/40 hairline ${boxClassName ?? ""}`}
       >
@@ -307,7 +307,7 @@ function DraftImgPreview({
             onError={() => setFailed(true)}
           />
         ) : (
-          <span className="text-[10px] text-faint">なし</span>
+          <span className="text-[12px] text-faint">なし</span>
         )}
       </div>
     </div>
@@ -319,7 +319,7 @@ function DraftArtPreview({ draft }: { draft: Draft }) {
   const previewCard = useMemo(() => draftToCard(draft), [draft]);
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="text-[10px] text-muted">art</span>
+      <span className="text-[12px] text-muted">art</span>
       <div className="flex justify-center overflow-hidden rounded-md bg-raised/40 px-1 py-2 hairline">
         <CardFace
           card={previewCard}
@@ -661,7 +661,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
           <CloseButton onClick={onClose} />
         </div>
 
-        <p className="mb-2 shrink-0 text-[11px] leading-relaxed text-faint">
+        <p className="mb-2 shrink-0 text-[13px] leading-relaxed text-faint">
           いま読み込んでいるカタログ（標準・ドライブ・ファイル・端末）を編集する。保存は端末のみ。ドライブへは「JSONを書き出す」→ 万象陣記/chars.json
           → マイデータの「ドライブから読む」。グラフィックは既存ファイル名を参照（アップロードなし）。
         </p>
@@ -671,28 +671,28 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
           <div className="inline-flex min-w-0 gap-0.5 rounded-md bg-raised p-0.5 hairline">
             <button
               type="button"
-              className={`h-9 rounded px-3 text-sm ${tab === "cards" ? "bg-panel text-brass" : "text-muted"}`}
+              className={`inline-flex h-11 items-center justify-center rounded px-3 text-sm ${tab === "cards" ? "bg-panel text-brass" : "text-muted"}`}
               onClick={() => setTab("cards")}
             >
               カード
             </button>
             <button
               type="button"
-              className={`h-9 rounded px-3 text-sm ${tab === "factions" ? "bg-panel text-brass" : "text-muted"}`}
+              className={`inline-flex h-11 items-center justify-center rounded px-3 text-sm ${tab === "factions" ? "bg-panel text-brass" : "text-muted"}`}
               onClick={() => setTab("factions")}
             >
               陣営
             </button>
             <button
               type="button"
-              className={`h-9 rounded px-3 text-sm ${tab === "skillKinds" ? "bg-panel text-brass" : "text-muted"}`}
+              className={`inline-flex h-11 items-center justify-center rounded px-3 text-sm ${tab === "skillKinds" ? "bg-panel text-brass" : "text-muted"}`}
               onClick={() => setTab("skillKinds")}
             >
               スキル種類
             </button>
             <button
               type="button"
-              className={`h-9 rounded px-3 text-sm ${tab === "formations" ? "bg-panel text-brass" : "text-muted"}`}
+              className={`inline-flex h-11 items-center justify-center rounded px-3 text-sm ${tab === "formations" ? "bg-panel text-brass" : "text-muted"}`}
               onClick={() => setTab("formations")}
             >
               陣形
@@ -704,7 +704,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                 type="button"
                 disabled={busy}
                 onClick={onSaveFactions}
-                className="h-9 shrink-0 rounded-md bg-brass px-3 text-sm font-medium text-bg disabled:opacity-40"
+                className="inline-flex h-11 items-center justify-center shrink-0 rounded-md bg-brass px-3 text-sm font-medium text-bg disabled:opacity-40"
               >
                 陣営名を保存
               </button>
@@ -713,7 +713,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                 type="button"
                 disabled={busy}
                 onClick={onSaveSkillKinds}
-                className="h-9 shrink-0 rounded-md bg-brass px-3 text-sm font-medium text-bg disabled:opacity-40"
+                className="inline-flex h-11 items-center justify-center shrink-0 rounded-md bg-brass px-3 text-sm font-medium text-bg disabled:opacity-40"
               >
                 スキル種類名を保存
               </button>
@@ -722,7 +722,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                 type="button"
                 disabled={busy || !formSlotsValid}
                 onClick={onSaveFormations}
-                className="h-9 shrink-0 rounded-md bg-brass px-3 text-sm font-medium text-bg disabled:opacity-40"
+                className="inline-flex h-11 items-center justify-center shrink-0 rounded-md bg-brass px-3 text-sm font-medium text-bg disabled:opacity-40"
               >
                 陣形を保存
               </button>
@@ -731,7 +731,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                 type="button"
                 disabled={busy}
                 onClick={onSaveCard}
-                className="h-9 shrink-0 rounded-md bg-brass px-3 text-sm font-medium text-bg disabled:opacity-40"
+                className="inline-flex h-11 items-center justify-center shrink-0 rounded-md bg-brass px-3 text-sm font-medium text-bg disabled:opacity-40"
               >
                 このカードを保存
               </button>
@@ -740,7 +740,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
               type="button"
               disabled={busy}
               onClick={onExportJson}
-              className="h-9 shrink-0 rounded-md bg-raised px-3 text-sm text-fg hairline disabled:opacity-40"
+              className="inline-flex h-11 items-center justify-center shrink-0 rounded-md bg-raised px-3 text-sm text-fg hairline disabled:opacity-40"
             >
               JSONを書き出す
             </button>
@@ -787,7 +787,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                   <button
                     type="button"
                     onClick={onAddFormation}
-                    className="h-10 flex-1 rounded-md bg-brass text-xs font-medium text-bg"
+                    className="h-11 flex-1 rounded-md bg-brass text-xs font-medium text-bg"
                   >
                     追加
                   </button>
@@ -795,7 +795,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                     type="button"
                     disabled={busy}
                     onClick={onDeleteFormation}
-                    className="h-10 flex-1 rounded-md bg-raised text-xs text-fg hairline disabled:opacity-40"
+                    className="h-11 flex-1 rounded-md bg-raised text-xs text-fg hairline disabled:opacity-40"
                   >
                     削除
                   </button>
@@ -811,7 +811,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                       }`}
                     >
                       <span className="truncate text-sm text-fg">{f.name}</span>
-                      <span className="truncate text-[10px] text-faint tabular">
+                      <span className="truncate text-[12px] text-faint tabular">
                         {f.id} · 開放{f.slots.filter(Boolean).length}
                       </span>
                     </button>
@@ -822,7 +822,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                       className="flex w-full flex-col items-start gap-0.5 border-b border-white/5 bg-brass/20 px-2 py-2.5 text-left"
                     >
                       <span className="truncate text-sm text-fg">{formDraft.name}</span>
-                      <span className="truncate text-[10px] text-faint tabular">新規 · 未保存</span>
+                      <span className="truncate text-[12px] text-faint tabular">新規 · 未保存</span>
                     </button>
                   ) : null}
                 </div>
@@ -854,7 +854,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                     </Field>
                   </div>
                   <div className="col-span-2">
-                    <p className="mb-1 text-[11px] text-muted">
+                    <p className="mb-1 text-[13px] text-muted">
                       スロット（タップで開閉）・開放{" "}
                       <span className={formSlotsValid ? "text-brass" : "text-crimson"}>
                         {openSlotCount}
@@ -877,7 +877,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                       ))}
                     </div>
                     {!formSlotsValid ? (
-                      <p className="mt-1 text-[11px] text-crimson">開放スロットは3〜5必須</p>
+                      <p className="mt-1 text-[13px] text-crimson">開放スロットは3〜5必須</p>
                     ) : null}
                   </div>
                   <Field label="HPボーナス（%）">
@@ -953,7 +953,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                   <button
                     type="button"
                     onClick={onAdd}
-                    className="h-10 flex-1 rounded-md bg-brass text-xs font-medium text-bg"
+                    className="h-11 flex-1 rounded-md bg-brass text-xs font-medium text-bg"
                   >
                     追加
                   </button>
@@ -961,7 +961,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                     type="button"
                     disabled={busy}
                     onClick={onDelete}
-                    className="h-10 flex-1 rounded-md bg-raised text-xs text-fg hairline disabled:opacity-40"
+                    className="h-11 flex-1 rounded-md bg-raised text-xs text-fg hairline disabled:opacity-40"
                   >
                     削除
                   </button>
@@ -979,12 +979,12 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                       <span className="flex w-full items-center gap-1 truncate text-sm text-fg">
                         <span className="truncate">{c.name}</span>
                         {c.fodder ? (
-                          <span className="shrink-0 rounded-sm bg-crimson/80 px-1 text-[9px] font-semibold text-fg">
+                          <span className="shrink-0 rounded-sm bg-crimson/80 px-1 text-[11px] font-semibold text-fg">
                             素材
                           </span>
                         ) : null}
                       </span>
-                      <span className="truncate text-[10px] text-faint tabular">
+                      <span className="truncate text-[12px] text-faint tabular">
                         {c.id} · {FACTION_LABEL[c.faction]}
                       </span>
                     </button>
@@ -1041,7 +1041,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                   <Field label="速度">
                     <input type="number" className={inputCls} value={draft.spd} onChange={(e) => patch("spd", Number(e.target.value))} />
                   </Field>
-                  <label className="col-span-2 flex h-10 items-center gap-2 rounded-md bg-raised px-2.5 text-sm text-fg hairline">
+                  <label className="col-span-2 flex h-11 items-center gap-2 rounded-md bg-raised px-2.5 text-sm text-fg hairline">
                     <input
                       type="checkbox"
                       checked={draft.fodder}
@@ -1059,7 +1059,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                       </select>
                     </Field>
                   ) : null}
-                  <p className="col-span-2 text-[11px] leading-snug text-muted">
+                  <p className="col-span-2 text-[13px] leading-snug text-muted">
                     基本技は行動抽選の基本枠。回復・加速・減速はダメージなし（加速と減速はATB）。未設定の古いデータは通常攻撃。
                   </p>
                   <Field label="基本技 攻撃方法">

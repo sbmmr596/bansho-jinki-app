@@ -29,7 +29,7 @@ const SORT_OPTIONS: { id: SortKey; label: string }[] = [
 const RARITY_RANK: Record<Rarity, number> = { SP: 4, H: 3, S: 2, N: 1 };
 
 const selectCls =
-  "h-7 min-h-7 min-w-0 flex-1 rounded-sm bg-surface px-1.5 text-xs text-fg hairline outline-none focus:ring-1 focus:ring-brass/50";
+  "h-11 min-h-11 min-w-0 flex-1 rounded-sm bg-surface px-2 text-xs text-fg hairline outline-none focus:ring-1 focus:ring-brass/50";
 
 export function FormationScreen() {
   const party = useGame((s) => s.party);
@@ -163,7 +163,7 @@ export function FormationScreen() {
       <div className="flex h-full min-h-0 gap-2">
         {/* Left: scrollable card inventory (~55–60%) */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-1.5">
-          <p className="shrink-0 px-0.5 text-[12px] leading-snug text-muted">
+          <p className="shrink-0 px-0.5 text-[14px] leading-snug text-muted">
             カードかマスを選んで置きたいマスへ。同じマスでもう一度で外す。リーダーを外すと全員解除。
           </p>
 
@@ -206,7 +206,7 @@ export function FormationScreen() {
                 </option>
               ))}
             </select>
-            <label className="inline-flex h-7 min-h-7 shrink-0 cursor-pointer items-center gap-1 rounded-sm bg-surface px-1.5 text-xs text-muted hairline">
+            <label className="inline-flex h-11 min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-sm bg-surface px-2 text-xs text-muted hairline">
               <input
                 type="checkbox"
                 checked={hideFodder}
@@ -223,13 +223,13 @@ export function FormationScreen() {
               <CostHex cost={focus.cost} className="h-6 w-7 shrink-0 text-xs" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-display text-xs leading-tight text-fg">{focus.name}</p>
-                <p className="truncate text-[12px] leading-tight text-muted">
+                <p className="truncate text-[14px] leading-tight text-muted">
                   {FACTION_LABEL[focus.faction]}　{focus.title}
                   <span className="ml-1 text-brass">{focus.rarity}</span>
                 </p>
               </div>
               {focus.fodder ? (
-                <span className="shrink-0 rounded-sm bg-crimson/20 px-1.5 py-0.5 text-[12px] text-crimson">
+                <span className="shrink-0 rounded-sm bg-crimson/20 px-1.5 py-0.5 text-[14px] text-crimson">
                   素材専用
                 </span>
               ) : null}
@@ -238,7 +238,7 @@ export function FormationScreen() {
                   type="button"
                   onClick={() => setLeader(focus.id)}
                   className={cn(
-                    "h-7 shrink-0 rounded-sm px-2 text-[12px]",
+                    "inline-flex h-11 shrink-0 items-center rounded-sm px-3 text-[14px]",
                     leaderId === focus.id ? "bg-brass text-bg" : "bg-raised text-muted",
                   )}
                 >
@@ -300,26 +300,26 @@ export function FormationScreen() {
                 <p className="font-display text-sm leading-tight text-fg">
                   {form.name}
                   {!leaderId && previewLeaderId ? (
-                    <span className="ml-1 font-sans text-[12px] font-normal text-muted">（プレビュー）</span>
+                    <span className="ml-1 font-sans text-[14px] font-normal text-muted">（プレビュー）</span>
                   ) : null}
                 </p>
-                <p className="mt-0.5 text-[12px] leading-snug text-muted">{form.desc}</p>
+                <p className="mt-0.5 text-[14px] leading-snug text-muted">{form.desc}</p>
               </div>
 
               {focus ? (
                 <div className="shrink-0 space-y-1 rounded-sm bg-bg/40 px-1.5 py-1.5">
                   <div className="flex items-center gap-1">
-                    <TypeHex type={focus.type} className="h-5 w-6 shrink-0 text-[10px]" />
-                    <CostHex cost={focus.cost} className="h-5 w-6 shrink-0 text-[10px]" />
-                    <p className="min-w-0 flex-1 truncate font-display text-[12px] leading-tight text-fg">
+                    <TypeHex type={focus.type} className="h-5 w-6 shrink-0 text-[12px]" />
+                    <CostHex cost={focus.cost} className="h-5 w-6 shrink-0 text-[12px]" />
+                    <p className="min-w-0 flex-1 truncate font-display text-[14px] leading-tight text-fg">
                       {focus.name}
                     </p>
                   </div>
-                  <p className="truncate text-[11px] leading-tight text-muted">
+                  <p className="truncate text-[13px] leading-tight text-muted">
                     {FACTION_LABEL[focus.faction]}　{focus.rarity}
                   </p>
                   {focus.fodder ? (
-                    <span className="inline-block rounded-sm bg-crimson/20 px-1 py-0.5 text-[11px] text-crimson">
+                    <span className="inline-block rounded-sm bg-crimson/20 px-1 py-0.5 text-[13px] text-crimson">
                       素材専用
                     </span>
                   ) : null}
@@ -333,7 +333,7 @@ export function FormationScreen() {
                       type="button"
                       onClick={() => setLeader(focus.id)}
                       className={cn(
-                        "mt-0.5 h-7 w-full shrink-0 rounded-sm px-1.5 text-[11px]",
+                        "mt-0.5 inline-flex h-11 w-full shrink-0 items-center justify-center rounded-sm px-1.5 text-[13px]",
                         leaderId === focus.id ? "bg-brass text-bg" : "bg-raised text-muted",
                       )}
                     >
@@ -343,8 +343,8 @@ export function FormationScreen() {
                 </div>
               ) : null}
 
-              <div className="mt-auto space-y-0.5 rounded-sm bg-bg/40 px-1.5 py-1.5 text-[13px]">
-                <p className="mb-1 text-[12px] text-faint">
+              <div className="mt-auto space-y-0.5 rounded-sm bg-bg/40 px-1.5 py-1.5 text-[15px]">
+                <p className="mb-1 text-[14px] text-faint">
                   {totals.count ? `${totals.count}体　平均Lv ${totals.avgLv}` : "未編成"}
                 </p>
                 <PartyStat label="HP" value={totals.hp} />
@@ -423,7 +423,7 @@ function FormationGrid({
                     className="w-full"
                   />
                 ) : open ? (
-                  <span className="text-[12px] text-faint">
+                  <span className="text-[14px] text-faint">
                     {col === 2 ? "前" : col === 1 ? "中" : "後"}
                   </span>
                 ) : null}

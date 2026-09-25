@@ -82,7 +82,7 @@ export function ArenaScreen() {
               闘気を消費してランダムな英雄隊と戦う。敗北しても闘気は戻らない。
               報酬の金は勝利時のみ（相手の強さに応じて変動）。1分で互角1回分が回復する。
             </p>
-            <p className="text-[12px] text-faint @sm:text-xs">
+            <p className="text-[14px] text-faint @sm:text-xs">
               パーティ平均 Lv.{avg.toFixed(1)}　合計Lv {myLevelSum}　人数 {partySize}　コスト {myCost}
               {!leaderId ? "　リーダー未設定" : ""}
             </p>
@@ -107,7 +107,7 @@ export function ArenaScreen() {
                     )}
                   >
                     <p className="font-display text-sm text-fg @sm:text-base">{m.name}</p>
-                    <p className="mt-0.5 text-[12px] text-faint">合計Lv ×{m.levelMul.toFixed(2)}</p>
+                    <p className="mt-0.5 text-[14px] text-faint">合計Lv ×{m.levelMul.toFixed(2)}</p>
                     <p className={cn("mt-1 text-xs tabular", locked ? "text-crimson" : "text-brass")}>
                       闘気 {c}
                     </p>
@@ -120,12 +120,12 @@ export function ArenaScreen() {
                 {meta.name}　消費 闘気{cost}　→　勝利報酬 約{reward}金
               </p>
               <p className="mt-1 text-xs text-muted">{meta.blurb}</p>
-              <p className="mt-1 text-[12px] text-faint">
+              <p className="mt-1 text-[14px] text-faint">
                 相手目安 合計Lv ~{foeLevelHint}　{countHint}
                 　相手目安コスト ~{foeCostHint}
                 {tier === "even" ? "　スキルLv1" : tier === "strong" ? "　スキルLv1〜2" : "　スキルLv2〜3"}
               </p>
-              <p className="mt-0.5 text-[12px] text-faint">基準報酬 {Math.round(fee * meta.rewardMul)}金 × 戦力比</p>
+              <p className="mt-0.5 text-[14px] text-faint">基準報酬 {Math.round(fee * meta.rewardMul)}金 × 戦力比</p>
             </div>
             {hint ? <p className="text-sm text-crimson">{hint}</p> : null}
             {!canPay && canFight ? (
