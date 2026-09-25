@@ -159,8 +159,8 @@ export function DebugPanel() {
                         <div className="relative w-full max-w-[88px] overflow-hidden rounded-md aspect-[2/3] ring-1 ring-white/15">
                           <img src={path} alt="" className="absolute inset-0 h-full w-full object-cover" />
                         </div>
-                        <p className="text-center text-[12px] text-muted">{FACTION_LABEL[faction]}</p>
-                        <p className="break-all text-center text-[11px] text-faint tabular">{path}</p>
+                        <p className="text-center text-[14px] text-muted">{FACTION_LABEL[faction]}</p>
+                        <p className="break-all text-center text-[13px] text-faint tabular">{path}</p>
                       </div>
                     );
                   })}
@@ -176,7 +176,7 @@ export function DebugPanel() {
                       return (
                         <div
                           key={faction}
-                          className="flex w-[120px] aspect-[2/3] items-center justify-center rounded-md bg-raised text-[12px] text-muted hairline"
+                          className="flex w-[120px] aspect-[2/3] items-center justify-center rounded-md bg-raised text-[14px] text-muted hairline"
                         >
                           {FACTION_LABEL[faction]}
                         </div>
@@ -200,8 +200,8 @@ export function DebugPanel() {
                       <div className="relative aspect-video w-full overflow-hidden bg-raised">
                         <img src={bg.path} alt="" className="absolute inset-0 h-full w-full object-cover" />
                       </div>
-                      <p className="px-1 text-[12px] text-muted">{bg.label}</p>
-                      <p className="break-all px-1 pb-1 text-[11px] text-faint tabular">{bg.path}</p>
+                      <p className="px-1 text-[14px] text-muted">{bg.label}</p>
+                      <p className="break-all px-1 pb-1 text-[13px] text-faint tabular">{bg.path}</p>
                     </button>
                   ))}
                 </div>
@@ -283,7 +283,7 @@ function DbgBtn({
         {children}
       </button>
       {disabled && hint ? (
-        <p className="px-0.5 text-center text-[11px] leading-tight text-faint">{hint}</p>
+        <p className="px-0.5 text-center text-[13px] leading-tight text-faint">{hint}</p>
       ) : null}
     </div>
   );

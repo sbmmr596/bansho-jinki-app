@@ -38,13 +38,13 @@ export type CardSizeKey = keyof typeof CARD_W;
 
 /**
  * Font sizes (logical px at `--text-scale: 1`).
- * Raised so body/UI stay nearer ≥10–11 physical px at typical phone scale
- * (~0.35–0.5) once CSS `--text-scale` (~1.0–1.35) is applied.
+ * caption/body/ui are +2px so on-stage copy stays readable without
+ * restacking screens. Phone downscale still gets `--text-scale` (~1.0–1.35).
  */
 export const FONT = {
-  caption: 12,
-  body: 14,
-  ui: 16,
+  caption: 14,
+  body: 16,
+  ui: 18,
   title: 24,
   displayMin: 38,
   displayMax: 46,

@@ -279,7 +279,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
             Grokで接続
           </button>
         ) : null}
-        <p className="mt-3 text-[12px] leading-relaxed text-faint">
+        <p className="mt-3 text-[14px] leading-relaxed text-faint">
           万象陣記 / chars.json。差し替え絵は chars/id.png か cards/id.jpg。JSON の art が /chars/… ならアプリ標準絵のまま。
         </p>
       </div>

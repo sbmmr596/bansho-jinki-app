@@ -71,7 +71,7 @@ export function TitleScreen() {
         <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/80 to-bg/40" />
         <div className="relative flex h-full w-full items-center justify-center px-6 py-4">
           <div className="flex w-full max-w-xl flex-col items-center gap-4">
-            <p className="text-[12px] tracking-[0.35em] text-brass">DIFFICULTY</p>
+            <p className="text-[14px] tracking-[0.35em] text-brass">DIFFICULTY</p>
             <h2 className="font-display text-3xl">難易度を選ぶ</h2>
             <p className="max-w-md text-center text-sm text-muted">
               はじめからの難易度。あとから変更はできない（つづきからは保存値を使う）。
@@ -91,8 +91,8 @@ export function TitleScreen() {
                     )}
                   >
                     <p className="font-display text-lg text-fg">{m.flavor}</p>
-                    <p className="text-[13px] text-brass">（{m.plain}）</p>
-                    <p className="mt-2 text-[12px] leading-snug text-faint">{m.blurb}</p>
+                    <p className="text-[15px] text-brass">（{m.plain}）</p>
+                    <p className="mt-2 text-[14px] leading-snug text-faint">{m.blurb}</p>
                   </button>
                 );
               })}
@@ -124,7 +124,7 @@ export function TitleScreen() {
       <div className="relative flex h-full w-full items-center justify-center px-6 py-3">
         <div className="flex max-w-4xl items-center gap-5">
           <div className="min-w-0 max-w-md">
-            <p className="mb-1 text-[12px] tracking-[0.35em] text-brass">BANSHO JINKI</p>
+            <p className="mb-1 text-[14px] tracking-[0.35em] text-brass">BANSHO JINKI</p>
             <h1
               className="font-display select-none text-5xl leading-none tracking-wide"
               onClick={onMark}
@@ -134,7 +134,7 @@ export function TitleScreen() {
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
               カードを集め、陣を敷き、地を取れ。属性の利を読んで覇を決する。
             </p>
-            <p className="mt-2 max-w-sm text-[13px] leading-relaxed text-faint">
+            <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-faint">
               スマホは横向き推奨。ホーム画面追加（PWA）だと横固定・全画面に近づきます。
             </p>
           </div>
@@ -163,7 +163,7 @@ export function TitleScreen() {
               全画面
             </GhostButton>
             {displayHint ? (
-              <p className="px-0.5 text-center text-[12px] leading-tight text-faint">{displayHint}</p>
+              <p className="px-0.5 text-center text-[14px] leading-tight text-faint">{displayHint}</p>
             ) : null}
             <button
               type="button"
