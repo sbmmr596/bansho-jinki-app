@@ -341,8 +341,8 @@ function FormationSelect({
           <ul
             ref={menuRef}
             role="listbox"
-            className="absolute z-[90] max-h-52 overflow-y-auto rounded-md bg-panel py-1 shadow-lg hairline"
-            style={{ top: box.top, left: box.left, width: box.width }}
+            className="formation-menu absolute z-[90] max-h-52 overflow-y-auto rounded-md border border-border bg-ink py-1 shadow-lg"
+            style={{ top: box.top, left: box.left, width: box.width, backgroundColor: "#16120e" }}
           >
             {FORMATION_IDS.map((id) => {
               const formation = FORMATIONS[id];
@@ -355,8 +355,9 @@ function FormationSelect({
                     role="option"
                     aria-selected={selected}
                     className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-sm ${
-                      selected ? "bg-brass/20 text-brass" : "text-fg"
+                      selected ? "bg-[#2a241c] text-brass" : "bg-ink text-fg"
                     }`}
+                    style={{ backgroundColor: selected ? "#2a241c" : "#16120e" }}
                     onClick={() => {
                       onChange(id);
                       setOpen(false);
