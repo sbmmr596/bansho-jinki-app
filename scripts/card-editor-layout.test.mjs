@@ -19,6 +19,13 @@ describe("card editor panel layout (stage scroll)", () => {
     assert.match(panel, /overflow-hidden rounded-xl/);
   });
 
+  it("sizes the panel from the stage, not the browser viewport", () => {
+    // 1280×720 stage is CSS-scaled. vw tracks the window, so the editor
+    // looked a different width than the widened max-w-6xl layout.
+    assert.match(panel, /w-\[96%\] max-w-6xl/);
+    assert.doesNotMatch(panel, /96vw/);
+  });
+
   it("keeps header chrome shrink-0 and body min-h-0 flex-1", () => {
     assert.match(panel, /shrink-0 items-center justify-between/);
     assert.match(panel, /flex min-h-0 flex-1 flex-col overflow-hidden/);
