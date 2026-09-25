@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import {
   BASIC_SKILL,
   applyCatalog,
@@ -257,6 +258,137 @@ function draftToFormation(d: FormationDraft): Formation | null {
     slots: d.slots,
     bonus,
   });
+}
+
+/** Tiny 3×3. Same facing as the battle grid (front column on the left). */
+function MiniFormation({ slots }: { slots: boolean[] }) {
+  return (
+    <span className="grid h-6 w-6 shrink-0 grid-cols-3 grid-rows-3 gap-px" aria-hidden>
+      {[0, 1, 2].map((row) =>
+        [2, 1, 0].map((col) => {
+          const open = slots[row * 3 + col];
+          return (
+            <span
+              key={`${row}-${col}`}
+              className={open ? "rounded-[1px] bg-brass" : "rounded-[1px] bg-fg/15"}
+            />
+          );
+        }),
+      )}
+    </span>
+  );
+}
+
+function FormationSelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [box, setBox] = useState<{ top: number; left: number; width: number } | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLUListElement>(null);
+  const current = FORMATIONS[value];
+
+  useEffect(() => {
+    if (!open) return;
+    const button = buttonRef.current;
+    const stageEl = button?.closest(".game-stage") as HTMLElement | null;
+    if (button && stageEl) {
+      const rect = button.getBoundingClientRect();
+      const stageRect = stageEl.getBoundingClientRect();
+      const scaleY = stageRect.height / stageEl.offsetHeight || 1;
+      const scaleX = stageRect.width / stageEl.offsetWidth || 1;
+      const buttonTop = (rect.top - stageRect.top) / scaleY;
+      const buttonBottom = (rect.bottom - stageRect.top) / scaleY;
+      const menuMax = 208;
+      const spaceBelow = stageEl.offsetHeight - buttonBottom;
+      const openUp = spaceBelow < menuMax && buttonTop > spaceBelow;
+      setBox({
+        top: openUp ? Math.max(8, buttonTop - 4 - menuMax) : buttonBottom + 4,
+        left: (rect.left - stageRect.left) / scaleX,
+        width: rect.width / scaleX,
+      });
+    }
+    const onDoc = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    const onScroll = (e: Event) => {
+      const target = e.target as Node;
+      if (menuRef.current === target || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    const onResize = () => setOpen(false);
+    document.addEventListener("pointerdown", onDoc);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
+    return () => {
+      document.removeEventListener("pointerdown", onDoc);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [open]);
+
+  const stage = typeof document !== "undefined" ? document.querySelector(".game-stage") : null;
+  const menu =
+    open && box && stage
+      ? createPortal(
+          <ul
+            ref={menuRef}
+            role="listbox"
+            className="absolute z-[90] max-h-52 overflow-y-auto rounded-md bg-panel py-1 shadow-lg hairline"
+            style={{ top: box.top, left: box.left, width: box.width }}
+          >
+            {FORMATION_IDS.map((id) => {
+              const formation = FORMATIONS[id];
+              if (!formation) return null;
+              const selected = id === value;
+              return (
+                <li key={id}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-sm ${
+                      selected ? "bg-brass/20 text-brass" : "text-fg"
+                    }`}
+                    onClick={() => {
+                      onChange(id);
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="min-w-0 flex-1 truncate">{formation.name}</span>
+                    <MiniFormation slots={formation.slots} />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>,
+          stage,
+        )
+      : null;
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        className="flex h-10 w-full items-center gap-2 rounded-md bg-raised px-2.5 text-left text-sm text-fg hairline outline-none focus:ring-1 focus:ring-brass/60"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className="min-w-0 flex-1 truncate">{current?.name ?? value}</span>
+        {current ? <MiniFormation slots={current.slots} /> : null}
+      </button>
+      {menu}
+    </div>
+  );
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -1051,13 +1183,10 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                     <span>素材用（編成・陣形に参加しない）</span>
                   </label>
                   {!draft.fodder ? (
-                    <Field label="陣形">
-                      <select className={inputCls} value={draft.formation} onChange={(e) => patch("formation", e.target.value)}>
-                        {FORMATION_IDS.map((id) => (
-                          <option key={id} value={id}>{FORMATIONS[id]?.name ?? id}</option>
-                        ))}
-                      </select>
-                    </Field>
+                    <div className="flex min-w-0 flex-col gap-0.5 text-[11px] text-muted">
+                      <span>陣形</span>
+                      <FormationSelect value={draft.formation} onChange={(id) => patch("formation", id)} />
+                    </div>
                   ) : null}
                   <p className="col-span-2 text-[11px] leading-snug text-muted">
                     基本技は行動抽選の基本枠。回復・加速・減速はダメージなし（加速と減速はATB）。未設定の古いデータは通常攻撃。
