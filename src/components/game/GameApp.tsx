@@ -3,6 +3,7 @@ import { useGame } from "@/game/store";
 import { applyCatalog } from "@/game/data";
 import { loadUserCatalog } from "@/game/catalog-api";
 import { loadDriveCatalog } from "@/game/drive-catalog";
+import { driveResumePending } from "@/game/drive-resume";
 import { GH_KEY, loadGithubCatalog } from "@/game/github-catalog";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { ArtTrialOverlay } from "./ArtTrialOverlay";
@@ -50,6 +51,11 @@ export function GameApp() {
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  useEffect(() => {
+    if (!hydrated || !driveResumePending()) return;
+    setCatalogOpen(true);
+  }, [hydrated, setCatalogOpen]);
 
   useEffect(() => {
     if (!hydrated) return;
