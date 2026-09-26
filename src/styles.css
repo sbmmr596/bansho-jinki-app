@@ -85,6 +85,7 @@ body,
   min-height: 100dvh;
   color: var(--color-fg);
   overflow: hidden;
+  touch-action: pan-x pan-y;
 }
 body {
   font-family: var(--font-sans);
@@ -92,7 +93,8 @@ body {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
-  touch-action: manipulation;
+  /* pan only: pinch-zoom is a browser scale from the top-left and slides the stage. */
+  touch-action: pan-x pan-y;
 }
 
 .font-display {
@@ -150,6 +152,7 @@ body {
   height: 100%;
   overflow: hidden;
   background: #0b0907;
+  touch-action: pan-x pan-y;
 }
 .game-stage {
   position: absolute;

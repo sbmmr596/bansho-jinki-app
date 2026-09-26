@@ -22,7 +22,7 @@ import { TitleScreen } from "./TitleScreen";
 import { TrainScreen } from "./TrainScreen";
 import { ArenaScreen } from "./ArenaScreen";
 import { ArtZoom } from "./pieces";
-import { DESIGN_H, DESIGN_W, fitContainScale } from "@/game/design";
+import { DESIGN_H, DESIGN_W, isPinchZoom, stageFrame } from "@/game/design";
 
 /** Show portrait tip when contain-scale is this small (phone portrait). */
 const PORTRAIT_TIP_SCALE = 0.55;
@@ -143,48 +143,82 @@ export function GameApp() {
       const n = parseFloat(raw);
       return Number.isFinite(n) ? n : 0;
     };
+    let pinching = false;
+    let zoomResetAt = 0;
+    const resetPinchZoom = () => {
+      const now = Date.now();
+      if (now - zoomResetAt < 800) return;
+      zoomResetAt = now;
+      window.scrollTo(0, 0);
+      const meta = document.querySelector('meta[name="viewport"]');
+      const locked = meta?.getAttribute("content");
+      if (!meta || !locked) return;
+      meta.setAttribute("content", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no");
+      requestAnimationFrame(() => {
+        meta.setAttribute("content", locked);
+      });
+    };
     const fit = () => {
+      if (pinching) return;
       const frame = frameRef.current;
       const stage = stageRef.current;
       if (!frame || !stage) return;
       const vv = window.visualViewport;
-      const vw = vv?.width ?? window.innerWidth;
-      const vh = vv?.height ?? window.innerHeight;
-      const ox = vv?.offsetLeft ?? 0;
-      const oy = vv?.offsetTop ?? 0;
-      frame.style.left = `${ox}px`;
-      frame.style.top = `${oy}px`;
-      frame.style.width = `${Math.floor(vw)}px`;
-      frame.style.height = `${Math.floor(vh)}px`;
-      // Clear inset/right/bottom so width/height are not stretched against right:0/bottom:0
-      // (CSS inset:0 leftover conflicts with visualViewport offsetLeft/offsetTop outside FS).
+      const zoomed = isPinchZoom(vv?.scale);
+      const box = stageFrame({
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+        visualWidth: vv?.width,
+        visualHeight: vv?.height,
+        offsetLeft: vv?.offsetLeft,
+        offsetTop: vv?.offsetTop,
+        visualScale: vv?.scale,
+        padL: cssPx("--sal"),
+        padR: cssPx("--sar"),
+        padT: cssPx("--sat"),
+        padB: cssPx("--sab"),
+      });
+      // Clear the inset shorthand before left/top. Assigning inset afterwards
+      // wipes left/top, so a pinch pan snaps the frame back to the layout origin.
+      frame.style.inset = "";
       frame.style.right = "auto";
       frame.style.bottom = "auto";
-      frame.style.inset = "";
-
-      // Safe-area padding on outer letterbox only (stage stays full design size).
-      const padL = cssPx("--sal");
-      const padR = cssPx("--sar");
-      const padT = cssPx("--sat");
-      const padB = cssPx("--sab");
-      // Playable area = visual viewport minus safe-area only (no desktop max-width/padding).
-      const aw = Math.max(1, vw - padL - padR);
-      const ah = Math.max(1, vh - padT - padB);
-      // True contain: may exceed 1 on PC/tablet so the stage enlarges like an image.
-      const scale = fitContainScale(aw, ah);
+      frame.style.left = `${box.frameLeft}px`;
+      frame.style.top = `${box.frameTop}px`;
+      frame.style.width = `${box.frameWidth}px`;
+      frame.style.height = `${box.frameHeight}px`;
 
       stage.style.width = `${DESIGN_W}px`;
       stage.style.height = `${DESIGN_H}px`;
       stage.style.transformOrigin = "top left";
-      stage.style.transform = `scale(${scale})`;
-      stage.style.left = `${padL + (aw - DESIGN_W * scale) / 2}px`;
-      stage.style.top = `${padT + (ah - DESIGN_H * scale) / 2}px`;
+      stage.style.transform = `scale(${box.scale})`;
+      stage.style.left = `${box.stageLeft}px`;
+      stage.style.top = `${box.stageTop}px`;
       // Drive mild inverse text scale in CSS (--text-scale on .game-stage).
       // When scale > 1, CSS keeps --text-scale at 1 so fonts enlarge with the stage.
-      stage.style.setProperty("--stage-scale", String(scale));
+      stage.style.setProperty("--stage-scale", String(box.scale));
 
-      const portrait = vh > vw;
-      setShowLandscapeHint(portrait && scale < PORTRAIT_TIP_SCALE);
+      const portrait = box.frameHeight > box.frameWidth;
+      setShowLandscapeHint(portrait && box.scale < PORTRAIT_TIP_SCALE);
+      if (zoomed) resetPinchZoom();
+    };
+    const blockPinch = (event: Event) => {
+      event.preventDefault();
+    };
+    const onGestureStart = (event: Event) => {
+      blockPinch(event);
+      pinching = true;
+    };
+    const onGestureEnd = (event: Event) => {
+      blockPinch(event);
+      pinching = false;
+      fit();
+    };
+    const onTouchMove = (event: TouchEvent) => {
+      if (event.touches.length > 1) event.preventDefault();
+    };
+    const onWheel = (event: WheelEvent) => {
+      if (event.ctrlKey) event.preventDefault();
     };
     fit();
     window.addEventListener("resize", fit);
@@ -192,12 +226,22 @@ export function GameApp() {
     window.visualViewport?.addEventListener("scroll", fit);
     document.addEventListener("fullscreenchange", fit);
     document.addEventListener("webkitfullscreenchange", fit);
+    document.addEventListener("gesturestart", onGestureStart, { passive: false });
+    document.addEventListener("gesturechange", blockPinch, { passive: false });
+    document.addEventListener("gestureend", onGestureEnd, { passive: false });
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("wheel", onWheel, { passive: false });
     return () => {
       window.removeEventListener("resize", fit);
       window.visualViewport?.removeEventListener("resize", fit);
       window.visualViewport?.removeEventListener("scroll", fit);
       document.removeEventListener("fullscreenchange", fit);
       document.removeEventListener("webkitfullscreenchange", fit);
+      document.removeEventListener("gesturestart", onGestureStart);
+      document.removeEventListener("gesturechange", blockPinch);
+      document.removeEventListener("gestureend", onGestureEnd);
+      document.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("wheel", onWheel);
     };
   }, [hydrated]);
 
