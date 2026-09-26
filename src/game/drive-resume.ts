@@ -3,8 +3,8 @@
  */
 
 const STORAGE_KEY = "bansho-drive-resume";
-const FOLDER_AUTH_KEY = "bansho-drive-folder-auth";
-const FOLDER_AUTH_TTL_MS = 10 * 60 * 1000;
+const AUTH_ATTEMPT_PREFIX = "bansho-drive-auth-";
+const AUTH_ATTEMPT_TTL_MS = 10 * 60 * 1000;
 const PARAM = "resume";
 
 export type DriveResumeAction = "read" | "folder";
@@ -15,6 +15,10 @@ function actionFromValue(raw: string | null): DriveResumeAction | null {
   if (raw === "folder") return "folder";
   if (raw === "1" || raw === "read" || raw === "drive") return "read";
   return null;
+}
+
+function authAttemptKey(action: DriveResumeAction): string {
+  return `${AUTH_ATTEMPT_PREFIX}${action}`;
 }
 
 export function markDriveResume(action: DriveResumeAction = "read"): void {
@@ -62,32 +66,47 @@ export function clearDriveResume(): void {
   }
 }
 
-/** Remember that folder creation already sent the user to Google in this tab. */
-export function markFolderAuthAttempt(now = Date.now()): void {
+/** Remember that this Drive action already sent the user to Google in this tab. */
+export function markDriveAuthAttempt(action: DriveResumeAction, now = Date.now()): void {
   try {
-    sessionStorage.setItem(FOLDER_AUTH_KEY, String(now));
+    sessionStorage.setItem(authAttemptKey(action), String(now));
   } catch {
     /* private mode */
   }
 }
 
-export function folderAuthAttempted(now = Date.now()): boolean {
+export function driveAuthAttempted(action: DriveResumeAction, now = Date.now()): boolean {
   try {
-    const raw = sessionStorage.getItem(FOLDER_AUTH_KEY);
+    const raw = sessionStorage.getItem(authAttemptKey(action));
     if (!raw) return false;
     const at = Number(raw);
-    return Number.isFinite(at) && now - at >= 0 && now - at < FOLDER_AUTH_TTL_MS;
+    return Number.isFinite(at) && now - at >= 0 && now - at < AUTH_ATTEMPT_TTL_MS;
   } catch {
     return false;
   }
 }
 
-export function clearFolderAuthAttempt(): void {
+export function clearDriveAuthAttempt(action: DriveResumeAction): void {
   try {
-    sessionStorage.removeItem(FOLDER_AUTH_KEY);
+    sessionStorage.removeItem(authAttemptKey(action));
   } catch {
     /* ignore */
   }
+}
+
+/** @deprecated Prefer markDriveAuthAttempt("folder") */
+export function markFolderAuthAttempt(now = Date.now()): void {
+  markDriveAuthAttempt("folder", now);
+}
+
+/** @deprecated Prefer driveAuthAttempted("folder") */
+export function folderAuthAttempted(now = Date.now()): boolean {
+  return driveAuthAttempted("folder", now);
+}
+
+/** @deprecated Prefer clearDriveAuthAttempt("folder") */
+export function clearFolderAuthAttempt(): void {
+  clearDriveAuthAttempt("folder");
 }
 
 /** Add resume=drive or resume=folder to the gate return_to so a new tab still continues. */

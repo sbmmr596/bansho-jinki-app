@@ -7,12 +7,12 @@ import { CATALOG_KEY, clearUserCatalog, saveUserCatalog } from "@/game/catalog-a
 import { createDriveFolder, loadDriveCatalog, type DriveCatalogResult } from "@/game/drive-catalog";
 import {
   beginDriveResume,
-  clearFolderAuthAttempt,
+  clearDriveAuthAttempt,
+  driveAuthAttempted,
   driveResumeAction,
-  folderAuthAttempted,
   loginUrlWithDriveResume,
+  markDriveAuthAttempt,
   markDriveResume,
-  markFolderAuthAttempt,
   type DriveResumeAction,
 } from "@/game/drive-resume";
 import { useGame } from "@/game/store";
@@ -41,7 +41,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
 
   const goDriveLogin = (loginUrl: string, action: DriveResumeAction) => {
     markDriveResume(action);
-    if (action === "folder") markFolderAuthAttempt();
+    markDriveAuthAttempt(action);
     redirectToLoginIfRequired({
       ok: false,
       data: null,
@@ -59,13 +59,12 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
       setLoginUrl(result.loginUrl ?? null);
       setLoginAction(action);
       if (result.loginRequired && result.loginUrl) {
-        const stay =
-          opts?.resumed || (action === "folder" && folderAuthAttempted());
+        const stay = opts?.resumed || driveAuthAttempted(action);
         if (stay) {
           setMsg(
             action === "folder"
               ? "許可のあと、フォルダはまだ作れません。接続が届いていれば、もう一度「フォルダを作る」を押してください。"
-              : "許可のあと、ドライブの接続がまだ届いていません。もう一度「ドライブから読む」を押してください。",
+              : "許可のあと、ドライブはまだ読めません。接続が届いていれば、もう一度「ドライブから読む」を押してください。",
           );
           return false;
         }
@@ -76,7 +75,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
       setMsg(result.message);
       return false;
     }
-    if (action === "folder") clearFolderAuthAttempt();
+    clearDriveAuthAttempt(action);
     setLoginUrl(null);
     if (result.status === "empty") {
       setMsg(result.message);
