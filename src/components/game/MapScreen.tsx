@@ -20,14 +20,15 @@ export function MapScreen() {
   return (
     <Shell title="神域大戦" extra={<GoldChip gold={gold} />} nav="map" wide>
       <div className="flex h-full min-h-0 gap-3">
-        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg">
+        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden [container-type:size]">
+          {/* /bg/map.jpg と同じ 16:9。はみ出し切り抜きをやめ、拠点の % を絵の上に乗せる。 */}
+          <div className="absolute top-1/2 left-1/2 aspect-[16/9] w-[min(100cqw,calc(100cqh*16/9))] -translate-x-1/2 -translate-y-1/2">
           <img
             src="/bg/map.jpg"
             alt=""
             crossOrigin="anonymous"
-            className="absolute inset-0 h-full w-full object-cover opacity-80"
+            className="absolute inset-0 h-full w-full opacity-90"
           />
-          <div className="absolute inset-0 bg-bg/25" />
           <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             {NODES.flatMap((n) =>
               n.neighbors
@@ -74,6 +75,7 @@ export function MapScreen() {
               </button>
             );
           })}
+          </div>
         </div>
         <div className="flex w-56 shrink-0 flex-col gap-2 overflow-y-auto">
           <p className="text-xs text-muted">
