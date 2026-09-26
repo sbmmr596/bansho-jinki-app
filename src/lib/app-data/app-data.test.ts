@@ -126,6 +126,47 @@ describe("callTool failure memo", () => {
     });
   });
 
+  it("keeps a gate loginUrl that asks for the missing tool", async () => {
+    await withStubbedGate(
+      401,
+      {
+        errorMessage: "login required",
+        loginUrl: "https://gate.invalid.example/__gate/signin?connector=GoogleDrive&scope=drive",
+      },
+      async () => {
+        const result = await callTool(
+          "google_drive_create_folder",
+          { folder_name: "万象陣記" },
+          {
+            connectorType: ConnectorType.GoogleDrive,
+            token: fakeJwt({ sub: "memo-user-6", iat: 1000, exp: 2000 }),
+          },
+        );
+        assert.equal(result.loginRequired, true);
+        assert.match(result.loginUrl ?? "", /scope=drive/);
+      },
+    );
+  });
+
+  it("ignores a loginUrl that is not the gate", async () => {
+    await withStubbedGate(
+      401,
+      { errorMessage: "login required", loginUrl: "https://evil.example/phish" },
+      async () => {
+        const result = await callTool(
+          "google_drive_search",
+          { q: "auth" },
+          {
+            connectorType: ConnectorType.GoogleDrive,
+            token: fakeJwt({ sub: "memo-user-7", iat: 1000, exp: 2000 }),
+          },
+        );
+        assert.equal(result.loginRequired, true);
+        assert.equal(result.loginUrl, "https://gate.invalid.example/__gate/signin");
+      },
+    );
+  });
+
   it("never memoizes login-required 401s", async () => {
     await withStubbedGate(401, { errorMessage: "login required" }, async (calls) => {
       const options = {
