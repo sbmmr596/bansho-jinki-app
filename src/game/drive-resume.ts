@@ -7,14 +7,21 @@ const AUTH_ATTEMPT_PREFIX = "bansho-drive-auth-";
 const AUTH_ATTEMPT_TTL_MS = 10 * 60 * 1000;
 const PARAM = "resume";
 
-export type DriveResumeAction = "read" | "folder";
+export type DriveResumeAction = "read" | "folder" | "export";
 
 let inflight: Promise<unknown> | null = null;
 
 function actionFromValue(raw: string | null): DriveResumeAction | null {
   if (raw === "folder") return "folder";
+  if (raw === "export") return "export";
   if (raw === "1" || raw === "read" || raw === "drive") return "read";
   return null;
+}
+
+function resumeQuery(action: DriveResumeAction): string {
+  if (action === "folder") return "folder";
+  if (action === "export") return "export";
+  return "drive";
 }
 
 function authAttemptKey(action: DriveResumeAction): string {
@@ -23,7 +30,7 @@ function authAttemptKey(action: DriveResumeAction): string {
 
 export function markDriveResume(action: DriveResumeAction = "read"): void {
   try {
-    sessionStorage.setItem(STORAGE_KEY, action === "folder" ? "folder" : "1");
+    sessionStorage.setItem(STORAGE_KEY, action === "read" ? "1" : action);
   } catch {
     /* private mode */
   }
@@ -119,7 +126,7 @@ export function loginUrlWithDriveResume(
     const ret = u.searchParams.get("return_to");
     if (!ret) return loginUrl;
     const back = new URL(ret);
-    back.searchParams.set(PARAM, action === "folder" ? "folder" : "drive");
+    back.searchParams.set(PARAM, resumeQuery(action));
     u.searchParams.set("return_to", back.toString());
     return u.toString();
   } catch {

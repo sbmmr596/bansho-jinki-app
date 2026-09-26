@@ -19,10 +19,14 @@ import {
   TYPE_LABEL,
 } from "@/game/data";
 import { CATALOG_KEY } from "@/game/catalog-api";
+import { catalogDownloadText } from "@/game/catalog-download";
+import { saveDriveCatalog } from "@/game/drive-catalog";
 import {
-  CATALOG_DOWNLOAD_FILENAME,
-  downloadCatalogJson,
-} from "@/game/catalog-download";
+  beginDriveResume,
+  clearDriveAuthAttempt,
+  driveAuthAttempted,
+} from "@/game/drive-resume";
+import { redirectForDriveLogin } from "@/game/drive-login";
 import {
   CARD_ART_FILES,
   cardArtPath,
@@ -489,6 +493,40 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
   });
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const job = beginDriveResume(async (action) => {
+      if (action !== "export") return null;
+      return saveDriveCatalog({ data: catalogDownloadText() });
+    });
+    if (!job) return;
+    let cancel = false;
+    setBusy(true);
+    setMsg("ドライブの万象陣記に書き出しています…");
+    void job
+      .then((result) => {
+        if (cancel || !result) return;
+        if (!result.ok) {
+          setMsg(
+            result.loginRequired
+              ? "許可のあと、まだ書き出せていません。もう一度「JSONを書き出す」を押してください。"
+              : result.message,
+          );
+          return;
+        }
+        clearDriveAuthAttempt("export");
+        setMsg(result.status === "saved" ? result.message : "ドライブに書き出した。");
+      })
+      .catch(() => {
+        if (!cancel) setMsg("JSONの書き出しに失敗した。");
+      })
+      .finally(() => {
+        if (!cancel) setBusy(false);
+      });
+    return () => {
+      cancel = true;
+    };
+  }, []);
   const [filter, setFilter] = useState("");
 
   const filtered = useMemo(() => {
@@ -583,7 +621,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
       setSelectedId(id);
       const saved = HERO_CARDS.find((c) => c.id === id);
       if (saved) setDraft(toDraft(saved));
-      setMsg(`${n}人を端末に保存した。ドライブへは「JSONを書き出す」で chars.json を置いてね。`);
+      setMsg(`${n}人を端末に保存した。「JSONを書き出す」でドライブの万象陣記/chars.json に置ける。`);
     } catch {
       setMsg("保存に失敗した。入力を確認してね。");
     } finally {
@@ -770,16 +808,30 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const onExportJson = () => {
+  const onExportJson = async () => {
+    setBusy(true);
+    setMsg("ドライブの万象陣記に書き出しています…");
     try {
-      // Prefer in-memory catalog after any unsaved draft? Spec: export current loaded catalog.
-      // If user edited draft without saving, export still reflects last persist — note that.
-      downloadCatalogJson();
-      setMsg(
-        `「${CATALOG_DOWNLOAD_FILENAME}」を書き出した。万象陣記フォルダに置き、マイデータの「ドライブから読む」で読み直せるよ。`,
-      );
+      const result = await saveDriveCatalog({ data: catalogDownloadText() });
+      if (!result.ok && result.loginRequired && result.loginUrl) {
+        if (driveAuthAttempted("export")) {
+          setMsg("許可のあと、まだ書き出せていません。もう一度「JSONを書き出す」を押してください。");
+          return;
+        }
+        setMsg("Googleでドライブを許可すると、万象陣記/chars.json に書き出します。");
+        redirectForDriveLogin(result.loginUrl, "export");
+        return;
+      }
+      if (!result.ok) {
+        setMsg(result.message);
+        return;
+      }
+      clearDriveAuthAttempt("export");
+      setMsg(result.status === "saved" ? result.message : "ドライブに書き出した。");
     } catch {
       setMsg("JSONの書き出しに失敗した。");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -795,8 +847,8 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
         </div>
 
         <p className="mb-2 shrink-0 text-[13px] leading-relaxed text-faint">
-          いま読み込んでいるカタログ（標準・ドライブ・ファイル・端末）を編集する。保存は端末のみ。ドライブへは「JSONを書き出す」→ 万象陣記/chars.json
-          → マイデータの「ドライブから読む」。グラフィックは既存ファイル名を参照（アップロードなし）。
+          いま読み込んでいるカタログ（標準・ドライブ・ファイル・端末）を編集する。カードの保存は端末。「JSONを書き出す」はドライブの万象陣記/chars.json
+          に書く。グラフィックは既存ファイル名を参照（絵のアップロードはしない）。
         </p>
         {msg ? <p className="mb-2 shrink-0 text-xs text-brass">{msg}</p> : null}
 

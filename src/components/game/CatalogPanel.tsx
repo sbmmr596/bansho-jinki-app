@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
-import { redirectToLoginIfRequired } from "@/lib/app-data";
 import { applyCatalog, HERO_CARDS, loadChars, resetCatalog } from "@/game/data";
 import { CATALOG_KEY, clearUserCatalog, saveUserCatalog } from "@/game/catalog-api";
 import { createDriveFolder, loadDriveCatalog, type DriveCatalogResult } from "@/game/drive-catalog";
@@ -10,11 +9,9 @@ import {
   clearDriveAuthAttempt,
   driveAuthAttempted,
   driveResumeAction,
-  loginUrlWithDriveResume,
-  markDriveAuthAttempt,
-  markDriveResume,
   type DriveResumeAction,
 } from "@/game/drive-resume";
+import { redirectForDriveLogin } from "@/game/drive-login";
 import { useGame } from "@/game/store";
 import { CloseButton } from "./pieces";
 
@@ -36,19 +33,6 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
-  const [loginUrl, setLoginUrl] = useState<string | null>(null);
-  const [loginAction, setLoginAction] = useState<DriveResumeAction>("read");
-
-  const goDriveLogin = (loginUrl: string, action: DriveResumeAction) => {
-    markDriveResume(action);
-    markDriveAuthAttempt(action);
-    redirectToLoginIfRequired({
-      ok: false,
-      data: null,
-      loginRequired: true,
-      loginUrl: loginUrlWithDriveResume(loginUrl, action),
-    });
-  };
 
   const handleDrive = (
     result: DriveCatalogResult,
@@ -56,28 +40,27 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
   ) => {
     const action = opts?.action ?? "read";
     if (!result.ok) {
-      setLoginUrl(result.loginUrl ?? null);
-      setLoginAction(action);
       if (result.loginRequired && result.loginUrl) {
+        const again =
+          action === "folder" ? "フォルダを作る" : action === "export" ? "JSONを書き出す" : "ドライブから読む";
         const stay = opts?.resumed || driveAuthAttempted(action);
         if (stay) {
-          setMsg(
-            action === "folder"
-              ? "許可のあと、フォルダはまだ作れません。接続が届いていれば、もう一度「フォルダを作る」を押してください。"
-              : "許可のあと、ドライブはまだ読めません。接続が届いていれば、もう一度「ドライブから読む」を押してください。",
-          );
+          setMsg(`許可のあと、まだ続けられていません。もう一度「${again}」を押してください。`);
           return false;
         }
-        setMsg(result.message);
-        goDriveLogin(result.loginUrl, action);
+        setMsg(
+          action === "folder"
+            ? "Googleでドライブを許可すると、フォルダ作成を続けます。"
+            : "Googleでドライブを許可すると、読み込みを続けます。",
+        );
+        redirectForDriveLogin(result.loginUrl, action);
         return false;
       }
       setMsg(result.message);
       return false;
     }
     clearDriveAuthAttempt(action);
-    setLoginUrl(null);
-    if (result.status === "empty") {
+    if (result.status !== "loaded") {
       setMsg(result.message);
       return false;
     }
@@ -280,15 +263,6 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
         >
           カード編集を開く
         </button>
-        {loginUrl ? (
-          <button
-            type="button"
-            className="mt-3 h-11 w-full rounded-md bg-brass text-sm font-medium text-bg"
-            onClick={() => goDriveLogin(loginUrl, loginAction)}
-          >
-            Grokで接続
-          </button>
-        ) : null}
         <p className="mt-3 text-[14px] leading-relaxed text-faint">
           万象陣記 / chars.json。差し替え絵は chars/id.png か cards/id.jpg。JSON の art が /chars/… ならアプリ標準絵のまま。
         </p>
