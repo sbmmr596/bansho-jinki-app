@@ -12,6 +12,7 @@ export const DRIVE_FOLDER = "万象陣記";
 export type DriveCatalogResult =
   | { ok: true; status: "loaded"; payload: string; count: number }
   | { ok: true; status: "empty"; message: string }
+  | { ok: true; status: "saved"; message: string }
   | {
       ok: false;
       kind: "login" | "not_connected" | "scope_denied" | "access_denied" | "error";
@@ -30,7 +31,7 @@ function driveFail(result: CallToolResult): DriveCatalogResult {
   const kind = classified?.kind ?? "error";
   const message =
     kind === "login"
-      ? "Grokで接続するとドライブを読めます。"
+      ? "Googleでドライブを許可すると続けられます。"
       : kind === "not_connected"
         ? "Googleドライブを接続してください。"
         : kind === "access_denied"
@@ -276,7 +277,7 @@ export const createDriveFolder = createServerFn({ method: "POST" }).handler(
       return {
         ok: true,
         status: "empty",
-        message: `「${DRIVE_FOLDER}」は既にあります。chars.json を置いて「ドライブから読む」を押してください。`,
+        message: `「${DRIVE_FOLDER}」は既にあります。カード編集の「JSONを書き出す」で chars.json を置けます。`,
       };
     }
     const created = await driveCall(GoogleDriveTools.createFolder, { folder_name: DRIVE_FOLDER });
@@ -286,8 +287,75 @@ export const createDriveFolder = createServerFn({ method: "POST" }).handler(
       ok: true,
       status: "empty",
       message: made
-        ? `「${DRIVE_FOLDER}」を作りました。chars.json を置いてください。標準データは書き込みません。`
-        : `「${DRIVE_FOLDER}」を作りました。chars.json を置いてください。標準データは書き込みません。`,
+        ? `「${DRIVE_FOLDER}」を作りました。カード編集の「JSONを書き出す」で chars.json を置けます。`
+        : `「${DRIVE_FOLDER}」を作りました。カード編集の「JSONを書き出す」で chars.json を置けます。`,
     };
   },
 );
+
+const JSON_MIME = "application/json";
+
+async function ensureDriveFolder(): Promise<
+  { ok: true; folder: DriveFile } | { ok: false; result: DriveCatalogResult }
+> {
+  const found = await searchFolder();
+  if (!found.ok) return { ok: false, result: driveFail(found) };
+  const existing = pickFolder(asFiles(found.data));
+  if (existing) return { ok: true, folder: existing };
+  const created = await driveCall(GoogleDriveTools.createFolder, { folder_name: DRIVE_FOLDER });
+  if (!created.ok) return { ok: false, result: driveFail(created) };
+  const made = asFile(created.data);
+  if (made) return { ok: true, folder: made };
+  const again = await searchFolder();
+  if (!again.ok) return { ok: false, result: driveFail(again) };
+  const refound = pickFolder(asFiles(again.data));
+  if (!refound) {
+    return { ok: false, result: { ok: false, kind: "error", message: "フォルダを特定できなかった。" } };
+  }
+  return { ok: true, folder: refound };
+}
+
+/** Write the current catalog to 万象陣記/chars.json. Creates the folder when missing. */
+export const saveDriveCatalog = createServerFn({ method: "POST" })
+  .validator((payload: string) => {
+    if (typeof payload !== "string" || !payload.trim()) throw new Error("empty catalog");
+    if (payload.length > 1_500_000) throw new Error("catalog too large");
+    return payload;
+  })
+  .handler(async ({ data }): Promise<DriveCatalogResult> => {
+    const folderResult = await ensureDriveFolder();
+    if (!folderResult.ok) return folderResult.result;
+    const folder = folderResult.folder;
+    const listed = await listFolder(folder.id);
+    if (!listed.ok) return driveFail(listed);
+    const previous = asFiles(listed.data).filter((f) => f.name.toLowerCase() === "chars.json");
+    const current = previous[0];
+    let written = current
+      ? await driveCall(GoogleDriveTools.updateFile, {
+          file_id: current.id,
+          content: data,
+          mime_type: JSON_MIME,
+        })
+      : { ok: false as const, data: null };
+    if (!written.ok && written.loginRequired) return driveFail(written);
+    if (!written.ok) {
+      written = await driveCall(GoogleDriveTools.createFile, {
+        file_name: "chars.json",
+        folder_id: folder.id,
+        content: data,
+        mime_type: JSON_MIME,
+      });
+      if (!written.ok) return driveFail(written);
+      const made = asFile(written.data);
+      for (const old of previous) {
+        if (made && old.id === made.id) continue;
+        const trashed = await driveCall(GoogleDriveTools.trashFile, { file_id: old.id });
+        if (!trashed.ok && trashed.loginRequired) return driveFail(trashed);
+      }
+    }
+    return {
+      ok: true,
+      status: "saved",
+      message: `ドライブの「${DRIVE_FOLDER}/chars.json」に書き出した。`,
+    };
+  });

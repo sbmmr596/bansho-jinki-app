@@ -75,6 +75,15 @@ describe("loginUrlWithDriveResume", () => {
     assert.equal(loginUrlWithDriveResume(raw), raw);
   });
 
+  it("adds resume=export when the action is export", () => {
+    const next = loginUrlWithDriveResume(
+      "https://gate.grok.me/__gate/signin?return_to=https%3A%2F%2Fapp.grok.me",
+      "export",
+    );
+    const back = new URL(new URL(next).searchParams.get("return_to") ?? "");
+    assert.equal(back.searchParams.get("resume"), "export");
+  });
+
   it("adds resume=folder when the action is folder", () => {
     const next = loginUrlWithDriveResume(
       "https://gate.grok.me/__gate/signin?return_to=https%3A%2F%2Fapp.grok.me",

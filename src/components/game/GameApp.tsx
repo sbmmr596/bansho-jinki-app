@@ -3,7 +3,7 @@ import { useGame } from "@/game/store";
 import { applyCatalog } from "@/game/data";
 import { loadUserCatalog } from "@/game/catalog-api";
 import { loadDriveCatalog } from "@/game/drive-catalog";
-import { driveResumePending } from "@/game/drive-resume";
+import { driveResumeAction, driveResumePending } from "@/game/drive-resume";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { ArtTrialOverlay } from "./ArtTrialOverlay";
 import { BattleView } from "./BattleView";
@@ -52,8 +52,9 @@ export function GameApp() {
 
   useEffect(() => {
     if (!hydrated || !driveResumePending()) return;
-    setCatalogOpen(true);
-  }, [hydrated, setCatalogOpen]);
+    if (driveResumeAction() === "export") setCardEditorOpen(true);
+    else setCatalogOpen(true);
+  }, [hydrated, setCardEditorOpen, setCatalogOpen]);
 
   useEffect(() => {
     if (!hydrated) return;

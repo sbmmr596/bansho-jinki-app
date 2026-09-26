@@ -18,6 +18,8 @@ export const GoogleDriveTools = {
   readFile: "google_drive_read_file",
   listFolder: "google_drive_list_folder",
   createFolder: "google_drive_create_folder",
+  createFile: "google_drive_create_file",
+  updateFile: "google_drive_update_file",
   trashFile: "google_drive_trash_file",
 } as const;
 
