@@ -1,10 +1,15 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { redirectToLoginIfRequired } from "@/lib/app-data";
 import { applyCatalog, HERO_CARDS, loadChars, resetCatalog } from "@/game/data";
 import { CATALOG_KEY, clearUserCatalog, saveUserCatalog } from "@/game/catalog-api";
 import { createDriveFolder, loadDriveCatalog, type DriveCatalogResult } from "@/game/drive-catalog";
+import {
+  beginDriveResume,
+  loginUrlWithDriveResume,
+  markDriveResume,
+} from "@/game/drive-resume";
 import { useGame } from "@/game/store";
 import { CloseButton } from "./pieces";
 
@@ -28,18 +33,29 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [loginUrl, setLoginUrl] = useState<string | null>(null);
 
-  const handleDrive = (result: DriveCatalogResult) => {
+  const goDriveLogin = (loginUrl: string) => {
+    markDriveResume();
+    redirectToLoginIfRequired({
+      ok: false,
+      data: null,
+      loginRequired: true,
+      loginUrl: loginUrlWithDriveResume(loginUrl),
+    });
+  };
+
+  const handleDrive = (result: DriveCatalogResult, opts?: { resumed?: boolean }) => {
     if (!result.ok) {
       setLoginUrl(result.loginUrl ?? null);
-      setMsg(result.message);
       if (result.loginRequired && result.loginUrl) {
-        redirectToLoginIfRequired({
-          ok: false,
-          data: null,
-          loginRequired: true,
-          loginUrl: result.loginUrl,
-        });
+        if (opts?.resumed) {
+          setMsg("許可のあと、ドライブの接続がまだ届いていません。もう一度「ドライブから読む」を押してください。");
+          return false;
+        }
+        setMsg(result.message);
+        goDriveLogin(result.loginUrl);
+        return false;
       }
+      setMsg(result.message);
       return false;
     }
     setLoginUrl(null);
@@ -93,17 +109,43 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const onDrive = async () => {
+  const onDrive = async (opts?: { resumed?: boolean }) => {
     setBusy(true);
     setMsg("ドライブを確認中…");
     try {
-      handleDrive(await loadDriveCatalog());
+      handleDrive(await loadDriveCatalog(), opts);
     } catch {
       setMsg("ドライブに届かなかった。");
     } finally {
       setBusy(false);
     }
   };
+
+  const resumeOnce = useRef(false);
+  useEffect(() => {
+    if (resumeOnce.current) return;
+    const job = beginDriveResume(() => loadDriveCatalog());
+    if (!job) return;
+    resumeOnce.current = true;
+    let cancel = false;
+    setBusy(true);
+    setMsg("ドライブを確認中…");
+    void job
+      .then((result) => {
+        if (!cancel) handleDrive(result, { resumed: true });
+      })
+      .catch(() => {
+        if (!cancel) setMsg("ドライブに届かなかった。");
+      })
+      .finally(() => {
+        if (!cancel) setBusy(false);
+      });
+    return () => {
+      cancel = true;
+    };
+    // Resume once when this panel opens after the Google consent return.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onMakeFolder = async () => {
     setBusy(true);
@@ -219,14 +261,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             className="mt-3 h-11 w-full rounded-md bg-brass text-sm font-medium text-bg"
-            onClick={() =>
-              redirectToLoginIfRequired({
-                ok: false,
-                data: null,
-                loginRequired: true,
-                loginUrl,
-              })
-            }
+            onClick={() => goDriveLogin(loginUrl)}
           >
             Grokで接続
           </button>
