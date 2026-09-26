@@ -3,9 +3,13 @@ import { afterEach, describe, it } from "node:test";
 import {
   beginDriveResume,
   clearDriveResume,
+  clearFolderAuthAttempt,
+  driveResumeAction,
   driveResumePending,
+  folderAuthAttempted,
   loginUrlWithDriveResume,
   markDriveResume,
+  markFolderAuthAttempt,
 } from "./drive-resume.ts";
 
 type Mem = {
@@ -67,6 +71,15 @@ describe("loginUrlWithDriveResume", () => {
     const raw = "https://gate.grok.me/__gate/signin";
     assert.equal(loginUrlWithDriveResume(raw), raw);
   });
+
+  it("adds resume=folder when the action is folder", () => {
+    const next = loginUrlWithDriveResume(
+      "https://gate.grok.me/__gate/signin?return_to=https%3A%2F%2Fapp.grok.me",
+      "folder",
+    );
+    const back = new URL(new URL(next).searchParams.get("return_to") ?? "");
+    assert.equal(back.searchParams.get("resume"), "folder");
+  });
 });
 
 describe("drive resume flag", () => {
@@ -83,9 +96,28 @@ describe("drive resume flag", () => {
   it("is pending from the return query and strips it", () => {
     const mem = install("https://app.grok.me/?resume=drive");
     assert.equal(driveResumePending(), true);
+    assert.equal(driveResumeAction(), "read");
     clearDriveResume();
     assert.equal(driveResumePending(), false);
     assert.equal(mem.replaced[0], "/");
+  });
+
+  it("resumes folder creation from the return query", () => {
+    const mem = install("https://app.grok.me/?resume=folder");
+    assert.equal(driveResumeAction(), "folder");
+    clearDriveResume();
+    assert.equal(driveResumePending(), false);
+    assert.equal(mem.replaced[0], "/");
+  });
+
+  it("remembers a folder auth attempt so the next press does not redirect", () => {
+    install("https://app.grok.me/");
+    assert.equal(folderAuthAttempted(1_000), false);
+    markFolderAuthAttempt(1_000);
+    assert.equal(folderAuthAttempted(1_000 + 1000), true);
+    assert.equal(folderAuthAttempted(1_000 + 10 * 60 * 1000), false);
+    clearFolderAuthAttempt();
+    assert.equal(folderAuthAttempted(1_000 + 1000), false);
   });
 
   it("shares one load across a second caller", async () => {
@@ -95,12 +127,23 @@ describe("drive resume flag", () => {
       calls += 1;
       return Promise.resolve("ok");
     };
-    const first = beginDriveResume(load);
-    const second = beginDriveResume(load);
+    const first = beginDriveResume(() => load());
+    const second = beginDriveResume(() => load());
     assert.equal(first, second);
     assert.equal(await first, "ok");
     assert.equal(calls, 1);
     assert.equal(driveResumePending(), false);
     assert.equal(beginDriveResume(load), null);
+  });
+
+  it("passes folder to the resumed action", async () => {
+    install("https://app.grok.me/?resume=folder");
+    let seen = "";
+    const job = beginDriveResume(async (action) => {
+      seen = action;
+      return action;
+    });
+    assert.equal(await job, "folder");
+    assert.equal(seen, "folder");
   });
 });

@@ -7,8 +7,13 @@ import { CATALOG_KEY, clearUserCatalog, saveUserCatalog } from "@/game/catalog-a
 import { createDriveFolder, loadDriveCatalog, type DriveCatalogResult } from "@/game/drive-catalog";
 import {
   beginDriveResume,
+  clearFolderAuthAttempt,
+  driveResumeAction,
+  folderAuthAttempted,
   loginUrlWithDriveResume,
   markDriveResume,
+  markFolderAuthAttempt,
+  type DriveResumeAction,
 } from "@/game/drive-resume";
 import { useGame } from "@/game/store";
 import { CloseButton } from "./pieces";
@@ -32,32 +37,46 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [loginUrl, setLoginUrl] = useState<string | null>(null);
+  const [loginAction, setLoginAction] = useState<DriveResumeAction>("read");
 
-  const goDriveLogin = (loginUrl: string) => {
-    markDriveResume();
+  const goDriveLogin = (loginUrl: string, action: DriveResumeAction) => {
+    markDriveResume(action);
+    if (action === "folder") markFolderAuthAttempt();
     redirectToLoginIfRequired({
       ok: false,
       data: null,
       loginRequired: true,
-      loginUrl: loginUrlWithDriveResume(loginUrl),
+      loginUrl: loginUrlWithDriveResume(loginUrl, action),
     });
   };
 
-  const handleDrive = (result: DriveCatalogResult, opts?: { resumed?: boolean }) => {
+  const handleDrive = (
+    result: DriveCatalogResult,
+    opts?: { resumed?: boolean; action?: DriveResumeAction },
+  ) => {
+    const action = opts?.action ?? "read";
     if (!result.ok) {
       setLoginUrl(result.loginUrl ?? null);
+      setLoginAction(action);
       if (result.loginRequired && result.loginUrl) {
-        if (opts?.resumed) {
-          setMsg("許可のあと、ドライブの接続がまだ届いていません。もう一度「ドライブから読む」を押してください。");
+        const stay =
+          opts?.resumed || (action === "folder" && folderAuthAttempted());
+        if (stay) {
+          setMsg(
+            action === "folder"
+              ? "許可のあと、フォルダはまだ作れません。接続が届いていれば、もう一度「フォルダを作る」を押してください。"
+              : "許可のあと、ドライブの接続がまだ届いていません。もう一度「ドライブから読む」を押してください。",
+          );
           return false;
         }
         setMsg(result.message);
-        goDriveLogin(result.loginUrl);
+        goDriveLogin(result.loginUrl, action);
         return false;
       }
       setMsg(result.message);
       return false;
     }
+    if (action === "folder") clearFolderAuthAttempt();
     setLoginUrl(null);
     if (result.status === "empty") {
       setMsg(result.message);
@@ -113,7 +132,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
     setBusy(true);
     setMsg("ドライブを確認中…");
     try {
-      handleDrive(await loadDriveCatalog(), opts);
+      handleDrive(await loadDriveCatalog(), { ...opts, action: "read" });
     } catch {
       setMsg("ドライブに届かなかった。");
     } finally {
@@ -124,18 +143,23 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
   const resumeOnce = useRef(false);
   useEffect(() => {
     if (resumeOnce.current) return;
-    const job = beginDriveResume(() => loadDriveCatalog());
+    const hinted = driveResumeAction();
+    const job = beginDriveResume(async (action) => ({
+      action,
+      result: action === "folder" ? await createDriveFolder() : await loadDriveCatalog(),
+    }));
     if (!job) return;
     resumeOnce.current = true;
     let cancel = false;
     setBusy(true);
-    setMsg("ドライブを確認中…");
+    if (hinted === "folder") setMsg("フォルダを作っています…");
+    else if (hinted) setMsg("ドライブを確認中…");
     void job
-      .then((result) => {
-        if (!cancel) handleDrive(result, { resumed: true });
+      .then(({ action, result }) => {
+        if (!cancel) handleDrive(result, { resumed: true, action });
       })
       .catch(() => {
-        if (!cancel) setMsg("ドライブに届かなかった。");
+        if (!cancel) setMsg(hinted === "folder" ? "フォルダを作れなかった。" : "ドライブに届かなかった。");
       })
       .finally(() => {
         if (!cancel) setBusy(false);
@@ -149,9 +173,9 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
 
   const onMakeFolder = async () => {
     setBusy(true);
-    setMsg("");
+    setMsg("フォルダを作っています…");
     try {
-      handleDrive(await createDriveFolder());
+      handleDrive(await createDriveFolder(), { action: "folder" });
     } catch {
       setMsg("フォルダを作れなかった。");
     } finally {
@@ -261,7 +285,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             className="mt-3 h-11 w-full rounded-md bg-brass text-sm font-medium text-bg"
-            onClick={() => goDriveLogin(loginUrl)}
+            onClick={() => goDriveLogin(loginUrl, loginAction)}
           >
             Grokで接続
           </button>

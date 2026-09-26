@@ -163,6 +163,35 @@ function gateSigninUrl(ctx: InboundContext): string | undefined {
   }
 }
 
+function gateHostFor(ctx: InboundContext): string | undefined {
+  const base = ctx.connectorsBase;
+  if (!base) return undefined;
+  try {
+    const connectorsHost = new URL(base).host.toLowerCase();
+    const gateHost = connectorsHost.replace(/^connectors\./, "gate.");
+    if (gateHost === connectorsHost) return undefined;
+    return gateHost;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Keep a 401 login URL from the gate when it asks for a missing tool scope. */
+function loginUrlForStatus(ctx: InboundContext, fromBody: string | undefined): string | undefined {
+  const fallback = gateSigninUrl(ctx);
+  if (!fromBody) return fallback;
+  try {
+    const url = new URL(fromBody);
+    const gateHost = gateHostFor(ctx);
+    if (url.protocol === "https:" && gateHost && url.host.toLowerCase() === gateHost) {
+      return url.toString();
+    }
+  } catch {
+    /* use the generic sign-in */
+  }
+  return fallback;
+}
+
 function missingAuthResult(ctx: InboundContext): CallToolResult {
   const loginUrl = gateSigninUrl(ctx);
   return {
@@ -324,11 +353,10 @@ export async function callTool(
     );
 
     if (status === 401) {
-      const loginUrl =
-        gateSigninUrl(ctx) ??
-        (typeof json.loginUrl === "string" && json.loginUrl
-          ? json.loginUrl
-          : undefined);
+      const loginUrl = loginUrlForStatus(
+        ctx,
+        typeof json.loginUrl === "string" ? json.loginUrl : undefined,
+      );
       return {
         ok: false,
         data: null,
