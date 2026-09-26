@@ -178,15 +178,15 @@ export function GameApp() {
         padT: cssPx("--sat"),
         padB: cssPx("--sab"),
       });
+      // Clear the inset shorthand before left/top. Assigning inset afterwards
+      // wipes left/top, so a pinch pan snaps the frame back to the layout origin.
+      frame.style.inset = "";
+      frame.style.right = "auto";
+      frame.style.bottom = "auto";
       frame.style.left = `${box.frameLeft}px`;
       frame.style.top = `${box.frameTop}px`;
       frame.style.width = `${box.frameWidth}px`;
       frame.style.height = `${box.frameHeight}px`;
-      // Clear inset/right/bottom so width/height are not stretched against right:0/bottom:0
-      // (CSS inset:0 leftover conflicts with visualViewport offsetLeft/offsetTop outside FS).
-      frame.style.right = "auto";
-      frame.style.bottom = "auto";
-      frame.style.inset = "";
 
       stage.style.width = `${DESIGN_W}px`;
       stage.style.height = `${DESIGN_H}px`;
