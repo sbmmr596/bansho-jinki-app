@@ -10,13 +10,14 @@ import {
   loginUrlWithDriveResume,
   markDriveResume,
 } from "@/game/drive-resume";
-import { DEFAULT_GH_REPO, GH_KEY, loadGithubCatalog, type GithubCatalogResult } from "@/game/github-catalog";
 import { useGame } from "@/game/store";
 import { CloseButton } from "./pieces";
 
-function sourceLabel(src: "default" | "custom" | "drive" | "github") {
+/** 廃止した GitHub 読み込みが残したリポジトリ指定。標準に戻すときだけ消す。 */
+const GH_REPO_KEY = "bansho-github-repo";
+
+function sourceLabel(src: "default" | "custom" | "drive") {
   if (src === "drive") return "ドライブ";
-  if (src === "github") return "GitHub";
   if (src === "custom") return "カスタム";
   return "標準";
 }
@@ -70,27 +71,6 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
     localStorage.setItem(CATALOG_KEY, result.payload);
     setCatalogSource("drive");
     setMsg(`${n}人をドライブから適用した。`);
-    if (user) void saveUserCatalog({ data: result.payload }).catch(() => undefined);
-    return true;
-  };
-
-  const handleGithub = (result: GithubCatalogResult) => {
-    if (!result.ok) {
-      setMsg(result.message);
-      return false;
-    }
-    if (result.status === "empty") {
-      setMsg(result.message);
-      return false;
-    }
-    const n = applyCatalog(JSON.parse(result.payload) as unknown);
-    if (!n) {
-      setMsg("有効なキャラがありません。");
-      return false;
-    }
-    localStorage.setItem(CATALOG_KEY, result.payload);
-    setCatalogSource("github");
-    setMsg(`${n}人を GitHubから適用した。`);
     if (user) void saveUserCatalog({ data: result.payload }).catch(() => undefined);
     return true;
   };
@@ -179,32 +159,12 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const onGithub = async () => {
-    let spec = DEFAULT_GH_REPO;
-    try {
-      const saved = localStorage.getItem(GH_KEY)?.trim();
-      if (saved) spec = saved;
-    } catch {
-      /* default */
-    }
-    setBusy(true);
-    setMsg("GitHubを確認中…");
-    try {
-      localStorage.setItem(GH_KEY, spec);
-      handleGithub(await loadGithubCatalog({ data: spec }));
-    } catch {
-      setMsg("GitHubに届かなかった。");
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const onReset = async () => {
     setBusy(true);
     setMsg("");
     try {
       localStorage.removeItem(CATALOG_KEY);
-      localStorage.removeItem(GH_KEY);
+      localStorage.removeItem(GH_REPO_KEY);
       resetCatalog();
       await loadChars();
       setCatalogSource("default");
@@ -235,7 +195,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
           {isPending ? <p className="text-xs text-muted">確認中…</p> : <UserButton />}
         </div>
         <p className="mb-2 text-xs leading-relaxed text-muted">
-          ドライブの「万象陣記」か、GitHubの公開リポジトリにある chars.json を使う。なければ標準データ。標準の絵や本体は書き出さない。
+          ドライブの「万象陣記」にある chars.json を使う。なければ標準データ。標準の絵や本体は書き出さない。
         </p>
         <p className="mb-2 text-xs tabular text-faint">
           いま {sourceLabel(catalogSource)}　{HERO_CARDS.length}人
@@ -286,14 +246,6 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
             標準に戻す
           </button>
         </div>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void onGithub()}
-          className="mt-3 h-11 w-full rounded-md bg-brass text-sm font-medium text-bg disabled:opacity-40"
-        >
-          GitHubから読む
-        </button>
         <button
           type="button"
           disabled={busy}

@@ -4,7 +4,6 @@ import { applyCatalog } from "@/game/data";
 import { loadUserCatalog } from "@/game/catalog-api";
 import { loadDriveCatalog } from "@/game/drive-catalog";
 import { driveResumePending } from "@/game/drive-resume";
-import { GH_KEY, loadGithubCatalog } from "@/game/github-catalog";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { ArtTrialOverlay } from "./ArtTrialOverlay";
 import { BattleView } from "./BattleView";
@@ -43,7 +42,6 @@ export function GameApp() {
   const { user, isPending: authPending } = useCurrentUserState();
   const [artOpen, setArtOpen] = useState(false);
   const [driveTried, setDriveTried] = useState(false);
-  const [githubTried, setGithubTried] = useState(false);
   const [showLandscapeHint, setShowLandscapeHint] = useState(false);
   const frameRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -76,48 +74,15 @@ export function GameApp() {
   }, [hydrated, setCatalogSource]);
 
   useEffect(() => {
-    if (!hydrated || !driveTried) return;
-    if (useGame.getState().catalogSource === "drive") {
-      setGithubTried(true);
-      return;
-    }
-    let repo = "";
-    try {
-      repo = localStorage.getItem(GH_KEY)?.trim() ?? "";
-    } catch {
-      repo = "";
-    }
-    if (!repo) {
-      setGithubTried(true);
-      return;
-    }
-    let cancelled = false;
-    void loadGithubCatalog({ data: repo })
-      .then((result) => {
-        if (cancelled || !result.ok || result.status !== "loaded") return;
-        if (useGame.getState().catalogSource === "drive") return;
-        const n = applyCatalog(JSON.parse(result.payload) as unknown);
-        if (n) setCatalogSource("github");
-      })
-      .catch(() => undefined)
-      .finally(() => {
-        if (!cancelled) setGithubTried(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [hydrated, driveTried, setCatalogSource]);
-
-  useEffect(() => {
-    if (!hydrated || !driveTried || !githubTried || authPending || !user) return;
+    if (!hydrated || !driveTried || authPending || !user) return;
     const src = useGame.getState().catalogSource;
-    if (src === "drive" || src === "github") return;
+    if (src === "drive") return;
     let cancelled = false;
     void loadUserCatalog()
       .then((remote) => {
         if (cancelled || !remote) return;
         const now = useGame.getState().catalogSource;
-        if (now === "drive" || now === "github") return;
+        if (now === "drive") return;
         const n = applyCatalog(JSON.parse(remote) as unknown);
         if (n) setCatalogSource("custom");
       })
@@ -125,7 +90,7 @@ export function GameApp() {
     return () => {
       cancelled = true;
     };
-  }, [hydrated, driveTried, githubTried, authPending, user, setCatalogSource]);
+  }, [hydrated, driveTried, authPending, user, setCatalogSource]);
 
   useEffect(() => {
     if (!hydrated) return;

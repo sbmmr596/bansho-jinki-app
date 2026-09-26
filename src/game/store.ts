@@ -67,7 +67,7 @@ interface GameStore extends SaveState {
   trial: { kills: number; field: FieldKind } | null;
   /** Active arena bout metadata (spirit already spent; fee is reward baseline only). Separate from endless trial. */
   arena: { tier: ArenaTier; fee: number; reward: number; seed: number } | null;
-  catalogSource: "default" | "custom" | "drive" | "github";
+  catalogSource: "default" | "custom" | "drive";
   catalogOpen: boolean;
   cardEditorOpen: boolean;
   catalogEpoch: number;
@@ -107,7 +107,7 @@ interface GameStore extends SaveState {
   addTrialKills: (n: number) => void;
   startArena: (tier: ArenaTier) => { ok: true } | { ok: false; reason: string };
   resetAll: () => void;
-  setCatalogSource: (v: "default" | "custom" | "drive" | "github") => void;
+  setCatalogSource: (v: "default" | "custom" | "drive") => void;
   setCatalogOpen: (v: boolean) => void;
   setCardEditorOpen: (v: boolean) => void;
   bumpCatalog: () => void;

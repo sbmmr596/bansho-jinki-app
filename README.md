@@ -24,7 +24,7 @@ npm run typecheck
 npm run build
 ```
 
-認証は Grok ゲート前提。ローカルでは標準データだけで遊べる。Google ドライブ／GitHub カタログは任意。
+認証は Grok ゲート前提。ローカルでは標準データだけで遊べる。Google ドライブのカタログは任意。
 
 ## レビューしてほしい箇所
 
@@ -46,7 +46,7 @@ QA スチル: `docs/qa/`
 - 標準カタログ: `public/data/chars.json` + `src/game/data.ts` のフォールバック
 - 全身: `public/chars/{id}.png`（カード・戦場）
 - バスト: `public/cards/{id}.jpg`（ATB レールなど）
-- ユーザー JSON の `art` が `/chars/…` なら標準絵。相対パス `chars/id.png` なら Drive / GitHub 側
+- ユーザー JSON の `art` が `/chars/…` なら標準絵。相対パス `chars/id.png` なら Drive 側
 
 ## 注意
 

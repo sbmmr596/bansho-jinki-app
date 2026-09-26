@@ -14,7 +14,7 @@
 - React 19 / TanStack Start / Zustand
 - 画面は DOM。Canvas ではない
 - セーブは `localStorage`（`src/game/save.ts`）
-- カタログ上書き: Drive（`src/game/drive-catalog.ts`）と GitHub raw（`src/game/github-catalog.ts`）
+- カタログ上書き: Drive（`src/game/drive-catalog.ts`）
 
 ## 起動後の操作
 
