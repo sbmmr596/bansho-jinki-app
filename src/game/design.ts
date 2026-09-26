@@ -94,3 +94,58 @@ export function fitContainScale(availW: number, availH: number): number {
   const ah = Math.max(1, availH);
   return Math.min(aw / DESIGN_W, ah / DESIGN_H);
 }
+
+export type StageFrame = {
+  frameLeft: number;
+  frameTop: number;
+  frameWidth: number;
+  frameHeight: number;
+  stageLeft: number;
+  stageTop: number;
+  scale: number;
+};
+
+/** Browser pinch-zoom. Keyboard resize keeps scale at 1 and must still follow the visual viewport. */
+export function isPinchZoom(visualScale: number | undefined): boolean {
+  return visualScale != null && Math.abs(visualScale - 1) > 0.01;
+}
+
+/**
+ * Place the 1280×720 stage in the visible window.
+ * Pinch-zoom reports a smaller visual viewport and a pan offset that collapses
+ * toward the layout origin, so the board jumps to the top-left. Ignore that
+ * pan and keep the layout-viewport fit until the zoom is cleared.
+ */
+export function stageFrame(opts: {
+  innerWidth: number;
+  innerHeight: number;
+  visualWidth?: number;
+  visualHeight?: number;
+  offsetLeft?: number;
+  offsetTop?: number;
+  visualScale?: number;
+  padL?: number;
+  padR?: number;
+  padT?: number;
+  padB?: number;
+}): StageFrame {
+  const pinch = isPinchZoom(opts.visualScale);
+  const rawW = pinch ? opts.innerWidth : (opts.visualWidth ?? opts.innerWidth);
+  const rawH = pinch ? opts.innerHeight : (opts.visualHeight ?? opts.innerHeight);
+  const padL = opts.padL ?? 0;
+  const padR = opts.padR ?? 0;
+  const padT = opts.padT ?? 0;
+  const padB = opts.padB ?? 0;
+  const aw = Math.max(1, rawW - padL - padR);
+  const ah = Math.max(1, rawH - padT - padB);
+  const scale = fitContainScale(aw, ah);
+  return {
+    frameLeft: pinch ? 0 : (opts.offsetLeft ?? 0),
+    frameTop: pinch ? 0 : (opts.offsetTop ?? 0),
+    frameWidth: Math.floor(rawW),
+    frameHeight: Math.floor(rawH),
+    stageLeft: padL + (aw - DESIGN_W * scale) / 2,
+    stageTop: padT + (ah - DESIGN_H * scale) / 2,
+    scale,
+  };
+}
