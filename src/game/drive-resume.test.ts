@@ -2,12 +2,15 @@ import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import {
   beginDriveResume,
+  clearDriveAuthAttempt,
   clearDriveResume,
   clearFolderAuthAttempt,
+  driveAuthAttempted,
   driveResumeAction,
   driveResumePending,
   folderAuthAttempted,
   loginUrlWithDriveResume,
+  markDriveAuthAttempt,
   markDriveResume,
   markFolderAuthAttempt,
 } from "./drive-resume.ts";
@@ -118,6 +121,17 @@ describe("drive resume flag", () => {
     assert.equal(folderAuthAttempted(1_000 + 10 * 60 * 1000), false);
     clearFolderAuthAttempt();
     assert.equal(folderAuthAttempted(1_000 + 1000), false);
+  });
+
+  it("remembers a read auth attempt so ドライブから読む does not redirect again", () => {
+    install("https://app.grok.me/");
+    assert.equal(driveAuthAttempted("read", 1_000), false);
+    markDriveAuthAttempt("read", 1_000);
+    assert.equal(driveAuthAttempted("read", 1_000 + 1000), true);
+    assert.equal(driveAuthAttempted("folder", 1_000 + 1000), false);
+    assert.equal(driveAuthAttempted("read", 1_000 + 10 * 60 * 1000), false);
+    clearDriveAuthAttempt("read");
+    assert.equal(driveAuthAttempted("read", 1_000 + 1000), false);
   });
 
   it("shares one load across a second caller", async () => {
