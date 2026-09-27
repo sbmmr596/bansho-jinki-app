@@ -340,8 +340,11 @@ export function ArtZoom() {
   const id = useGame((s) => s.zoomCardId);
   const setZoomCard = useGame((s) => s.setZoomCard);
   const owned = useGame((s) => s.owned);
+  // Re-read CARD_BY_ID after editor / catalog apply (mutable module singleton).
+  const catalogEpoch = useGame((s) => s.catalogEpoch);
   const card = id ? CARD_BY_ID[id] : null;
   if (!card) return null;
+  void catalogEpoch;
 
   const own = owned[card.id];
   const level = own?.level ?? 1;

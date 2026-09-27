@@ -47,6 +47,7 @@ export function FormationScreen() {
   const [elType, setElType] = useState<ElementType | "all">("all");
   const [hideFodder, setHideFodder] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("costDesc");
+  const catalogEpoch = useGame((s) => s.catalogEpoch);
 
   // Empty party: preview selected non-fodder card's formation on the 3×3 before place.
   // Once a leader exists, keep that formation until 「リーダーにする」.
@@ -110,9 +111,10 @@ export function FormationScreen() {
     });
 
     return cards;
-  }, [owned, faction, elType, hideFodder, sortKey]);
+  }, [owned, faction, elType, hideFodder, sortKey, catalogEpoch]);
 
   const focus = selected ? CARD_BY_ID[selected] : null;
+  void catalogEpoch;
   const focusOwn = focus ? owned[focus.id] : null;
 
   const totals = (() => {

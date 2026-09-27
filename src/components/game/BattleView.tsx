@@ -96,9 +96,11 @@ export function BattleView() {
   const stage = useGame((s) => s.stage);
   const xp = useGame((s) => s.xp);
   const [units, setUnits] = useState<Unit[]>(() => battle?.units.map((u) => ({ ...u })) ?? []);
-  const [float, setFloat] = useState<FloatFx | null>(null);
+  /** Damage/heal numbers — multiple for pierce/sweep applied in one beat. */
+  const [floats, setFloats] = useState<FloatFx[]>([]);
   const [acting, setActing] = useState<string | null>(null);
-  const [struck, setStruck] = useState<string | null>(null);
+  /** Uids flinching this beat (multi-target hits share one frame). */
+  const [struck, setStruck] = useState<string[]>([]);
   const [fx, setFx] = useState<SkillFxState | null>(null);
   const [lunge, setLunge] = useState<Lunge | null>(null);
   const [shake, setShake] = useState(false);
@@ -125,6 +127,8 @@ export function BattleView() {
   const actingRef = useRef<string | null>(null);
   /** Index of event already stepEvent'd at start of its DUR (skill early-present). */
   const presentedIdxRef = useRef(-1);
+  /** When a hit batch consumes several events, advance past the last index after DUR. */
+  const batchEndRef = useRef(-1);
   const unitsRef = useRef(units);
   const [assetsReady, setAssetsReady] = useState(false);
   const [loadDone, setLoadDone] = useState(0);
@@ -165,9 +169,9 @@ export function BattleView() {
   useEffect(() => {
     if (!battle || !assetsReady) return;
     setUnits(battle.units.map((u) => ({ ...u })));
-    setFloat(null);
+    setFloats([]);
     setActing(null);
-    setStruck(null);
+    setStruck([]);
     setFx(null);
     setLunge(null);
     setShake(false);
@@ -185,13 +189,15 @@ export function BattleView() {
     lastEndRef.current = null;
     gaugeTickRef.current = 0;
     presentedIdxRef.current = -1;
+    batchEndRef.current = -1;
     eventsRef.current = battle.events.slice();
     let raf = 0;
     const stepEvent = (ev: BattleEvent) => {
       if (ev.kind === "round") {
         setLog((l) => [`第${ev.n}合`, ...l].slice(0, 6));
         setFx(null);
-        setStruck(null);
+        setStruck([]);
+        setFloats([]);
         setLunge(null);
         actingRef.current = null;
         setActing(null);
@@ -199,6 +205,8 @@ export function BattleView() {
         const prevAct = actingRef.current;
         actingRef.current = ev.actorUid;
         setActing(ev.actorUid);
+        setFloats([]);
+        setStruck([]);
         const live = activeTrial();
         if (live) {
           setUnits((prev) =>
@@ -273,18 +281,53 @@ export function BattleView() {
           setLunge({ uid: u.uid, x: dest.x, y: dest.y });
         }
       } else if (ev.kind === "hit") {
-        setUnits((prev) =>
-          prev.map((u) => (u.uid === ev.targetUid ? { ...u, hp: ev.hpAfter } : u)),
-        );
-        setFloat({
-          uid: ev.targetUid,
-          text: String(ev.damage),
-          kind: "damage",
-          affinity: affinityLabel(ev.mod),
-          key: ev.targetUid.length + ev.damage + idxRef.current,
+        // Pierce / sweep / multi-hit: apply consecutive hit (+ interleaved ko) in one beat.
+        const events = eventsRef.current;
+        let i = idxRef.current;
+        const hits: Extract<BattleEvent, { kind: "hit" }>[] = [];
+        const kos: Extract<BattleEvent, { kind: "ko" }>[] = [];
+        while (i < events.length) {
+          const e = events[i];
+          if (e.kind === "hit") {
+            hits.push(e);
+            i++;
+          } else if (e.kind === "ko") {
+            kos.push(e);
+            i++;
+          } else break;
+        }
+        batchEndRef.current = i - 1;
+        const hpAfter = new Map(hits.map((h) => [h.targetUid, h.hpAfter]));
+        const koSet = new Set(kos.map((k) => k.uid));
+        setUnits((prev) => {
+          const next = prev.map((u) => {
+            if (hpAfter.has(u.uid)) {
+              const hp = hpAfter.get(u.uid)!;
+              return { ...u, hp, alive: hp > 0 && !koSet.has(u.uid) };
+            }
+            if (koSet.has(u.uid)) return { ...u, alive: false, hp: 0 };
+            return u;
+          });
+          unitsRef.current = next;
+          return next;
         });
-        setStruck(ev.targetUid);
-        if (ev.mod >= 1.45) {
+        setFloats(
+          hits.map((h, n) => ({
+            uid: h.targetUid,
+            text: String(h.damage),
+            kind: "damage" as const,
+            affinity: affinityLabel(h.mod),
+            key: h.targetUid.length + h.damage + idxRef.current + n * 17,
+          })),
+        );
+        setStruck(hits.map((h) => h.targetUid));
+        for (const k of kos) {
+          const u = unitsRef.current.find((x) => x.uid === k.uid);
+          setLog((l) => [`${u?.name ?? ""}　撃破`, ...l].slice(0, 6));
+          if (trialRef.current && u?.side === "enemy") addKillsRef.current(1);
+        }
+        if (kos.length) sfx("ko");
+        if (hits.some((h) => h.mod >= 1.45)) {
           sfx("crit");
           setShake(true);
           setFlash(true);
@@ -292,17 +335,31 @@ export function BattleView() {
           window.setTimeout(() => setFlash(false), 160);
         } else sfx("hit");
       } else if (ev.kind === "heal") {
-        setUnits((prev) =>
-          prev.map((u) => (u.uid === ev.targetUid ? { ...u, hp: ev.hpAfter } : u)),
-        );
-        setFloat({
-          uid: ev.targetUid,
-          text: `+${ev.amount}`,
-          kind: "heal",
-          affinity: null,
-          key: idxRef.current,
+        // Multi-target heal in one presentation beat (same pattern as hit).
+        const events = eventsRef.current;
+        let i = idxRef.current;
+        const heals: Extract<BattleEvent, { kind: "heal" }>[] = [];
+        while (i < events.length && events[i].kind === "heal") {
+          heals.push(events[i] as Extract<BattleEvent, { kind: "heal" }>);
+          i++;
+        }
+        batchEndRef.current = i - 1;
+        const hpAfter = new Map(heals.map((h) => [h.targetUid, h.hpAfter]));
+        setUnits((prev) => {
+          const next = prev.map((u) => (hpAfter.has(u.uid) ? { ...u, hp: hpAfter.get(u.uid)! } : u));
+          unitsRef.current = next;
+          return next;
         });
-        setStruck(ev.targetUid);
+        setFloats(
+          heals.map((h, n) => ({
+            uid: h.targetUid,
+            text: `+${h.amount}`,
+            kind: "heal" as const,
+            affinity: null,
+            key: idxRef.current + n * 17,
+          })),
+        );
+        setStruck(heals.map((h) => h.targetUid));
         sfx("heal");
       } else if (ev.kind === "buff") {
         const live = activeTrial();
@@ -455,7 +512,8 @@ export function BattleView() {
           setActing(null);
           setFx(null);
           setLunge(null);
-          setStruck(null);
+          setStruck([]);
+          setFloats([]);
           setSkillBanner(null);
           setUnits((prev) => {
             const next = prev.map((u) => (u.uid === doneId ? { ...u, gauge: 0 } : u));
@@ -565,7 +623,13 @@ export function BattleView() {
           stepEvent(ev);
           presentedIdxRef.current = idxRef.current;
         }
-        idxRef.current += 1;
+        // Hit/heal batches advance past trailing ko/extra hits in one DUR beat.
+        if (batchEndRef.current >= idxRef.current) {
+          idxRef.current = batchEndRef.current + 1;
+          batchEndRef.current = -1;
+        } else {
+          idxRef.current += 1;
+        }
       }
       raf = requestAnimationFrame(tick);
     };
@@ -629,7 +693,7 @@ export function BattleView() {
               unit={u}
               acting={acting}
               struck={struck}
-              float={float}
+              floats={floats}
               lunge={lunge}
             />
           ))}
@@ -639,7 +703,7 @@ export function BattleView() {
               unit={u}
               acting={acting}
               struck={struck}
-              float={float}
+              floats={floats}
               lunge={lunge}
             />
           ))}
@@ -752,13 +816,13 @@ function UnitSpot({
   unit,
   acting,
   struck,
-  float,
+  floats,
   lunge,
 }: {
   unit: Unit;
   acting: string | null;
-  struck: string | null;
-  float: FloatFx | null;
+  struck: string[];
+  floats: FloatFx[];
   lunge: Lunge | null;
 }) {
   const p = visOf(unit.slot, unit.side);
@@ -767,6 +831,7 @@ function UnitSpot({
   const isLunge = lunge?.uid === unit.uid;
   const x = isLunge ? lunge.x : p.x;
   const y = isLunge ? lunge.y : p.y;
+  const float = floats.find((f) => f.uid === unit.uid) ?? null;
   return (
     <div
       className={cn("unit-spot absolute h-[38%] w-[14%] -translate-x-1/2 -translate-y-1/2", isLunge && "is-lunge")}
@@ -775,13 +840,13 @@ function UnitSpot({
       <CharSprite
         card={card}
         acting={acting === unit.uid}
-        struck={struck === unit.uid}
+        struck={struck.includes(unit.uid)}
         dimmed={!unit.alive}
         hp={unit.hp}
         maxHp={unit.maxHp}
         flip={unit.side === "player"}
         bust={unit.bust}
-        float={float && float.uid === unit.uid ? float : null}
+        float={float}
       />
     </div>
   );

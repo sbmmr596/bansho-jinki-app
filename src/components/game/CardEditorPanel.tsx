@@ -18,7 +18,7 @@ import {
   TYPE_IDS,
   TYPE_LABEL,
 } from "@/game/data";
-import { CATALOG_KEY } from "@/game/catalog-api";
+import { CATALOG_KEY, saveUserCatalog } from "@/game/catalog-api";
 import { catalogDownloadText } from "@/game/catalog-download";
 import { saveDriveCatalog } from "@/game/drive-catalog";
 import {
@@ -35,6 +35,7 @@ import {
 } from "@/game/art-assets";
 import { SKILL_KIND_LABEL } from "@/game/skillNames";
 import type { Card, ElementType, Faction, Formation, Rarity, SkillKind } from "@/game/types";
+import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { useGame } from "@/game/store";
 import { CardFace, CloseButton } from "./pieces";
 
@@ -469,6 +470,7 @@ function DraftArtPreview({ draft }: { draft: Draft }) {
 }
 
 export function CardEditorPanel({ onClose }: { onClose: () => void }) {
+  const { user } = useCurrentUserState();
   const setCatalogSource = useGame((s) => s.setCatalogSource);
   const bumpCatalog = useGame((s) => s.bumpCatalog);
   const catalogEpoch = useGame((s) => s.catalogEpoch);
@@ -601,6 +603,8 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
     }
     setCatalogSource("custom");
     bumpCatalog();
+    // Keep account catalog in sync so a later silent hydrate cannot revive stale remote data.
+    if (user) void saveUserCatalog({ data: text }).catch(() => undefined);
     return n;
   };
 

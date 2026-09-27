@@ -28,6 +28,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
   const { user, isPending } = useCurrentUserState();
   const catalogSource = useGame((s) => s.catalogSource);
   const setCatalogSource = useGame((s) => s.setCatalogSource);
+  const bumpCatalog = useGame((s) => s.bumpCatalog);
   const setCardEditorOpen = useGame((s) => s.setCardEditorOpen);
   const setCatalogOpen = useGame((s) => s.setCatalogOpen);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -71,6 +72,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
     }
     localStorage.setItem(CATALOG_KEY, result.payload);
     setCatalogSource("drive");
+    bumpCatalog();
     setMsg(`${n}人をドライブから適用した。`);
     if (user) void saveUserCatalog({ data: result.payload }).catch(() => undefined);
     return true;
@@ -85,6 +87,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
     const text = JSON.stringify(raw);
     localStorage.setItem(CATALOG_KEY, text);
     setCatalogSource("custom");
+    bumpCatalog();
     setMsg(`${n}人のデータを適用した。`);
     if (persist && user) {
       try {
@@ -174,6 +177,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
       resetCatalog();
       await loadChars();
       setCatalogSource("default");
+      bumpCatalog();
       if (user) {
         try {
           await clearUserCatalog();
