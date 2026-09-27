@@ -79,6 +79,15 @@ describe("solo map", () => {
     assert.ok(last.captured.includes(hold.id));
   });
 
+  it("scatters cells across the board", () => {
+    const map = soloStage("rookie", 1);
+    const quads = [0, 0, 0, 0];
+    for (const n of map.nodes) {
+      quads[(n.x < 50 ? 0 : 1) + (n.y < 50 ? 0 : 2)]++;
+    }
+    for (const q of quads) assert.ok(q >= map.nodes.length * 0.12, quads.join(","));
+  });
+
   it("raises rank every two stages", () => {
     assert.equal(rankForStage(1), "rookie");
     assert.equal(rankForStage(2), "rookie");

@@ -1,6 +1,6 @@
 import { COUNTER_OF, TYPE_LABEL } from "@/game/data";
 import { rankForStage, rankLabel } from "@/game/rank";
-import { FIELD_LABEL, FIELD_SRC, soloStage } from "@/game/solo-map";
+import { FIELD_BOARD, FIELD_LABEL, soloStage } from "@/game/solo-map";
 import { useGame } from "@/game/store";
 import { GoldChip, Shell, TypeBadge } from "./pieces";
 import { cn } from "@/lib/utils";
@@ -39,14 +39,10 @@ export function MapScreen() {
       wide
     >
       <div className="flex h-full min-h-0 gap-3">
-        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg">
-          <img
-            src={FIELD_SRC[map.field]}
-            alt=""
-            crossOrigin="anonymous"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          <div className="pointer-events-none absolute inset-0 bg-bg/25" />
+        <div
+          className="relative min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg hairline"
+          style={{ background: FIELD_BOARD[map.field] }}
+        >
           <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             {map.nodes.flatMap((n) =>
               n.neighbors
