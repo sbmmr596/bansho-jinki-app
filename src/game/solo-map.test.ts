@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { FODDER_CARDS } from "./data.ts";
-import { RANK_META, RANK_ORDER, rankForStage } from "./rank.ts";
-import { applyVictory, soloStage, STRONGHOLD_WINS } from "./solo-map.ts";
+import { SORTIE_SPIRIT } from "./arena.ts";
+import { hpGaugeColor } from "./hp-gauge.ts";
+import { RANK_META, RANK_ORDER, XP_PER_CLEAR, costCapForRank, rankForStage, rankForXp } from "./rank.ts";
+import { SOLO_FIELDS, applyVictory, soloStage, STRONGHOLD_WINS } from "./solo-map.ts";
 import { WAR_CONCEPT, warConceptBalanced } from "./war-concept.ts";
 
 const fodderIds = new Set(FODDER_CARDS.map((c) => c.id));
@@ -87,12 +89,31 @@ describe("solo map", () => {
     assert.ok(Math.hypot(home.x - 50, home.y - 50) < 18);
   });
 
-  it("raises rank every two stages", () => {
+  it("uses one terrain per stage, with no extra rule", () => {
+    const seen = [1, 2, 3, 4, 5, 6].map((stage) => soloStage("rookie", stage).field);
+    assert.deepEqual(seen, SOLO_FIELDS);
+    for (const rank of RANK_ORDER) {
+      const fields = new Set(soloStage(rank, 1).nodes.map((n) => n.field));
+      assert.equal(fields.size, 1);
+    }
+  });
+  it("raises rank from experience, and rank raises the cost cap", () => {
     assert.equal(rankForStage(1), "rookie");
     assert.equal(rankForStage(2), "rookie");
     assert.equal(rankForStage(3), "middle");
     assert.equal(rankForStage(9), "master");
     assert.equal(rankForStage(20), "master");
+    assert.equal(rankForXp(0), "rookie");
+    assert.equal(rankForXp(XP_PER_CLEAR), "rookie");
+    assert.equal(rankForXp(XP_PER_CLEAR * 2), "middle");
+    assert.equal(costCapForRank("rookie"), 10);
+    assert.ok(costCapForRank("master") > costCapForRank("rookie"));
+    assert.ok(costCapForRank("ace") > costCapForRank("high"));
+    assert.equal(SORTIE_SPIRIT, 1);
+    assert.match(hpGaugeColor(100), /hsl\(122 /);
+    assert.match(hpGaugeColor(0), /hsl\(0 /);
+    const mid = hpGaugeColor(50);
+    assert.match(mid, /hsl\(61 /);
   });
 });
 

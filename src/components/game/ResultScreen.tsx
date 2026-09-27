@@ -84,8 +84,9 @@ export function ResultScreen() {
                 {result.stageClear ? (
                   <p className="text-muted">マスと拠点をすべて占領した。次の段へ進む。</p>
                 ) : null}
+                {result.xpGain ? <p className="text-brass tabular">+{result.xpGain} 経験</p> : null}
                 {result.rankUpLabel ? (
-                  <p className="text-brass">位が{result.rankUpLabel}になった。地図が広くなる。</p>
+                  <p className="text-brass">位が{result.rankUpLabel}になった。コスト上限と地図が広がる。</p>
                 ) : null}
                 {result.leveled.length ? (
                   <p className="text-muted">出陣したカードのレベルが上がった。</p>

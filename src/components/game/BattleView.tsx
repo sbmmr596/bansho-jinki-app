@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { sfx } from "@/game/audio";
 import { CARD_BY_ID } from "@/game/data";
-import { rankForStage } from "@/game/rank";
-import { findStageNode } from "@/game/solo-map";
+import { rankForXp } from "@/game/rank";
+import { FIELD_LABEL, FIELD_SRC, findStageNode } from "@/game/solo-map";
 import { ATB_PER_SEC, atbRate, advanceGauges, GAUGE_MAX, affinityLabel } from "@/game/combat";
 import { activeTrial, pumpTrial } from "@/game/trial";
 import { BATTLE_PRELOAD_TIMEOUT_MS, preloadImages } from "@/game/preload";
@@ -34,23 +34,6 @@ const TYPE_FX: Record<ElementType, string> = {
   heaven: "#fff3c0",
   earth: "#b4e08c",
 };
-
-const FIELD_SRC: Record<FieldKind, string> = {
-  grass: "/bg/grass.jpg",
-  snow: "/bg/snow.jpg",
-  magma: "/bg/magma.jpg",
-  forest: "/bg/forest.jpg",
-  waste: "/bg/field.jpg",
-};
-
-const FIELD_LABEL: Record<FieldKind, string> = {
-  grass: "草原",
-  snow: "雪原",
-  magma: "岩漿",
-  forest: "森林",
-  waste: "荒野",
-};
-
 
 function collectBattleImageUrls(battle: BattleLog, field: FieldKind): string[] {
   const urls = new Set<string>();
@@ -99,6 +82,7 @@ export function BattleView() {
   const trial = useGame((s) => s.trial);
   const scoutNodeId = useGame((s) => s.scoutNodeId);
   const stage = useGame((s) => s.stage);
+  const xp = useGame((s) => s.xp);
   const [units, setUnits] = useState<Unit[]>(() => battle?.units.map((u) => ({ ...u })) ?? []);
   const [float, setFloat] = useState<FloatFx | null>(null);
   const [acting, setActing] = useState<string | null>(null);
@@ -144,7 +128,7 @@ export function BattleView() {
       setAssetsReady(false);
       return;
     }
-    const node = scoutNodeId ? findStageNode(rankForStage(stage), stage, scoutNodeId) : null;
+    const node = scoutNodeId ? findStageNode(rankForXp(xp), stage, scoutNodeId) : null;
     const field: FieldKind = trial?.field ?? node?.field ?? "waste";
     const urls = collectBattleImageUrls(battle, field);
     let cancelled = false;
@@ -164,7 +148,7 @@ export function BattleView() {
     return () => {
       cancelled = true;
     };
-  }, [battle, trial?.field, scoutNodeId, stage]);
+  }, [battle, trial?.field, scoutNodeId, stage, xp]);
 
   useEffect(() => {
     if (!battle || !assetsReady) return;
@@ -586,7 +570,7 @@ export function BattleView() {
   if (!battle) return null;
   const player = units.filter((u) => u.side === "player");
   const enemy = units.filter((u) => u.side === "enemy" && u.alive);
-  const node = scoutNodeId ? findStageNode(rankForStage(stage), stage, scoutNodeId) : null;
+  const node = scoutNodeId ? findStageNode(rankForXp(xp), stage, scoutNodeId) : null;
   const field: FieldKind = trial?.field ?? node?.field ?? "waste";
 
   return (

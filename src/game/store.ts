@@ -3,11 +3,12 @@ import { sfx, unlockAudio } from "./audio";
 import { enemyToMembers, formationOfLeader, simulateBattle } from "./combat";
 import { beginTrial, clearTrial } from "./trial";
 import { clampDifficulty } from "./difficulty";
-import { rankForStage, rankLabel } from "./rank";
+import { costCapForRank, rankForXp, rankLabel, XP_PER_CLEAR } from "./rank";
 import { applyVictory, findStageNode, soloStage } from "./solo-map";
 import {
   ARENA_TIER_META,
   SPIRIT_MAX,
+  SORTIE_SPIRIT,
   applySpiritRegen,
   arenaSpiritCost,
   buildArenaEncounter,
@@ -30,7 +31,6 @@ import {
   SUMMON_COST,
   SUMMON_INCLUDE_FODDER,
   applyCatalog,
-  costCapFor,
   fuseSuccessRate,
   loadChars,
   trainCost,
@@ -265,6 +265,7 @@ export const useGame = create<GameStore>((set, get) => ({
       navSide: clampNavSide(s.navSide),
       difficulty: clampDifficulty(s.difficulty),
       stage: s.stage,
+      xp: s.xp,
       holdWins: s.holdWins,
     });
   },
@@ -323,7 +324,7 @@ export const useGame = create<GameStore>((set, get) => ({
       const home = nf.slots[slot] ? slot : nf.slots.findIndex((ok) => ok);
       if (home < 0) return;
       cleared[home] = cardId;
-      if (partyCost(cleared) > currentCostCap(s.captured)) return;
+      if (partyCost(cleared) > currentCostCap(s.xp)) return;
       sfx("click");
       set({ party: cleared, leaderId: cardId, selectedCardId: null });
       get().persist();
@@ -332,7 +333,7 @@ export const useGame = create<GameStore>((set, get) => ({
       next[slot] = cardId;
     }
 
-    if (partyCost(next) > currentCostCap(s.captured)) return;
+    if (partyCost(next) > currentCostCap(s.xp)) return;
 
     if (!leaderId) {
       leaderId = cardId;
@@ -369,8 +370,13 @@ export const useGame = create<GameStore>((set, get) => ({
 
   startBattle: () => {
     const s = get();
-    const node = s.scoutNodeId ? findStageNode(rankForStage(s.stage), s.stage, s.scoutNodeId) : null;
+    const node = s.scoutNodeId ? findStageNode(rankForXp(s.xp), s.stage, s.scoutNodeId) : null;
     if (!node || node.home) return;
+    const spiritNow = applySpiritRegen(
+      clampSpirit(s.spirit ?? SPIRIT_MAX),
+      typeof s.spiritAt === "number" ? s.spiritAt : Date.now(),
+    );
+    if (spiritNow.spirit < SORTIE_SPIRIT) return;
     const player = s.party
       .map((id, slot) =>
         id
@@ -394,7 +400,17 @@ export const useGame = create<GameStore>((set, get) => ({
       formationOfLeader(enemyLeader ?? null).id,
     );
     unlockAudio();
-    set({ battle: log, screen: "battle", result: null, trial: null, arena: null });
+    const spent = spiritNow.spirit - SORTIE_SPIRIT;
+    set({
+      spirit: spent,
+      spiritAt: spiritNow.spirit >= SPIRIT_MAX ? Date.now() : spiritNow.spiritAt,
+      battle: log,
+      screen: "battle",
+      result: null,
+      trial: null,
+      arena: null,
+    });
+    get().persist();
   },
 
   finishBattle: (endOverride) => {
@@ -449,7 +465,7 @@ export const useGame = create<GameStore>((set, get) => ({
       return;
     }
 
-    const map = soloStage(rankForStage(s.stage), s.stage);
+    const map = soloStage(rankForXp(s.xp), s.stage);
     const node = s.scoutNodeId ? map.byId[s.scoutNodeId] : null;
     let goldGain = 0;
     let cardGain: string | null = null;
@@ -493,9 +509,16 @@ export const useGame = create<GameStore>((set, get) => ({
         }
       }
     }
+    let xp = s.xp;
+    let xpGain = 0;
     if (end.winner === "player") sfx("win");
     else sfx("lose");
-    const nextRank = stageClear ? rankForStage(s.stage + 1) : null;
+    if (stageClear) {
+      xpGain = XP_PER_CLEAR;
+      xp += xpGain;
+    }
+    const prevRank = rankForXp(s.xp);
+    const nextRank = rankForXp(xp);
     const result: BattleResult = {
       winner: end.winner,
       reason: end.reason,
@@ -506,10 +529,10 @@ export const useGame = create<GameStore>((set, get) => ({
       nodeName: node?.name ?? "",
       holdProgress,
       stageClear,
-      rankUpLabel:
-        stageClear && nextRank && nextRank !== rankForStage(s.stage) ? rankLabel(nextRank) : null,
+      xpGain: xpGain || undefined,
+      rankUpLabel: stageClear && nextRank !== prevRank ? rankLabel(nextRank) : null,
     };
-    set({ gold, owned, captured, holdWins, result, screen: "result" });
+    set({ gold, owned, captured, holdWins, xp, result, screen: "result" });
     get().persist();
   },
 
@@ -521,7 +544,7 @@ export const useGame = create<GameStore>((set, get) => ({
     const toPalace = trialDone;
     if (s.result?.stageClear) {
       const stage = s.stage + 1;
-      const rank = rankForStage(stage);
+      const rank = rankForXp(s.xp);
       set({
         stage,
         captured: [soloStage(rank, stage).homeId],
@@ -768,7 +791,7 @@ export const useGame = create<GameStore>((set, get) => ({
 
   debugCaptureAll: () => {
     const s = get();
-    const map = soloStage(rankForStage(s.stage), s.stage);
+    const map = soloStage(rankForXp(s.xp), s.stage);
     set({ captured: map.nodes.map((n) => n.id), holdWins: {} });
     get().persist();
   },
@@ -785,7 +808,7 @@ export const useGame = create<GameStore>((set, get) => ({
   debugCaptureNode: () => {
     const s = get();
     if (!s.scoutNodeId) return;
-    const node = findStageNode(rankForStage(s.stage), s.stage, s.scoutNodeId);
+    const node = findStageNode(rankForXp(s.xp), s.stage, s.scoutNodeId);
     if (!node || node.home) return;
     let gold = s.gold + node.reward.gold;
     let owned = s.owned;
@@ -931,6 +954,6 @@ export function partyCost(party: (string | null)[]): number {
   return party.reduce((sum, id) => sum + (id ? (CARD_BY_ID[id]?.cost ?? 0) : 0), 0);
 }
 
-export function currentCostCap(captured: string[]): number {
-  return costCapFor(captured.length);
+export function currentCostCap(xp: number): number {
+  return costCapForRank(rankForXp(xp));
 }

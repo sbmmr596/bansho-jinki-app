@@ -3,7 +3,7 @@ import type { PartyMember } from "./combat";
 import { CARD_BY_ID, FODDER_CARDS, FORMATIONS, HERO_CARDS, MAX_LEVEL, scaledStat, SPECIAL_FODDER } from "./data";
 import type { BattleEvent, FieldKind, Unit } from "./types";
 
-const FIELDS: FieldKind[] = ["grass", "forest", "waste", "snow", "magma"];
+const FIELDS: FieldKind[] = ["grass", "desert", "snow", "ice", "forest", "volcano"];
 const MAX_ENEMY = 5;
 
 export type TrialLive = {

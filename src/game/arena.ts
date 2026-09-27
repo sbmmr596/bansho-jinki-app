@@ -214,6 +214,9 @@ export const SPIRIT_MAX = 5;
 /** 1分で互角1回分（+1）回復。 */
 export const SPIRIT_REGEN_MS = 60_000;
 
+/** 冒険の出撃1回。数値はあとで調整する。 */
+export const SORTIE_SPIRIT = 1;
+
 export const ARENA_SPIRIT_COST: Record<ArenaTier, number> = {
   even: 1,
   strong: 2,

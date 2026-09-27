@@ -5,22 +5,41 @@ import type { ElementType, EnemyUnit, FieldKind, MapNode } from "./types";
 /** 拠点は数回勝たないと占領できない。開発中の固定値。 */
 export const STRONGHOLD_WINS = 3;
 
-const FIELDS: FieldKind[] = ["grass", "forest", "snow", "waste", "magma"];
+/** 地形は見た目だけ。難易度の差はない。 */
+export const SOLO_FIELDS: FieldKind[] = ["grass", "desert", "snow", "ice", "forest", "volcano"];
 
 export const FIELD_LABEL: Record<FieldKind, string> = {
   grass: "草原",
+  desert: "砂漠",
   snow: "雪原",
-  magma: "岩漿",
+  ice: "氷原",
   forest: "森林",
+  volcano: "火山",
   waste: "荒野",
+  magma: "岩漿",
 };
 
-/** Flat map board. No photo, no sky. */
+/** Ground art for the map and the battle of that stage. */
+export const FIELD_SRC: Record<FieldKind, string> = {
+  grass: "/bg/terrain-grass.jpg",
+  desert: "/bg/terrain-desert.jpg",
+  snow: "/bg/terrain-snow.jpg",
+  ice: "/bg/terrain-ice.jpg",
+  forest: "/bg/terrain-forest.jpg",
+  volcano: "/bg/terrain-volcano.jpg",
+  waste: "/bg/terrain-desert.jpg",
+  magma: "/bg/terrain-volcano.jpg",
+};
+
+/** Shown under the image while it loads. */
 export const FIELD_BOARD: Record<FieldKind, string> = {
   grass: "#243828",
+  desert: "#8a6840",
+  snow: "#c8d0d8",
+  ice: "#8eb4c8",
   forest: "#1a2c24",
-  snow: "#2c3844",
-  waste: "#3a3226",
+  volcano: "#3a2420",
+  waste: "#8a6840",
   magma: "#3a2420",
 };
 
@@ -148,7 +167,7 @@ function growBranches(
     p.y = H / 2 + (p.y - cy) * sy;
   }
 
-  const min = 36;
+  const min = 64;
   for (let iter = 0; iter < 48; iter++) {
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
@@ -230,7 +249,7 @@ function buildSoloStage(rank: PlayerRank, stage: number): SoloStage {
   const meta = RANK_META[rank];
   const n = meta.cells;
   const rng = mulberry32(stageSeed(rank, Math.max(1, stage)));
-  const field = FIELDS[(Math.max(1, stage) - 1) % FIELDS.length];
+  const field = SOLO_FIELDS[(Math.max(1, stage) - 1) % SOLO_FIELDS.length];
   const grown = growBranches(n, rng, meta.spread);
   const pos = grown.pos;
   const adj = grown.adj;
