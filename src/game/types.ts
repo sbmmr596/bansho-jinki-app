@@ -119,6 +119,8 @@ export interface MapNode {
   hint: ElementType;
   field: FieldKind;
   enemy: EnemyUnit[];
+  /** Enemy formation id (random per node). Falls back to leader card formation. */
+  enemyFormation?: string;
   reward: { gold: number; cardId?: string };
   home?: boolean;
   /** 占領に必要な勝利回数。省略時は 1。拠点は 2 以上。 */
