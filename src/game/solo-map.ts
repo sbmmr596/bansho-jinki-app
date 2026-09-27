@@ -1,6 +1,9 @@
-import { FODDER_CARDS } from "./data";
+import { FODDER_CARDS, FORMATION_IDS, FORMATIONS } from "./data";
 import { RANK_META, rankIndex, type PlayerRank } from "./rank";
 import type { ElementType, EnemyUnit, FieldKind, MapNode } from "./types";
+
+/** Bump when layout / enemy rules change so in-memory cache invalidates. */
+const STAGE_CACHE_VER = 3;
 
 /** 拠点は数回勝たないと占領できない。開発中の固定値。 */
 export const STRONGHOLD_WINS = 3;
@@ -60,7 +63,7 @@ export interface SoloStage {
 const cache = new Map<string, SoloStage>();
 
 export function soloStage(rank: PlayerRank, stage: number): SoloStage {
-  const key = `${rank}:${stage}`;
+  const key = `${STAGE_CACHE_VER}:${rank}:${stage}`;
   const hit = cache.get(key);
   if (hit) return hit;
   const built = buildSoloStage(rank, stage);
@@ -225,15 +228,46 @@ function pickStrongholds(adj: number[][], count: number, rng: () => number): Set
   return new Set(holds);
 }
 
-function fodderEnemy(rng: () => number, level: number): { enemy: EnemyUnit[]; hint: ElementType } {
-  const slots = [5, 2, 8];
-  const enemy: EnemyUnit[] = [];
-  for (let i = 0; i < slots.length; i++) {
-    const card = FODDER_CARDS[Math.floor(rng() * FODDER_CARDS.length)];
-    enemy.push({ cardId: card.id, slot: slots[i], level, leader: i === 0 });
+function shuffleInPlace<T>(arr: T[], rng: () => number): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
+  return arr;
+}
+
+/**
+ * Test-tuned weak foes: always Lv1, 2 units.
+ * Formation + leader slot are picked at random among open cells.
+ */
+function fodderEnemy(rng: () => number): {
+  enemy: EnemyUnit[];
+  hint: ElementType;
+  enemyFormation: string;
+} {
+  const ids = FORMATION_IDS.length ? FORMATION_IDS : ["basic"];
+  const enemyFormation = ids[Math.floor(rng() * ids.length)] ?? "basic";
+  const form = FORMATIONS[enemyFormation] ?? FORMATIONS.basic;
+  const open = form.slots
+    .map((ok, i) => (ok ? i : -1))
+    .filter((i) => i >= 0);
+  shuffleInPlace(open, rng);
+  const count = Math.min(2, open.length);
+  const picks = open.slice(0, count);
+  const leaderSlot = picks[Math.floor(rng() * picks.length)] ?? picks[0] ?? 4;
+  const enemy: EnemyUnit[] = [];
+  for (const slot of picks) {
+    const card = FODDER_CARDS[Math.floor(rng() * FODDER_CARDS.length)];
+    enemy.push({
+      cardId: card.id,
+      slot,
+      level: 1, // test: keep opponents weak
+      leader: slot === leaderSlot,
+    });
+  }
+  if (!enemy.some((e) => e.leader) && enemy[0]) enemy[0].leader = true;
   const hint = HINTS[Math.floor(rng() * HINTS.length)];
-  return { enemy, hint };
+  return { enemy, hint, enemyFormation };
 }
 
 function buildSoloStage(rank: PlayerRank, stage: number): SoloStage {
@@ -244,13 +278,15 @@ function buildSoloStage(rank: PlayerRank, stage: number): SoloStage {
   const pos = evenPositions(n, rng, meta.spread);
   const adj = connectEven(pos);
   const holds = pickStrongholds(adj, meta.strongholds, rng);
-  const level = 1 + rankIndex(rank);
   const nodes: MapNode[] = [];
   let holdN = 0;
   for (let i = 0; i < n; i++) {
     const id = i === 0 ? `s${stage}-home` : `s${stage}-${i}`;
     const stronghold = holds.has(i);
-    const { enemy, hint } = i === 0 ? { enemy: [] as EnemyUnit[], hint: "earth" as ElementType } : fodderEnemy(rng, level);
+    const pack =
+      i === 0
+        ? { enemy: [] as EnemyUnit[], hint: "earth" as ElementType, enemyFormation: undefined as string | undefined }
+        : fodderEnemy(rng);
     const gold = stronghold ? 80 + rankIndex(rank) * 20 : 40 + rankIndex(rank) * 10;
     let name = "本拠";
     let short = "本拠";
@@ -275,9 +311,10 @@ function buildSoloStage(rank: PlayerRank, stage: number): SoloStage {
       x: Math.round(pos[i].x * 10) / 10,
       y: Math.round(pos[i].y * 10) / 10,
       neighbors,
-      hint,
+      hint: pack.hint,
       field,
-      enemy,
+      enemy: pack.enemy,
+      enemyFormation: pack.enemyFormation,
       reward: { gold: i === 0 ? 0 : gold },
       home: i === 0,
       holdNeed: stronghold ? STRONGHOLD_WINS : 1,

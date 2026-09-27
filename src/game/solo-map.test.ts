@@ -48,14 +48,22 @@ describe("solo map", () => {
       for (const nb of map.byId[id].neighbors) q.push(nb);
     }
     assert.equal(seen.size, map.nodes.length);
+    const formations = new Set<string>();
     for (const n of map.nodes) {
       if (n.home) {
         assert.equal(n.enemy.length, 0);
         continue;
       }
-      assert.ok(n.enemy.length > 0);
-      for (const e of n.enemy) assert.ok(fodderIds.has(e.cardId), e.cardId);
+      assert.equal(n.enemy.length, 2, "test foes stay small");
+      assert.ok(n.enemyFormation, "random formation stored");
+      formations.add(n.enemyFormation!);
+      assert.equal(n.enemy.filter((e) => e.leader).length, 1);
+      for (const e of n.enemy) {
+        assert.ok(fodderIds.has(e.cardId), e.cardId);
+        assert.equal(e.level, 1, "test foes stay Lv1");
+      }
     }
+    assert.ok(formations.size >= 2, "formations vary across nodes");
   });
 
   it("is stable for the same rank and stage", () => {

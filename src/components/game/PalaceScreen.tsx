@@ -1,6 +1,8 @@
 import { SPIRIT_MAX } from "@/game/arena";
-import { CARD_BY_ID, NODES } from "@/game/data";
+import { CARD_BY_ID } from "@/game/data";
 import { difficultyLabel } from "@/game/difficulty";
+import { rankForXp, rankLabel } from "@/game/rank";
+import { FIELD_LABEL, soloStage } from "@/game/solo-map";
 import { currentCostCap, partyCost, useGame } from "@/game/store";
 import { useEffect } from "react";
 import { CardFace, GoldChip, PrimaryButton, Shell, SpiritChip } from "./pieces";
@@ -14,14 +16,16 @@ export function PalaceScreen() {
   const leaderId = useGame((s) => s.leaderId);
   const owned = useGame((s) => s.owned);
   const difficulty = useGame((s) => s.difficulty);
+  const stage = useGame((s) => s.stage);
+  const xp = useGame((s) => s.xp);
   const setScreen = useGame((s) => s.setScreen);
   const setHelp = useGame((s) => s.setHelp);
   const setCatalogOpen = useGame((s) => s.setCatalogOpen);
   const resetAll = useGame((s) => s.resetAll);
+  const rank = rankForXp(xp);
+  const map = soloStage(rank, stage);
   const leader = leaderId ? CARD_BY_ID[leaderId] : null;
-  const cap = currentCostCap(captured);
-  const held = captured.filter((id) => NODES.some((n) => n.id === id)).length;
-  const capturePct = Math.round((held / NODES.length) * 100);
+  const cap = currentCostCap(xp);
 
   useEffect(() => {
     tickSpirit();
@@ -44,10 +48,13 @@ export function PalaceScreen() {
           </div>
           <div className="flex min-w-0 flex-1 flex-col justify-center gap-3">
             <p className="text-sm leading-relaxed text-muted">
-              神域大戦。接する未占領だけが見える。陣地を広げ、帝都を制せ。
+              {rankLabel(rank)}・第{stage}段・経験{xp}。{FIELD_LABEL[map.field]}を、マスと拠点で埋めよ。位が上がると地図とコスト上限が広がる。地形で難易度は変わらない。
             </p>
             <div className="grid max-w-md grid-cols-4 gap-2">
-              <Stat label="領地" value={`${capturePct}%`} />
+              <Stat
+                label="領地"
+                value={`${Math.round((captured.filter((id) => map.byId[id]).length / map.nodes.length) * 100)}%`}
+              />
               <Stat label="所持" value={`${Object.keys(owned).length}`} />
               <Stat label="コスト" value={`${partyCost(party)}/${cap}`} />
               <Stat label="難易度" value={difficultyLabel(difficulty)} compact />
@@ -84,9 +91,11 @@ export function PalaceScreen() {
 
 function Stat({ label, value, compact }: { label: string; value: string; compact?: boolean }) {
   return (
-    <div className="rounded-md bg-surface/80 px-2 py-1.5 hairline">
-      <p className="text-[12px] text-faint">{label}</p>
-      <p className={compact ? "text-sm text-fg" : "text-base tabular text-fg"}>{value}</p>
+    <div className="rounded-lg bg-surface/80 px-3 py-2 hairline">
+      <p className="text-[14px] font-medium tracking-wide text-muted">{label}</p>
+      <p className={"font-display tabular text-fg " + (compact ? "text-sm leading-tight" : "text-lg")}>
+        {value}
+      </p>
     </div>
   );
 }
