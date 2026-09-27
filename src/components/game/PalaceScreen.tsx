@@ -1,7 +1,7 @@
 import { SPIRIT_MAX } from "@/game/arena";
 import { CARD_BY_ID } from "@/game/data";
 import { difficultyLabel } from "@/game/difficulty";
-import { rankForStage, rankLabel } from "@/game/rank";
+import { rankForXp, rankLabel } from "@/game/rank";
 import { FIELD_LABEL, soloStage } from "@/game/solo-map";
 import { currentCostCap, partyCost, useGame } from "@/game/store";
 import { useEffect } from "react";
@@ -17,14 +17,15 @@ export function PalaceScreen() {
   const owned = useGame((s) => s.owned);
   const difficulty = useGame((s) => s.difficulty);
   const stage = useGame((s) => s.stage);
+  const xp = useGame((s) => s.xp);
   const setScreen = useGame((s) => s.setScreen);
   const setHelp = useGame((s) => s.setHelp);
   const setCatalogOpen = useGame((s) => s.setCatalogOpen);
   const resetAll = useGame((s) => s.resetAll);
-  const rank = rankForStage(stage);
+  const rank = rankForXp(xp);
   const map = soloStage(rank, stage);
   const leader = leaderId ? CARD_BY_ID[leaderId] : null;
-  const cap = currentCostCap(captured);
+  const cap = currentCostCap(xp);
 
   useEffect(() => {
     tickSpirit();
@@ -47,7 +48,7 @@ export function PalaceScreen() {
           </div>
           <div className="flex min-w-0 flex-1 flex-col justify-center gap-3">
             <p className="text-sm leading-relaxed text-muted">
-              {rankLabel(rank)}・第{stage}段。{FIELD_LABEL[map.field]}を、マスと拠点で埋めよ。位が上がると地図が広くなる。
+              {rankLabel(rank)}・第{stage}段・経験{xp}。{FIELD_LABEL[map.field]}を、マスと拠点で埋めよ。位が上がると地図とコスト上限が広がる。地形で難易度は変わらない。
             </p>
             <div className="grid max-w-md grid-cols-4 gap-2">
               <Stat label="領地" value={`${captured.length}/${map.nodes.length}`} />

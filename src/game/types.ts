@@ -3,7 +3,15 @@ export type Faction = "koryu" | "tekki" | "tensho" | "metsujin" | "reiju" | "yuk
 export type Rarity = "N" | "S" | "H" | "SP";
 export type SkillKind = "front" | "pierce" | "sweep" | "random" | "all" | "heal" | "haste" | "slow";
 export type Side = "player" | "enemy";
-export type FieldKind = "grass" | "snow" | "magma" | "forest" | "waste";
+export type FieldKind =
+  | "grass"
+  | "desert"
+  | "snow"
+  | "ice"
+  | "forest"
+  | "volcano"
+  | "waste"
+  | "magma";
 /** Temporary 0.1 for ATB debug / verification — revert when done. */
 export type BattleSpeed = 0.1 | 1 | 2 | 4;
 export type NavSide = "left" | "right";
@@ -199,6 +207,8 @@ export interface BattleResult {
   /** この段のマスと拠点をすべて占領した。 */
   stageClear?: boolean;
   rankUpLabel?: string | null;
+  /** 段クリアで入った経験。 */
+  xpGain?: number;
 }
 
 export const SAVE_VERSION = 1;
@@ -218,8 +228,10 @@ export interface SaveState {
   navSide: NavSide;
   /** Set at new game; continue uses saved value. Default normal for old saves. */
   difficulty: Difficulty;
-  /** 一人用の段。位は段から決まる。 */
+  /** 一人用の段。 */
   stage: number;
+  /** 段クリアで溜まる経験。位とコスト上限はここから決まる。 */
+  xp: number;
   /** 拠点への勝利回数。占領すると消える。 */
   holdWins: Record<string, number>;
 }

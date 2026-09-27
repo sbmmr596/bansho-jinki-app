@@ -1689,7 +1689,7 @@ export function costCapFor(capturedCount: number): number {
 }
 
 const TRIAL_SLOTS = [5, 2, 8, 4, 1, 7];
-const TRIAL_FIELDS: FieldKind[] = ["grass", "forest", "waste", "snow", "magma"];
+const TRIAL_FIELDS: FieldKind[] = ["grass", "desert", "snow", "ice", "forest", "volcano"];
 
 export function makeTrialWave(wave: number): {
   enemy: EnemyUnit[];

@@ -4,9 +4,8 @@ import {
   STARTER_IDS,
   MAX_LEVEL,
   MAX_SKILL_LV,
-  costCapFor,
 } from "./data";
-import { rankForStage } from "./rank";
+import { costCapForRank, rankForXp, xpForStage } from "./rank";
 import { soloStage } from "./solo-map";
 import {
   SAVE_VERSION,
@@ -72,7 +71,7 @@ export function defaultSave(): SaveState {
     .map((ok, i) => (ok ? i : -1))
     .filter((i) => i >= 0);
   party[slots[0] ?? 4] = leaderId;
-  const startCap = costCapFor(1);
+  const startCap = costCapForRank("rookie");
   let cost = leader.cost;
   let si = 1;
   for (const id of starters) {
@@ -93,11 +92,12 @@ export function defaultSave(): SaveState {
     owned,
     party,
     leaderId,
-    captured: [soloStage(rankForStage(1), 1).homeId],
+    captured: [soloStage(rankForXp(0), 1).homeId],
     battleSpeed: 0.1, // temporary for ATB debug / verification
     navSide: "right",
     difficulty: "normal",
     stage: 1,
+    xp: 0,
     holdWins: {},
   };
 }
@@ -149,8 +149,10 @@ export function loadSave(): SaveState {
     );
     const stage =
       typeof parsed.stage === "number" && parsed.stage >= 1 ? Math.floor(parsed.stage) : 1;
+    const xp =
+      typeof parsed.xp === "number" && parsed.xp >= 0 ? Math.floor(parsed.xp) : xpForStage(stage);
     const freshMap = typeof parsed.stage !== "number";
-    const homeId = soloStage(rankForStage(stage), stage).homeId;
+    const homeId = soloStage(rankForXp(xp), stage).homeId;
     const holdWins: Record<string, number> = {};
     if (!freshMap && parsed.holdWins && typeof parsed.holdWins === "object") {
       for (const [id, n] of Object.entries(parsed.holdWins)) {
@@ -170,6 +172,7 @@ export function loadSave(): SaveState {
       navSide: clampNavSide(parsed.navSide),
       difficulty: clampDifficulty(parsed.difficulty),
       stage,
+      xp,
       holdWins,
     });
   } catch {
@@ -202,6 +205,7 @@ export function writeSave(state: SaveState) {
       navSide: clampNavSide(state.navSide),
       difficulty: clampDifficulty(state.difficulty),
       stage: typeof state.stage === "number" && state.stage >= 1 ? Math.floor(state.stage) : 1,
+      xp: typeof state.xp === "number" && state.xp >= 0 ? Math.floor(state.xp) : 0,
       holdWins: state.holdWins ?? {},
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));

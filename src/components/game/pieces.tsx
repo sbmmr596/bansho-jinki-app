@@ -9,6 +9,7 @@ import {
   skillPowerScale,
 } from "@/game/data";
 import { commonSkillName } from "@/game/skillNames";
+import { hpGaugeColor } from "@/game/hp-gauge";
 import { useGame } from "@/game/store";
 import type { Card, ElementType, Rarity, Screen } from "@/game/types";
 import { cn } from "@/lib/utils";
@@ -682,17 +683,16 @@ function Crest({ card }: { card: Card }) {
 
 export function HpBar({ hp, max, thick }: { hp: number; max: number; thick?: boolean }) {
   const pct = Math.max(0, Math.min(100, (hp / Math.max(1, max)) * 100));
-  const low = pct < 30;
   return (
     <div
       className={cn(
         "mt-0.5 w-full overflow-hidden rounded-full bg-bg/80",
-        thick ? "h-1.5" : "h-1",
+        thick ? "h-3" : "h-2",
       )}
     >
       <div
-        className={cn("h-full rounded-full", low ? "bg-crimson" : "bg-ok")}
-        style={{ width: `${pct}%` }}
+        className="h-full rounded-full"
+        style={{ width: `${pct}%`, background: hpGaugeColor(pct) }}
       />
     </div>
   );

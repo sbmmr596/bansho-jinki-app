@@ -1,30 +1,33 @@
+import { SORTIE_SPIRIT, SPIRIT_MAX } from "@/game/arena";
 import { CARD_BY_ID, COUNTER_OF, FORMATIONS, TYPE_LABEL } from "@/game/data";
 import { scaleEnemyLevel } from "@/game/difficulty";
 import { formationOfLeader, typeMod } from "@/game/combat";
-import { rankForStage } from "@/game/rank";
+import { rankForXp } from "@/game/rank";
 import { findStageNode } from "@/game/solo-map";
 import { currentCostCap, partyCost, useGame } from "@/game/store";
-import { CardFace, GhostButton, PrimaryButton, Shell, TypeBadge } from "./pieces";
+import { CardFace, GhostButton, PrimaryButton, Shell, SpiritChip, TypeBadge } from "./pieces";
 import { cn } from "@/lib/utils";
 
 export function ScoutScreen() {
   const scoutNodeId = useGame((s) => s.scoutNodeId);
   const party = useGame((s) => s.party);
   const leaderId = useGame((s) => s.leaderId);
-  const captured = useGame((s) => s.captured);
   const setScreen = useGame((s) => s.setScreen);
   const startBattle = useGame((s) => s.startBattle);
   const difficulty = useGame((s) => s.difficulty);
   const stage = useGame((s) => s.stage);
+  const xp = useGame((s) => s.xp);
+  const spirit = useGame((s) => s.spirit);
   const holdWins = useGame((s) => s.holdWins);
-  const node = scoutNodeId ? findStageNode(rankForStage(stage), stage, scoutNodeId) : null;
+  const node = scoutNodeId ? findStageNode(rankForXp(xp), stage, scoutNodeId) : null;
   if (!node) return null;
 
   const enemyLeader = node.enemy.find((e) => e.leader)?.cardId ?? null;
   const eForm = formationOfLeader(enemyLeader);
   const pForm = formationOfLeader(leaderId);
   const cost = partyCost(party);
-  const cap = currentCostCap(captured);
+  const cap = currentCostCap(xp);
+  const canSpirit = spirit >= SORTIE_SPIRIT;
   const counters = COUNTER_OF[node.hint];
   const enemyTypes = node.enemy.map((e) => CARD_BY_ID[e.cardId]?.type).filter(Boolean);
   const hasCounter = party.some((id) => {
@@ -32,13 +35,13 @@ export function ScoutScreen() {
     if (!c) return false;
     return enemyTypes.some((t) => t && typeMod(c.type, t) > 1);
   });
-  const canGo = !!leaderId && cost <= cap && cost > 0;
+  const canGo = !!leaderId && cost <= cap && cost > 0 && canSpirit;
 
   const enemyParty: (string | null)[] = Array(9).fill(null);
   for (const e of node.enemy) enemyParty[e.slot] = e.cardId;
 
   return (
-    <Shell title={node.name} onBack={() => setScreen("map")} nav="map" wide>
+    <Shell title={node.name} onBack={() => setScreen("map")} nav="map" wide extra={<SpiritChip spirit={spirit} max={SPIRIT_MAX} />}>
       <div className="flex h-full min-h-0 items-center justify-center">
         <div className="flex w-full max-w-3xl items-stretch gap-6">
           <div className="flex w-[300px] shrink-0 flex-col">
@@ -102,12 +105,13 @@ export function ScoutScreen() {
             ) : (
               <p className="text-xs text-crimson">リーダー未設定</p>
             )}
+            <p className="text-xs text-muted">出撃で闘気を{SORTIE_SPIRIT}使う。足りないと出られない。</p>
             <div className="mt-1 flex gap-2">
               <GhostButton onClick={() => setScreen("formation")} className="min-w-36">
                 編成を見直す
               </GhostButton>
               <PrimaryButton onClick={startBattle} disabled={!canGo} className="min-w-36">
-                出撃
+                {canSpirit ? "出撃" : "闘気が足りない"}
               </PrimaryButton>
             </div>
           </div>
