@@ -21,13 +21,13 @@ export function MapScreen() {
     <Shell title="神域大戦" extra={<GoldChip gold={gold} />} nav="map" wide>
       <div className="flex h-full min-h-0 gap-3">
         <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden [container-type:size]">
-          {/* /bg/map.jpg と同じ 16:9。はみ出し切り抜きをやめ、拠点の % を絵の上に乗せる。 */}
+          {/* 背景は拠点と同じ11領地。枠は絵と同じ16:9で、% が領地の中心に合う。 */}
           <div className="absolute top-1/2 left-1/2 aspect-[16/9] w-[min(100cqw,calc(100cqh*16/9))] -translate-x-1/2 -translate-y-1/2">
           <img
             src="/bg/map.jpg"
             alt=""
             crossOrigin="anonymous"
-            className="absolute inset-0 h-full w-full opacity-90"
+            className="absolute inset-0 h-full w-full"
           />
           <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             {NODES.flatMap((n) =>
