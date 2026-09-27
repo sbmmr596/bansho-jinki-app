@@ -6,7 +6,7 @@ export function HelpOverlay() {
   const close = () => useGame.getState().setHelp(false);
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-bg/80 p-3">
-      <div className="panel max-h-full w-full max-w-3xl overflow-y-auto rounded-xl p-4">
+      <div className="panel stage-scroll max-h-full w-full max-w-3xl rounded-xl p-4">
         <div className="mb-2 flex items-start justify-between gap-3">
           <h2 className="font-display text-lg">遊び方</h2>
           <CloseButton onClick={close} />

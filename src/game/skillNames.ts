@@ -49,6 +49,25 @@ const DEFAULT_SKILL_KIND_LABEL: Record<SkillKind, string> = {
   slow: "減速",
 };
 
+/** Default skill blurbs for the card editor when a method is selected. */
+export const SKILL_KIND_DESC: Record<SkillKind, string> = {
+  front: "正面の敵を攻撃する",
+  pierce: "横一列を貫く",
+  sweep: "前列をなぎ払う",
+  random: "敵を乱撃する",
+  all: "敵全体を攻撃する",
+  heal: "味方を癒す",
+  haste: "味方の速度を速める",
+  slow: "敵の速度を遅らせる",
+};
+
+/** True when desc is empty or still one of the stock method blurbs (safe to auto-replace). */
+export function isStockSkillDesc(desc: string): boolean {
+  const t = desc.trim();
+  if (!t) return true;
+  return Object.values(SKILL_KIND_DESC).includes(t);
+}
+
 /** Mutable labels — user catalog may override via `skillKinds` in payload. */
 export const SKILL_KIND_LABEL: Record<SkillKind, string> = { ...DEFAULT_SKILL_KIND_LABEL };
 

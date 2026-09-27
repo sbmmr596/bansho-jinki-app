@@ -85,7 +85,8 @@ body,
   min-height: 100dvh;
   color: var(--color-fg);
   overflow: hidden;
-  touch-action: pan-x pan-y;
+  /* Vertical only — horizontal pan was sliding the letterboxed stage on phones. */
+  touch-action: pan-y;
 }
 body {
   font-family: var(--font-sans);
@@ -93,8 +94,8 @@ body {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
-  /* pan only: pinch-zoom is a browser scale from the top-left and slides the stage. */
-  touch-action: pan-x pan-y;
+  /* pan-y only: pinch-zoom + horizontal pan slide the stage off-screen. */
+  touch-action: pan-y;
 }
 
 .font-display {
@@ -152,7 +153,7 @@ body {
   height: 100%;
   overflow: hidden;
   background: #0b0907;
-  touch-action: pan-x pan-y;
+  touch-action: pan-y;
 }
 .game-stage {
   position: absolute;
@@ -1124,6 +1125,11 @@ body {
 
 /* Formation tray: dark-theme scrollbar (matches ink/brass UI) */
 .formation-tray-scroll {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: #6e5c45 #1a1510;
@@ -1152,4 +1158,10 @@ body {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+}
+/* Rotated stage: browser pan-y is screen-vertical, but overflow-y is stage-local
+ * (horizontal on screen). JS in GameApp remaps phone-vertical swipes → scrollTop. */
+.game-stage.is-rotated .stage-scroll,
+.game-stage.is-rotated .formation-tray-scroll {
+  touch-action: none;
 }

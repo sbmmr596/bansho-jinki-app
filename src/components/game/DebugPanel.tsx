@@ -99,7 +99,7 @@ export function DebugPanel() {
           </TabBtn>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+        <div className="stage-scroll min-h-0 flex-1 pr-1">
           {tab === "ops" ? (
             <>
               <p className="mb-3 text-xs text-muted tabular">
