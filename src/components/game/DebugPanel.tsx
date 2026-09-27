@@ -28,6 +28,8 @@ export function DebugPanel() {
   const [previewBg, setPreviewBg] = useState<string | null>(null);
 
   const setDebugOpen = useGame((s) => s.setDebugOpen);
+  const pseudoLandscape = useGame((s) => s.pseudoLandscape);
+  const setPseudoLandscape = useGame((s) => s.setPseudoLandscape);
   const setCatalogOpen = useGame((s) => s.setCatalogOpen);
   const setCardEditorOpen = useGame((s) => s.setCardEditorOpen);
   const debugAddGold = useGame((s) => s.debugAddGold);
@@ -145,6 +147,13 @@ export function DebugPanel() {
                 >
                   全画面
                 </DbgBtn>
+                <DbgBtn
+                  onClick={() => setPseudoLandscape(!pseudoLandscape)}
+                  active={pseudoLandscape}
+                  hint="縦枠のみ効果"
+                >
+                  {pseudoLandscape ? "擬似横 ON" : "擬似横表示"}
+                </DbgBtn>
               </div>
             </>
           ) : (
@@ -260,17 +269,20 @@ function DbgBtn({
   onClick,
   disabled,
   hint,
+  active,
 }: {
   children: string;
   onClick: () => void;
   disabled?: boolean;
   hint?: string;
+  active?: boolean;
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
       <button
         type="button"
         disabled={disabled}
+        aria-pressed={active ? true : undefined}
         onClick={(e) => {
           if (disabled) return;
           e.preventDefault();
@@ -278,11 +290,14 @@ function DbgBtn({
           sfx("click");
           onClick();
         }}
-        className="debug-hit flex h-12 min-h-11 w-full items-center justify-center rounded-md bg-raised text-sm hairline disabled:opacity-40"
+        className={cn(
+          "debug-hit flex h-12 min-h-11 w-full items-center justify-center rounded-md text-sm hairline disabled:opacity-40",
+          active ? "bg-panel text-brass ring-1 ring-brass/50" : "bg-raised",
+        )}
       >
         {children}
       </button>
-      {disabled && hint ? (
+      {hint && (disabled || active) ? (
         <p className="px-0.5 text-center text-[13px] leading-tight text-faint">{hint}</p>
       ) : null}
     </div>

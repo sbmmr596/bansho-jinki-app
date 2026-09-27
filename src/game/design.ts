@@ -103,6 +103,12 @@ export type StageFrame = {
   stageLeft: number;
   stageTop: number;
   scale: number;
+  /**
+   * When true, stageLeft/Top are the center of the padded area and the stage
+   * should use `translate(-50%,-50%) rotate(90deg) scale(...)` (portrait iframe
+   * showing landscape content — Grok sandbox / phone preview debug aid).
+   */
+  rotate90: boolean;
 };
 
 /** Browser pinch-zoom. Keyboard resize keeps scale at 1 and must still follow the visual viewport. */
@@ -111,10 +117,23 @@ export function isPinchZoom(visualScale: number | undefined): boolean {
 }
 
 /**
+ * Contain-fit scale when the 1280×720 stage is CSS-rotated 90° in a portrait
+ * viewport: visual box is DESIGN_H×DESIGN_W.
+ */
+export function fitContainScaleRotated(availW: number, availH: number): number {
+  const aw = Math.max(1, availW);
+  const ah = Math.max(1, availH);
+  return Math.min(aw / DESIGN_H, ah / DESIGN_W);
+}
+
+/**
  * Place the 1280×720 stage in the visible window.
  * Pinch-zoom reports a smaller visual viewport and a pan offset that collapses
  * toward the layout origin, so the board jumps to the top-left. Ignore that
  * pan and keep the layout-viewport fit until the zoom is cleared.
+ *
+ * `pseudoLandscape`: in a portrait frame, rotate the stage 90° and fit using
+ * the swapped visual box so sandbox/phone previews can review landscape UI.
  */
 export function stageFrame(opts: {
   innerWidth: number;
@@ -128,6 +147,7 @@ export function stageFrame(opts: {
   padR?: number;
   padT?: number;
   padB?: number;
+  pseudoLandscape?: boolean;
 }): StageFrame {
   const pinch = isPinchZoom(opts.visualScale);
   const rawW = pinch ? opts.innerWidth : (opts.visualWidth ?? opts.innerWidth);
@@ -138,14 +158,33 @@ export function stageFrame(opts: {
   const padB = opts.padB ?? 0;
   const aw = Math.max(1, rawW - padL - padR);
   const ah = Math.max(1, rawH - padT - padB);
+  const frameLeft = pinch ? 0 : (opts.offsetLeft ?? 0);
+  const frameTop = pinch ? 0 : (opts.offsetTop ?? 0);
+  const frameWidth = Math.floor(rawW);
+  const frameHeight = Math.floor(rawH);
+  const portrait = frameHeight > frameWidth;
+  if (opts.pseudoLandscape && portrait) {
+    const scale = fitContainScaleRotated(aw, ah);
+    return {
+      frameLeft,
+      frameTop,
+      frameWidth,
+      frameHeight,
+      stageLeft: padL + aw / 2,
+      stageTop: padT + ah / 2,
+      scale,
+      rotate90: true,
+    };
+  }
   const scale = fitContainScale(aw, ah);
   return {
-    frameLeft: pinch ? 0 : (opts.offsetLeft ?? 0),
-    frameTop: pinch ? 0 : (opts.offsetTop ?? 0),
-    frameWidth: Math.floor(rawW),
-    frameHeight: Math.floor(rawH),
+    frameLeft,
+    frameTop,
+    frameWidth,
+    frameHeight,
     stageLeft: padL + (aw - DESIGN_W * scale) / 2,
     stageTop: padT + (ah - DESIGN_H * scale) / 2,
     scale,
+    rotate90: false,
   };
 }
