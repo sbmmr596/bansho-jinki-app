@@ -24,10 +24,10 @@ const TYPE_CLASS: Record<ElementType, string> = {
 };
 
 const RARITY_RING: Record<Rarity, string> = {
-  N: "ring-faint",
-  S: "ring-muted",
-  H: "ring-brass",
-  SP: "ring-crimson",
+  N: "card-rarity-n",
+  S: "card-rarity-s",
+  H: "card-rarity-h",
+  SP: "card-rarity-sp",
 };
 
 const SPRITES = new Set([
@@ -249,10 +249,10 @@ export function CardFace({
         onClick?.();
       }}
       className={cn(
-        "card-face relative overflow-hidden text-left ring-1 transition-transform duration-150",
+        "card-face relative overflow-hidden text-left transition-transform duration-150",
         sizes[size],
         RARITY_RING[card.rarity],
-        selected && "ring-2 ring-brass scale-[1.03]",
+        selected && "card-face-selected scale-[1.03]",
         dimmed && "opacity-40",
         acting && "anim-act",
         struck && "anim-struck",
@@ -593,6 +593,7 @@ export function CharSprite({
   float,
   flip,
   bust,
+  leader,
 }: {
   card: Card;
   acting?: boolean;
@@ -608,6 +609,7 @@ export function CharSprite({
   } | null;
   flip?: boolean;
   bust?: boolean;
+  leader?: boolean;
 }) {
   const { src, onError } = useCardImg(card, bust);
   return (
@@ -632,6 +634,11 @@ export function CharSprite({
       ) : null}
       {hp != null && maxHp != null ? (
         <div className="absolute left-1/2 top-0 z-[3] w-[72%] -translate-x-1/2">
+          {leader ? (
+            <span className="battle-leader-mark pointer-events-none mb-0.5 flex justify-center" aria-label="リーダー">
+              ★
+            </span>
+          ) : null}
           <HpBar hp={hp} max={maxHp} thick />
         </div>
       ) : null}

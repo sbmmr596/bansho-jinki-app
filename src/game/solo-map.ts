@@ -1,9 +1,9 @@
-import { FODDER_CARDS, FORMATION_IDS, FORMATIONS } from "./data";
+import { FODDER_CARDS, FORMATIONS } from "./data";
 import { RANK_META, rankIndex, type PlayerRank } from "./rank";
 import type { ElementType, EnemyUnit, FieldKind, MapNode } from "./types";
 
 /** Bump when layout / enemy rules change so in-memory cache invalidates. */
-const STAGE_CACHE_VER = 3;
+const STAGE_CACHE_VER = 4;
 
 /** 拠点は数回勝たないと占領できない。開発中の固定値。 */
 export const STRONGHOLD_WINS = 3;
@@ -238,15 +238,16 @@ function shuffleInPlace<T>(arr: T[], rng: () => number): T[] {
 
 /**
  * Test-tuned weak foes: always Lv1, 2 units.
- * Formation + leader slot are picked at random among open cells.
+ * Leader is chosen first; placement uses that leader's formation only.
  */
 function fodderEnemy(rng: () => number): {
   enemy: EnemyUnit[];
   hint: ElementType;
   enemyFormation: string;
 } {
-  const ids = FORMATION_IDS.length ? FORMATION_IDS : ["basic"];
-  const enemyFormation = ids[Math.floor(rng() * ids.length)] ?? "basic";
+  const pool = FODDER_CARDS.length ? FODDER_CARDS : [];
+  const leaderCard = pool[Math.floor(rng() * pool.length)] ?? pool[0];
+  const enemyFormation = leaderCard?.formation ?? "basic";
   const form = FORMATIONS[enemyFormation] ?? FORMATIONS.basic;
   const open = form.slots
     .map((ok, i) => (ok ? i : -1))
@@ -257,7 +258,11 @@ function fodderEnemy(rng: () => number): {
   const leaderSlot = picks[Math.floor(rng() * picks.length)] ?? picks[0] ?? 4;
   const enemy: EnemyUnit[] = [];
   for (const slot of picks) {
-    const card = FODDER_CARDS[Math.floor(rng() * FODDER_CARDS.length)];
+    const card =
+      slot === leaderSlot && leaderCard
+        ? leaderCard
+        : pool[Math.floor(rng() * pool.length)] ?? leaderCard;
+    if (!card) continue;
     enemy.push({
       cardId: card.id,
       slot,

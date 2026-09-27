@@ -69,7 +69,7 @@ export function ScoutScreen() {
                     const card = id ? CARD_BY_ID[id] : null;
                     const eu = node.enemy.find((e) => e.slot === slot);
                     const occupied = !!card && !!eu;
-                    const open = eForm.slots[slot] || occupied;
+                    const open = !!eForm.slots[slot];
                     return (
                       <div
                         key={slot}
