@@ -4,7 +4,6 @@ import type { Faction } from "@/game/types";
 import { sfx } from "@/game/audio";
 import { useGame } from "@/game/store";
 import { CardFace, CloseButton } from "./pieces";
-import { requestGameDisplay } from "@/lib/display-mode";
 import { cn } from "@/lib/utils";
 
 type Tab = "ops" | "assets";
@@ -139,20 +138,11 @@ export function DebugPanel() {
                 </DbgBtn>
                 <DbgBtn onClick={() => setTab("assets")}>素材確認</DbgBtn>
                 <DbgBtn
-                  onClick={() => {
-                    void requestGameDisplay(
-                      document.querySelector(".game-frame") as HTMLElement | null,
-                    );
-                  }}
-                >
-                  全画面
-                </DbgBtn>
-                <DbgBtn
                   onClick={() => setPseudoLandscape(!pseudoLandscape)}
                   active={pseudoLandscape}
-                  hint="縦枠のみ効果"
+                  hint="縦枠で擬似横（Grok等で実全画面不可のため）"
                 >
-                  {pseudoLandscape ? "擬似横 ON" : "擬似横表示"}
+                  {pseudoLandscape ? "全画面 ON" : "全画面"}
                 </DbgBtn>
               </div>
             </>

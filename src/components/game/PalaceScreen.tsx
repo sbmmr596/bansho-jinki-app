@@ -18,6 +18,7 @@ export function PalaceScreen() {
   const difficulty = useGame((s) => s.difficulty);
   const stage = useGame((s) => s.stage);
   const xp = useGame((s) => s.xp);
+  const catalogEpoch = useGame((s) => s.catalogEpoch);
   const setScreen = useGame((s) => s.setScreen);
   const setHelp = useGame((s) => s.setHelp);
   const setCatalogOpen = useGame((s) => s.setCatalogOpen);
@@ -25,6 +26,7 @@ export function PalaceScreen() {
   const rank = rankForXp(xp);
   const map = soloStage(rank, stage);
   const leader = leaderId ? CARD_BY_ID[leaderId] : null;
+  void catalogEpoch;
   const cap = currentCostCap(xp);
 
   useEffect(() => {

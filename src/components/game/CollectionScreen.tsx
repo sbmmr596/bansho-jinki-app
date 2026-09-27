@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { CARDS, CARD_BY_ID, FACTION_LABEL, FORMATIONS, TYPE_LABEL, cardBasicSkill, skillPowerScale } from "@/game/data";
 import { commonSkillName, SKILL_KIND_LABEL } from "@/game/skillNames";
-import type { Faction } from "@/game/types";
+import type { Faction, SkillKind } from "@/game/types";
 import { useGame } from "@/game/store";
 import { CardFace, CostHex, GoldChip, Shell, StatRow, TypeHex } from "./pieces";
 import { cn } from "@/lib/utils";
@@ -107,12 +107,14 @@ export function CollectionScreen() {
                   <p className="min-w-0 truncate text-[15px] text-muted">
                     <span className="text-[14px] tracking-wide text-faint">基本技</span>{" "}
                     <span className="text-fg">{cardBasicSkill(card).name}</span>
+                    <span className="ml-1 text-brass">{SKILL_KIND_LABEL[cardBasicSkill(card).kind]}</span>
                   </p>
                   <span className="shrink-0 text-[14px] text-brass">威力:{cardBasicSkill(card).power}</span>
                 </div>
                 <DetailSkill
                   label="必殺技1"
                   name={card.skill.name}
+                  kind={card.skill.kind}
                   desc={card.skill.desc}
                   power={card.skill.power}
                   lv={own?.skill1Lv ?? 1}
@@ -126,6 +128,7 @@ export function CollectionScreen() {
                       CARD_BY_ID[own.skill2.sourceCardId]!.rarity,
                     )}
                     subName={CARD_BY_ID[own.skill2.sourceCardId]!.skill.name}
+                    kind={CARD_BY_ID[own.skill2.sourceCardId]!.skill.kind}
                     desc={CARD_BY_ID[own.skill2.sourceCardId]!.skill.desc}
                     power={CARD_BY_ID[own.skill2.sourceCardId]!.skill.power}
                     lv={own.skill2.lv}
@@ -139,7 +142,7 @@ export function CollectionScreen() {
                   <DetailSkill label="必殺技2" name="-" desc="未装着" empty tone="s2" />
                 )}
                 <p className="pt-0.5 text-[14px] text-brass">
-                  属性 {TYPE_LABEL[card.type]}　／　種別 {SKILL_KIND_LABEL[card.skill.kind]}
+                  属性 {TYPE_LABEL[card.type]}
                 </p>
               </div>
             </div>
@@ -179,6 +182,7 @@ function DetailSkill({
   label,
   name,
   subName,
+  kind,
   desc,
   power,
   lv,
@@ -189,6 +193,7 @@ function DetailSkill({
   label: string;
   name: string;
   subName?: string;
+  kind?: SkillKind;
   desc: string;
   power?: number;
   lv?: number;
@@ -218,6 +223,9 @@ function DetailSkill({
       <p className={"font-display text-sm " + (empty ? "text-crimson" : "text-fg")}>{name}</p>
       {subName && subName !== name ? (
         <p className="text-[14px] text-faint">{subName}</p>
+      ) : null}
+      {kind && !empty ? (
+        <p className="text-[14px] text-brass">{SKILL_KIND_LABEL[kind]}</p>
       ) : null}
       <p className="mt-0.5 text-[15px] leading-snug text-muted">{desc}</p>
       {power != null && !empty ? (
