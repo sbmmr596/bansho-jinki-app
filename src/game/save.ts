@@ -103,9 +103,10 @@ export function defaultSave(): SaveState {
 }
 
 
-/** Strip material-only fodder from party/leader (corrupt or experimental saves). */
+/** Strip material-only fodder from party/leader (corrupt or experimental saves).
+ * Also drops units sitting outside the current leader's formation. */
 export function sanitizeParty(state: SaveState): SaveState {
-  const party = state.party.map((id) => {
+  let party = state.party.map((id) => {
     if (!id) return null;
     const c = CARD_BY_ID[id];
     if (!c || c.fodder) return null;
@@ -116,6 +117,15 @@ export function sanitizeParty(state: SaveState): SaveState {
     const leader = CARD_BY_ID[leaderId];
     if (!leader || leader.fodder || !party.includes(leaderId)) {
       leaderId = party.find((id) => !!id) ?? null;
+    }
+  }
+  if (leaderId) {
+    const form = FORMATIONS[CARD_BY_ID[leaderId]?.formation ?? ""] ?? FORMATIONS.basic;
+    party = party.map((id, slot) => (id && form.slots[slot] ? id : null));
+    if (!party.includes(leaderId)) {
+      const free = form.slots.findIndex((ok, i) => ok && !party[i]);
+      if (free >= 0) party[free] = leaderId;
+      else leaderId = party.find((id) => !!id) ?? null;
     }
   }
   return { ...state, party, leaderId };

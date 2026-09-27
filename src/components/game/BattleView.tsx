@@ -17,8 +17,8 @@ import { cn } from "@/lib/utils";
 const DUR: Record<BattleEvent["kind"], number> = {
   round: 280,
   skill: 720,
-  hit: 420,
-  heal: 480,
+  hit: 720,
+  heal: 720,
   ko: 280,
   shift: 240,
   spawn: 300,
@@ -847,6 +847,7 @@ function UnitSpot({
         flip={unit.side === "player"}
         bust={unit.bust}
         float={float}
+        leader={unit.isLeader}
       />
     </div>
   );

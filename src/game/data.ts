@@ -1104,6 +1104,7 @@ function fodderBasicSkill(skill: Skill): Skill | undefined {
 }
 
 function buildFodder(): Card[] {
+  const formIds = Object.keys(DEFAULT_FORMATIONS);
   const out: Card[] = [];
   for (let fi = 0; fi < FACTION_IDS.length; fi++) {
     const faction = FACTION_IDS[fi];
@@ -1111,6 +1112,8 @@ function buildFodder(): Card[] {
       const type = ELEMENTS[ei];
       const skill = fodderSkillFor(fi, ei);
       const basicSkill = fodderBasicSkill(skill);
+      // Spread formations so NPC leaders bring varied layouts (player can't lead with fodder).
+      const formation = formIds[(fi * ELEMENTS.length + ei) % formIds.length] ?? "basic";
       out.push({
         id: `z_${faction}_${type}`,
         name: `${FODDER_JOB[faction]}${FODDER_ROLE_BY_KIND[skill.kind]}`,
@@ -1123,7 +1126,7 @@ function buildFodder(): Card[] {
         atk: 5,
         def: 2,
         spd: 68,
-        formation: "basic",
+        formation,
         ...(basicSkill ? { basicSkill } : {}),
         skill,
         portrait: `z_${type}`,
@@ -1599,8 +1602,8 @@ export const NODES: MapNode[] = [
     enemy: [
       { cardId: "vel", slot: 5, level: 3, leader: true },
       { cardId: "mizuki", slot: 4, level: 3 },
-      { cardId: "hito", slot: 3, level: 3 },
-      { cardId: "nox", slot: 8, level: 2 },
+      { cardId: "hito", slot: 1, level: 3 },
+      { cardId: "nox", slot: 7, level: 2 },
     ],
     reward: { gold: 210, cardId: "mizuki" },
   },
@@ -1654,7 +1657,7 @@ export const NODES: MapNode[] = [
       { cardId: "nox", slot: 4, level: 5, leader: true },
       { cardId: "daruk", slot: 5, level: 5 },
       { cardId: "claire", slot: 2, level: 4 },
-      { cardId: "mizuki", slot: 8, level: 4 },
+      { cardId: "mizuki", slot: 0, level: 4 },
     ],
     reward: { gold: 280, cardId: "nox" },
   },
@@ -1671,9 +1674,9 @@ export const NODES: MapNode[] = [
     enemy: [
       { cardId: "kaien", slot: 4, level: 7, leader: true },
       { cardId: "daruk", slot: 5, level: 6 },
-      { cardId: "gouzan", slot: 2, level: 6 },
+      { cardId: "gouzan", slot: 1, level: 6 },
       { cardId: "azuha", slot: 3, level: 6 },
-      { cardId: "yuki", slot: 8, level: 6 },
+      { cardId: "yuki", slot: 7, level: 6 },
     ],
     reward: { gold: 480, cardId: "kaien" },
   },
@@ -1691,8 +1694,20 @@ export function costCapFor(capturedCount: number): number {
   return Math.min(20, BASE_COST_CAP + Math.max(0, capturedCount - 1));
 }
 
-const TRIAL_SLOTS = [5, 2, 8, 4, 1, 7];
 const TRIAL_FIELDS: FieldKind[] = ["grass", "desert", "snow", "ice", "forest", "volcano"];
+
+/** Open slots of a formation, front-column preference (col 2 → 0) then top→bottom. */
+function trialOpenSlots(formationId: string): number[] {
+  const form = FORMATIONS[formationId] ?? FORMATIONS.basic;
+  const open = form.slots
+    .map((ok, i) => (ok ? i : -1))
+    .filter((i) => i >= 0);
+  return open.sort((a, b) => {
+    const col = (b % 3) - (a % 3);
+    if (col) return col;
+    return Math.floor(a / 3) - Math.floor(b / 3);
+  });
+}
 
 export function makeTrialWave(wave: number): {
   enemy: EnemyUnit[];
@@ -1707,21 +1722,26 @@ export function makeTrialWave(wave: number): {
 
   if (heroWave) {
     const hero = HERO_CARDS[Math.floor(Math.random() * HERO_CARDS.length)];
+    formationId = hero.formation;
+    const slots = trialOpenSlots(formationId);
     enemy.push({
       cardId: hero.id,
-      slot: TRIAL_SLOTS[0],
+      slot: slots[0] ?? 4,
       level: Math.min(50, level + 3),
       leader: true,
     });
-    formationId = hero.formation;
   }
 
+  const slots = trialOpenSlots(formationId);
   const fodder = FODDER_CARDS;
   for (let i = enemy.length; i < n; i++) {
     const f = fodder[Math.floor(Math.random() * fodder.length)];
+    const slot = slots[i] ?? slots[slots.length - 1] ?? 4;
+    // Skip if this open slot is already taken (formation smaller than n).
+    if (enemy.some((e) => e.slot === slot)) continue;
     enemy.push({
       cardId: f.id,
-      slot: TRIAL_SLOTS[i],
+      slot,
       level,
       leader: enemy.length === 0,
     });

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { FODDER_CARDS } from "./data.ts";
+import { CARD_BY_ID, FODDER_CARDS, FORMATIONS } from "./data.ts";
 import { SORTIE_SPIRIT } from "./arena.ts";
 import { hpGaugeColor } from "./hp-gauge.ts";
 import { RANK_META, RANK_ORDER, XP_PER_CLEAR, costCapForRank, rankForStage, rankForXp } from "./rank.ts";
@@ -55,12 +55,23 @@ describe("solo map", () => {
         continue;
       }
       assert.equal(n.enemy.length, 2, "test foes stay small");
-      assert.ok(n.enemyFormation, "random formation stored");
+      assert.ok(n.enemyFormation, "leader formation stored");
       formations.add(n.enemyFormation!);
       assert.equal(n.enemy.filter((e) => e.leader).length, 1);
+      const lead = n.enemy.find((e) => e.leader)!;
+      const leadCard = CARD_BY_ID[lead.cardId];
+      assert.ok(leadCard, lead.cardId);
+      assert.equal(
+        n.enemyFormation,
+        leadCard.formation,
+        "enemy formation must match the leader card",
+      );
+      const form = FORMATIONS[n.enemyFormation!];
+      assert.ok(form, n.enemyFormation);
       for (const e of n.enemy) {
         assert.ok(fodderIds.has(e.cardId), e.cardId);
         assert.equal(e.level, 1, "test foes stay Lv1");
+        assert.ok(form.slots[e.slot], `${e.cardId} slot ${e.slot} outside ${n.enemyFormation}`);
       }
     }
     assert.ok(formations.size >= 2, "formations vary across nodes");

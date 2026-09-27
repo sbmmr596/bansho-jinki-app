@@ -261,9 +261,13 @@ body {
     opacity: 1;
     transform: translate(-50%);
   }
+  55% {
+    opacity: 1;
+    transform: translate(-50%, -18px);
+  }
   to {
     opacity: 0;
-    transform: translate(-50%, -28px);
+    transform: translate(-50%, -32px);
   }
 }
 @keyframes shake-x {
@@ -288,7 +292,7 @@ body {
   }
 }
 .anim-float {
-  animation: 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards float-up;
+  animation: 1.15s cubic-bezier(0.22, 1, 0.36, 1) forwards float-up;
 }
 .anim-shake {
   animation: 0.18s ease-in-out shake-x;
@@ -311,7 +315,7 @@ body {
 
 /* Battle damage / heal floats (above HP gauge) */
 .battle-float-num {
-  top: -0.35em;
+  top: -1.15em;
   font-family: var(--font-display);
   font-size: calc(19px * var(--text-scale, 1));
   font-weight: 700;
@@ -744,6 +748,45 @@ body {
   width: 68%;
   height: 11%;
   background: radial-gradient(ellipse at center, rgb(0 0 0 / 0.72) 0%, rgb(0 0 0 / 0.4) 42%, rgb(0 0 0 / 0.12) 68%, transparent 78%);
+}
+
+/* Leader mark above HP gauge in battle */
+.battle-leader-mark {
+  font-family: var(--font-display);
+  font-size: calc(13px * var(--text-scale, 1));
+  font-weight: 700;
+  line-height: 1;
+  color: #f0d060;
+  -webkit-text-stroke: 0.12em #120c08;
+  paint-order: stroke fill;
+  text-shadow: 0 0.05em 0.1em rgb(0 0 0 / 0.55);
+}
+
+/* Rarity frame colors on card faces (drawn on .card-layer-frame above art) */
+.card-face {
+  --card-rarity-edge: #9eb8d4;
+}
+.card-rarity-n {
+  --card-rarity-edge: #9eb8d4; /* 薄い青 */
+}
+.card-rarity-s {
+  --card-rarity-edge: #2f9e8a; /* 青緑 */
+}
+.card-rarity-h {
+  --card-rarity-edge: #c9a016; /* 濃い黄色 */
+}
+.card-rarity-sp {
+  --card-rarity-edge: #d45a12; /* 濃いオレンジ */
+}
+.card-layer-frame {
+  box-shadow: inset 0 0 0 2.5px var(--card-rarity-edge);
+  border-radius: inherit;
+  pointer-events: none;
+}
+.card-face-selected .card-layer-frame {
+  box-shadow:
+    inset 0 0 0 2.5px var(--card-rarity-edge),
+    0 0 0 2px color-mix(in oklab, var(--color-brass) 85%, white);
 }
 
 /* Rarity prism / holo sweep — plays once on first mount (iteration-count: 1) */

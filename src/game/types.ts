@@ -119,7 +119,7 @@ export interface MapNode {
   hint: ElementType;
   field: FieldKind;
   enemy: EnemyUnit[];
-  /** Enemy formation id (random per node). Falls back to leader card formation. */
+  /** Enemy formation id. Always the enemy leader's card formation for solo nodes. */
   enemyFormation?: string;
   reward: { gold: number; cardId?: string };
   home?: boolean;
