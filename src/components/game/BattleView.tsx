@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { sfx } from "@/game/audio";
 import { CARD_BY_ID } from "@/game/data";
 import { rankForXp } from "@/game/rank";
-import { FIELD_LABEL, FIELD_SRC, findStageNode } from "@/game/solo-map";
+import { FIELD_LABEL, findStageNode } from "@/game/solo-map";
 import { ATB_PER_SEC, atbRate, advanceGauges, GAUGE_MAX, affinityLabel } from "@/game/combat";
 import { activeTrial, pumpTrial } from "@/game/trial";
 import { BATTLE_PRELOAD_TIMEOUT_MS, preloadImages } from "@/game/preload";
@@ -26,6 +26,18 @@ const DUR: Record<BattleEvent["kind"], number> = {
   end: 900,
 };
 
+/** Battle keeps the earlier photos. New map terrains reuse the closest of those. */
+const BATTLE_FIELD_SRC: Record<FieldKind, string> = {
+  grass: "/bg/grass.jpg",
+  desert: "/bg/field.jpg",
+  snow: "/bg/snow.jpg",
+  ice: "/bg/snow.jpg",
+  forest: "/bg/forest.jpg",
+  volcano: "/bg/magma.jpg",
+  waste: "/bg/field.jpg",
+  magma: "/bg/magma.jpg",
+};
+
 const TYPE_FX: Record<ElementType, string> = {
   power: "#ff8a72",
   skill: "#8ee4ff",
@@ -37,7 +49,7 @@ const TYPE_FX: Record<ElementType, string> = {
 
 function collectBattleImageUrls(battle: BattleLog, field: FieldKind): string[] {
   const urls = new Set<string>();
-  urls.add(FIELD_SRC[field]);
+  urls.add(BATTLE_FIELD_SRC[field]);
   const addCard = (cardId: string, bust?: boolean) => {
     const card = CARD_BY_ID[cardId];
     if (!card) return;
@@ -576,7 +588,7 @@ export function BattleView() {
   return (
     <div className="relative flex h-full min-h-0 w-full overflow-hidden text-fg">
       <img
-        src={FIELD_SRC[field]}
+        src={BATTLE_FIELD_SRC[field]}
         alt=""
         crossOrigin="anonymous"
         className="absolute inset-0 h-full w-full object-cover"
