@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { sfx } from "@/game/audio";
-import { CARD_BY_ID, NODE_BY_ID } from "@/game/data";
+import { CARD_BY_ID } from "@/game/data";
+import { rankForStage } from "@/game/rank";
+import { findStageNode } from "@/game/solo-map";
 import { ATB_PER_SEC, atbRate, advanceGauges, GAUGE_MAX, affinityLabel } from "@/game/combat";
 import { activeTrial, pumpTrial } from "@/game/trial";
 import { BATTLE_PRELOAD_TIMEOUT_MS, preloadImages } from "@/game/preload";
@@ -96,6 +98,7 @@ export function BattleView() {
   const addTrialKills = useGame((s) => s.addTrialKills);
   const trial = useGame((s) => s.trial);
   const scoutNodeId = useGame((s) => s.scoutNodeId);
+  const stage = useGame((s) => s.stage);
   const [units, setUnits] = useState<Unit[]>(() => battle?.units.map((u) => ({ ...u })) ?? []);
   const [float, setFloat] = useState<FloatFx | null>(null);
   const [acting, setActing] = useState<string | null>(null);
@@ -141,7 +144,7 @@ export function BattleView() {
       setAssetsReady(false);
       return;
     }
-    const node = scoutNodeId ? NODE_BY_ID[scoutNodeId] : null;
+    const node = scoutNodeId ? findStageNode(rankForStage(stage), stage, scoutNodeId) : null;
     const field: FieldKind = trial?.field ?? node?.field ?? "waste";
     const urls = collectBattleImageUrls(battle, field);
     let cancelled = false;
@@ -161,7 +164,7 @@ export function BattleView() {
     return () => {
       cancelled = true;
     };
-  }, [battle, trial?.field, scoutNodeId]);
+  }, [battle, trial?.field, scoutNodeId, stage]);
 
   useEffect(() => {
     if (!battle || !assetsReady) return;
@@ -583,7 +586,7 @@ export function BattleView() {
   if (!battle) return null;
   const player = units.filter((u) => u.side === "player");
   const enemy = units.filter((u) => u.side === "enemy" && u.alive);
-  const node = scoutNodeId ? NODE_BY_ID[scoutNodeId] : null;
+  const node = scoutNodeId ? findStageNode(rankForStage(stage), stage, scoutNodeId) : null;
   const field: FieldKind = trial?.field ?? node?.field ?? "waste";
 
   return (

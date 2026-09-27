@@ -2,11 +2,12 @@ import {
   CARD_BY_ID,
   FORMATIONS,
   STARTER_IDS,
-  HOME_ID,
   MAX_LEVEL,
   MAX_SKILL_LV,
   costCapFor,
 } from "./data";
+import { rankForStage } from "./rank";
+import { soloStage } from "./solo-map";
 import {
   SAVE_VERSION,
   clampBattleSpeed,
@@ -92,10 +93,12 @@ export function defaultSave(): SaveState {
     owned,
     party,
     leaderId,
-    captured: [HOME_ID],
+    captured: [soloStage(rankForStage(1), 1).homeId],
     battleSpeed: 0.1, // temporary for ATB debug / verification
     navSide: "right",
     difficulty: "normal",
+    stage: 1,
+    holdWins: {},
   };
 }
 
@@ -144,6 +147,16 @@ export function loadSave(): SaveState {
       hasSpirit ? rawAt : now,
       now,
     );
+    const stage =
+      typeof parsed.stage === "number" && parsed.stage >= 1 ? Math.floor(parsed.stage) : 1;
+    const freshMap = typeof parsed.stage !== "number";
+    const homeId = soloStage(rankForStage(stage), stage).homeId;
+    const holdWins: Record<string, number> = {};
+    if (!freshMap && parsed.holdWins && typeof parsed.holdWins === "object") {
+      for (const [id, n] of Object.entries(parsed.holdWins)) {
+        if (typeof n === "number" && n > 0) holdWins[id] = Math.floor(n);
+      }
+    }
     return sanitizeParty({
       version: SAVE_VERSION,
       gold: typeof parsed.gold === "number" ? parsed.gold : base.gold,
@@ -152,10 +165,12 @@ export function loadSave(): SaveState {
       owned,
       party,
       leaderId: parsed.leaderId ?? base.leaderId,
-      captured: Array.isArray(parsed.captured) ? parsed.captured : base.captured,
+      captured: freshMap ? [homeId] : Array.isArray(parsed.captured) ? parsed.captured : [homeId],
       battleSpeed: clampBattleSpeed(parsed.battleSpeed),
       navSide: clampNavSide(parsed.navSide),
       difficulty: clampDifficulty(parsed.difficulty),
+      stage,
+      holdWins,
     });
   } catch {
     return base;
@@ -186,6 +201,8 @@ export function writeSave(state: SaveState) {
       battleSpeed: clampBattleSpeed(state.battleSpeed),
       navSide: clampNavSide(state.navSide),
       difficulty: clampDifficulty(state.difficulty),
+      stage: typeof state.stage === "number" && state.stage >= 1 ? Math.floor(state.stage) : 1,
+      holdWins: state.holdWins ?? {},
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
   } catch {

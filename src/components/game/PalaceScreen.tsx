@@ -1,6 +1,8 @@
 import { SPIRIT_MAX } from "@/game/arena";
-import { CARD_BY_ID, NODES } from "@/game/data";
+import { CARD_BY_ID } from "@/game/data";
 import { difficultyLabel } from "@/game/difficulty";
+import { rankForStage, rankLabel } from "@/game/rank";
+import { FIELD_LABEL, soloStage } from "@/game/solo-map";
 import { currentCostCap, partyCost, useGame } from "@/game/store";
 import { useEffect } from "react";
 import { CardFace, GoldChip, PrimaryButton, Shell, SpiritChip } from "./pieces";
@@ -14,11 +16,13 @@ export function PalaceScreen() {
   const leaderId = useGame((s) => s.leaderId);
   const owned = useGame((s) => s.owned);
   const difficulty = useGame((s) => s.difficulty);
+  const stage = useGame((s) => s.stage);
   const setScreen = useGame((s) => s.setScreen);
   const setHelp = useGame((s) => s.setHelp);
   const setCatalogOpen = useGame((s) => s.setCatalogOpen);
   const resetAll = useGame((s) => s.resetAll);
-  const won = captured.includes("capital");
+  const rank = rankForStage(stage);
+  const map = soloStage(rank, stage);
   const leader = leaderId ? CARD_BY_ID[leaderId] : null;
   const cap = currentCostCap(captured);
 
@@ -43,12 +47,10 @@ export function PalaceScreen() {
           </div>
           <div className="flex min-w-0 flex-1 flex-col justify-center gap-3">
             <p className="text-sm leading-relaxed text-muted">
-              {won
-                ? "帝都は落ちた。万象は、しばらくあなたの手にある。"
-                : "本拠から地を広げよ。敵の属性を見て、陣を組み直せ。"}
+              {rankLabel(rank)}・第{stage}段。{FIELD_LABEL[map.field]}を、マスと拠点で埋めよ。位が上がると地図が広くなる。
             </p>
             <div className="grid max-w-md grid-cols-4 gap-2">
-              <Stat label="領地" value={`${captured.length}/${NODES.length}`} />
+              <Stat label="領地" value={`${captured.length}/${map.nodes.length}`} />
               <Stat label="所持" value={`${Object.keys(owned).length}`} />
               <Stat label="コスト" value={`${partyCost(party)}/${cap}`} />
               <Stat label="難易度" value={difficultyLabel(difficulty)} compact />
