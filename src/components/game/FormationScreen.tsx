@@ -36,7 +36,7 @@ export function FormationScreen() {
   const owned = useGame((s) => s.owned);
   const leaderId = useGame((s) => s.leaderId);
   const selected = useGame((s) => s.selectedCardId);
-  const xp = useGame((s) => s.xp);
+  const captured = useGame((s) => s.captured);
   const gold = useGame((s) => s.gold);
   const setScreen = useGame((s) => s.setScreen);
   const placeCard = useGame((s) => s.placeCard);
@@ -55,7 +55,7 @@ export function FormationScreen() {
     (selected && !CARD_BY_ID[selected]?.fodder ? selected : null);
   const form = formationOfLeader(previewLeaderId);
   const cost = partyCost(party);
-  const cap = currentCostCap(xp);
+  const cap = currentCostCap(captured);
   const over = cost > cap;
   const costPct = cap > 0 ? Math.min(100, (cost / cap) * 100) : 0;
   const inParty = new Set(party.filter(Boolean) as string[]);

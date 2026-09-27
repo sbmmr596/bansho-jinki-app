@@ -12,8 +12,7 @@ export type FieldKind =
   | "volcano"
   | "waste"
   | "magma";
-/** Temporary 0.1 for ATB debug / verification — revert when done. */
-export type BattleSpeed = 0.1 | 1 | 2 | 4;
+export type BattleSpeed = 1 | 2 | 4;
 export type NavSide = "left" | "right";
 export type Difficulty = "easy" | "normal" | "hard";
 export type { PlayerRank } from "./rank";
@@ -237,8 +236,8 @@ export interface SaveState {
 }
 
 export function clampBattleSpeed(n: unknown): BattleSpeed {
-  // 0.1 is temporary for ATB debug / verification
-  return n === 0.1 || n === 4 || n === 2 ? n : 1;
+  // Legacy 0.1 (ATB debug) maps to 1.
+  return n === 4 || n === 2 ? n : 1;
 }
 
 export function clampNavSide(v: unknown): NavSide {
@@ -246,6 +245,5 @@ export function clampNavSide(v: unknown): NavSide {
 }
 
 export function nextBattleSpeed(n: BattleSpeed): BattleSpeed {
-  // Cycle includes temporary 0.1 for ATB debug / verification
-  return n === 0.1 ? 1 : n === 1 ? 2 : n === 2 ? 4 : 0.1;
+  return n === 1 ? 2 : n === 2 ? 4 : 1;
 }
