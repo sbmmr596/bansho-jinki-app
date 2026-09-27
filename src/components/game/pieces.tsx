@@ -633,12 +633,14 @@ export function CharSprite({
         </span>
       ) : null}
       {hp != null && maxHp != null ? (
-        <div className="absolute left-1/2 top-0 z-[3] w-[72%] -translate-x-1/2">
+        <div className="absolute left-1/2 top-0 z-[3] flex w-[72%] -translate-x-1/2 flex-col items-center gap-0.5">
           {leader ? (
-            <span className="battle-leader-mark pointer-events-none mb-0.5 flex justify-center" aria-label="リーダー">
+            <span className="battle-leader-mark pointer-events-none" aria-label="リーダー">
               ★
             </span>
-          ) : null}
+          ) : (
+            <span className="h-[0.85em]" aria-hidden />
+          )}
           <HpBar hp={hp} max={maxHp} thick />
         </div>
       ) : null}

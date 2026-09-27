@@ -762,9 +762,9 @@ body {
   text-shadow: 0 0.05em 0.1em rgb(0 0 0 / 0.55);
 }
 
-/* Rarity frame colors on card faces */
+/* Rarity frame colors on card faces (drawn on .card-layer-frame above art) */
 .card-face {
-  box-shadow: inset 0 0 0 2px var(--card-rarity-edge, #9eb8d4);
+  --card-rarity-edge: #9eb8d4;
 }
 .card-rarity-n {
   --card-rarity-edge: #9eb8d4; /* 薄い青 */
@@ -778,9 +778,14 @@ body {
 .card-rarity-sp {
   --card-rarity-edge: #d45a12; /* 濃いオレンジ */
 }
-.card-face-selected {
+.card-layer-frame {
+  box-shadow: inset 0 0 0 2.5px var(--card-rarity-edge);
+  border-radius: inherit;
+  pointer-events: none;
+}
+.card-face-selected .card-layer-frame {
   box-shadow:
-    inset 0 0 0 2px var(--card-rarity-edge, #9eb8d4),
+    inset 0 0 0 2.5px var(--card-rarity-edge),
     0 0 0 2px color-mix(in oklab, var(--color-brass) 85%, white);
 }
 
