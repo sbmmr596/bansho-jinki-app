@@ -270,6 +270,7 @@ export function TrainScreen() {
               <SkillSlot
                 label="基本技"
                 name={cardBasicSkill(card).name}
+                kind={cardBasicSkill(card).kind}
                 desc={cardBasicSkill(card).desc}
                 power={cardBasicSkill(card).power}
                 tone="basic"
@@ -277,6 +278,7 @@ export function TrainScreen() {
               <SkillSlot
                 label="必殺技1"
                 name={card.skill.name}
+                kind={card.skill.kind}
                 desc={card.skill.desc}
                 power={card.skill.power}
                 lv={skill1Lv}
@@ -287,6 +289,7 @@ export function TrainScreen() {
                 label="必殺技2"
                 name={skill2Card ? commonSkillName(skill2Card.skill, skill2Card.rarity) : "-"}
                 subName={skill2Card ? skill2Card.skill.name : undefined}
+                kind={skill2Card?.skill.kind}
                 desc={skill2Card ? skill2Card.skill.desc : "異名カードを合成して装着できる。"}
                 power={skill2Card?.skill.power}
                 lv={skill2 ? skill2.lv : undefined}
