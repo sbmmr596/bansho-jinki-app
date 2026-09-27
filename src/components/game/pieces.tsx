@@ -8,10 +8,10 @@ import {
   scaledStat,
   skillPowerScale,
 } from "@/game/data";
-import { commonSkillName } from "@/game/skillNames";
+import { commonSkillName, SKILL_KIND_LABEL } from "@/game/skillNames";
 import { hpGaugeColor } from "@/game/hp-gauge";
 import { useGame } from "@/game/store";
-import type { Card, ElementType, Rarity, Screen } from "@/game/types";
+import type { Card, ElementType, Rarity, Screen, SkillKind } from "@/game/types";
 import { cn } from "@/lib/utils";
 
 const TYPE_CLASS: Record<ElementType, string> = {
@@ -371,6 +371,7 @@ export function ArtZoom() {
         <div className="flex min-h-0 flex-col gap-2">
           <div className="flex min-h-0 flex-1 items-center justify-center">
             <CardFace
+              key={`${card.id}-e${catalogEpoch}`}
               card={card}
               size="lg"
               className="!h-full !w-auto max-h-full max-w-full"
@@ -446,6 +447,7 @@ export function ArtZoom() {
             <SkillSlot
               label="基本技"
               name={cardBasicSkill(card).name}
+              kind={cardBasicSkill(card).kind}
               desc={cardBasicSkill(card).desc}
               power={cardBasicSkill(card).power}
               tone="basic"
@@ -454,6 +456,7 @@ export function ArtZoom() {
             <SkillSlot
               label="必殺技1"
               name={card.skill.name}
+              kind={card.skill.kind}
               desc={card.skill.desc}
               power={card.skill.power}
               lv={skill1Lv}
@@ -465,6 +468,7 @@ export function ArtZoom() {
               label="必殺技2"
               name={skill2Card ? commonSkillName(skill2Card.skill, skill2Card.rarity) : "-"}
               subName={skill2Card ? skill2Card.skill.name : undefined}
+              kind={skill2Card?.skill.kind}
               desc={skill2Card ? skill2Card.skill.desc : "未装着"}
               power={skill2Card?.skill.power}
               lv={skill2 ? skill2.lv : undefined}
@@ -530,6 +534,7 @@ export function SkillSlot({
   label,
   name,
   subName,
+  kind,
   desc,
   power,
   lv,
@@ -542,6 +547,8 @@ export function SkillSlot({
   name: string;
   /** Optional original card skill name under common name (skill2). */
   subName?: string;
+  /** Attack / support method — shown so editor saves are visible on the card sheet. */
+  kind?: SkillKind;
   desc: string;
   power?: number;
   lv?: number;
@@ -571,6 +578,9 @@ export function SkillSlot({
       <p className={cn("font-display text-sm", empty ? "text-crimson" : "text-fg")}>{name}</p>
       {subName && subName !== name ? (
         <p className="text-[14px] text-faint">{subName}</p>
+      ) : null}
+      {kind && !empty ? (
+        <p className="text-[14px] text-brass">{SKILL_KIND_LABEL[kind]}</p>
       ) : null}
       <p className="mt-0.5 text-[15px] leading-snug text-muted">{desc}</p>
       {power != null && !empty ? (

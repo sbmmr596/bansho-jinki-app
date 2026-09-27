@@ -3,7 +3,6 @@ import { CARD_BY_ID } from "@/game/data";
 import { DIFFICULTIES, DIFFICULTY_META, difficultyLabel } from "@/game/difficulty";
 import { useGame } from "@/game/store";
 import type { Difficulty } from "@/game/types";
-import { requestGameDisplay } from "@/lib/display-mode";
 import { cn } from "@/lib/utils";
 import { CardFace, GhostButton, PrimaryButton } from "./pieces";
 
@@ -16,11 +15,15 @@ export function TitleScreen() {
   const setHelp = useGame((s) => s.setHelp);
   const setCatalogOpen = useGame((s) => s.setCatalogOpen);
   const unlockDebug = useGame((s) => s.unlockDebug);
+  const pseudoLandscape = useGame((s) => s.pseudoLandscape);
+  const setPseudoLandscape = useGame((s) => s.setPseudoLandscape);
+  const catalogEpoch = useGame((s) => s.catalogEpoch);
   const taps = useRef(0);
   const tapTimer = useRef(0);
   const [displayHint, setDisplayHint] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>("normal");
+  void catalogEpoch;
 
   const onMark = () => {
     taps.current += 1;
@@ -34,9 +37,7 @@ export function TitleScreen() {
     }
   };
 
-  // Fullscreen is only via the dedicated 「全画面」 button.
-  // Calling requestGameDisplay (toggle) on start was flipping fullscreen and
-  // could drop local picking state / feel like start did nothing but toggle.
+  // 「全画面」 toggles pseudo-landscape (real Fullscreen API fails in Grok / many WebViews).
   const openDifficulty = () => {
     setDifficulty("normal");
     setPicking(true);
@@ -46,17 +47,10 @@ export function TitleScreen() {
     newGame(difficulty);
   };
 
-  const onFullscreen = async () => {
-    const result = await requestGameDisplay(
-      document.querySelector(".game-frame") as HTMLElement | null,
-    );
-    if (result.mode === "entered") {
-      setDisplayHint("全画面にした");
-    } else if (result.mode === "exited") {
-      setDisplayHint("全画面を解除した");
-    } else {
-      setDisplayHint(result.reason ?? "このブラウザでは制限あり（PWA推奨）");
-    }
+  const onFullscreen = () => {
+    const next = !pseudoLandscape;
+    setPseudoLandscape(next);
+    setDisplayHint(next ? "擬似横表示にした" : "擬似横表示を解除した");
   };
 
   if (picking) {
