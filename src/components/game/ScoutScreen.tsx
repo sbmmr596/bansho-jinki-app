@@ -44,13 +44,14 @@ export function ScoutScreen() {
 
   return (
     <Shell title={node.name} onBack={() => setScreen("map")} nav="map" wide extra={<SpiritChip spirit={spirit} max={SPIRIT_MAX} />}>
-      <div className="flex h-full min-h-0 items-center justify-center">
-        <div className="flex w-full max-w-3xl items-stretch gap-6">
-          <div className="flex w-[300px] shrink-0 flex-col">
-            <p className="mb-1 text-[14px] text-faint">
-              敵陣 {eForm.name}　→前
-            </p>
-            <div className="grid min-h-0 flex-1 grid-cols-3 gap-1.5">
+      <div className="flex h-full min-h-0 w-full items-stretch gap-5 px-1 py-1">
+        {/* Enemy board — scales like FormationScreen (aspect cells, fill height). */}
+        <div className="flex min-h-0 w-[min(48%,26rem)] shrink-0 flex-col">
+          <p className="mb-1 shrink-0 text-[14px] text-faint">
+            敵陣 {eForm.name}　→前
+          </p>
+          <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden">
+            <div className="grid w-full max-w-full grid-cols-3 gap-1.5">
               {[0, 1, 2].map((row) =>
                 [0, 1, 2].map((col) => {
                   const slot = row * 3 + col;
@@ -58,19 +59,23 @@ export function ScoutScreen() {
                   const card = id ? CARD_BY_ID[id] : null;
                   const eu = node.enemy.find((e) => e.slot === slot);
                   const occupied = !!card && !!eu;
-                  // Occupied slots always read as valid cells even if the leader
-                  // formation mask would close them (placements are fixed per node).
                   const open = eForm.slots[slot] || occupied;
                   return (
                     <div
                       key={slot}
                       className={cn(
-                        "flex items-center justify-center rounded-md border border-dashed p-0.5",
+                        "flex aspect-[2/3] w-full items-center justify-center overflow-hidden rounded-md border border-dashed p-0.5",
                         open ? "border-crimson/40 bg-surface/70" : "border-transparent opacity-30",
                       )}
                     >
                       {occupied ? (
-                        <CardFace card={card} level={scaleEnemyLevel(eu.level, difficulty)} size="mini" leader={!!eu.leader} />
+                        <CardFace
+                          card={card}
+                          level={scaleEnemyLevel(eu.level, difficulty)}
+                          size="xs"
+                          leader={!!eu.leader}
+                          className="!h-full !w-full max-h-full max-w-full"
+                        />
                       ) : open ? (
                         <span className="text-[14px] text-faint">空</span>
                       ) : null}
@@ -80,42 +85,43 @@ export function ScoutScreen() {
               )}
             </div>
           </div>
-          <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
-            <p className="text-sm leading-relaxed text-muted">{node.blurb}</p>
-            {(node.holdNeed ?? 1) > 1 ? (
-              <p className="text-sm text-brass">
-                占領まで {node.holdNeed! - (holdWins[node.id] ?? 0)} 勝
-              </p>
-            ) : null}
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-muted">敵の傾向</span>
-              <TypeBadge type={node.hint} />
-              <span className="text-xs text-muted">
-                刺さる属性 {counters.map((t) => TYPE_LABEL[t]).join("・")}
-              </span>
-            </div>
-            <p className="text-xs text-faint">
-              報酬 {node.reward.gold}金
-              {node.reward.cardId ? `　${CARD_BY_ID[node.reward.cardId]?.name}` : ""}
+        </div>
+
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-2.5 overflow-y-auto pr-1">
+          <p className="text-sm leading-relaxed text-muted">{node.blurb}</p>
+          {(node.holdNeed ?? 1) > 1 ? (
+            <p className="text-sm text-brass">
+              占領まで {node.holdNeed! - (holdWins[node.id] ?? 0)} 勝
             </p>
-            <p className="text-xs text-muted">
-              自陣 {pForm.name}　{cost}/{cap}
-              {!hasCounter ? "　有利属性がいない" : "　有利あり"}
-            </p>
-            {leaderId ? (
-              <p className="text-[14px] text-faint">{FORMATIONS[pForm.id]?.desc}</p>
-            ) : (
-              <p className="text-xs text-crimson">リーダー未設定</p>
-            )}
-            <p className="text-xs text-muted">出撃で闘気を{SORTIE_SPIRIT}使う。足りないと出られない。</p>
-            <div className="mt-1 flex gap-2">
-              <GhostButton onClick={() => setScreen("formation")} className="min-w-36">
-                編成を見直す
-              </GhostButton>
-              <PrimaryButton onClick={startBattle} disabled={!canGo} className="min-w-36">
-                {canSpirit ? "出撃" : "闘気が足りない"}
-              </PrimaryButton>
-            </div>
+          ) : null}
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-muted">敵の傾向</span>
+            <TypeBadge type={node.hint} />
+            <span className="text-xs text-muted">
+              刺さる属性 {counters.map((t) => TYPE_LABEL[t]).join("・")}
+            </span>
+          </div>
+          <p className="text-xs text-faint">
+            報酬 {node.reward.gold}金
+            {node.reward.cardId ? `　${CARD_BY_ID[node.reward.cardId]?.name}` : ""}
+          </p>
+          <p className="text-xs text-muted">
+            自陣 {pForm.name}　{cost}/{cap}
+            {!hasCounter ? "　有利属性がいない" : "　有利あり"}
+          </p>
+          {leaderId ? (
+            <p className="text-[14px] text-faint">{FORMATIONS[pForm.id]?.desc ?? pForm.desc}</p>
+          ) : (
+            <p className="text-xs text-crimson">リーダー未設定</p>
+          )}
+          <p className="text-xs text-muted">出撃で闘気を{SORTIE_SPIRIT}使う。足りないと出られない。</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <GhostButton onClick={() => setScreen("formation")} className="min-w-36">
+              編成を見直す
+            </GhostButton>
+            <PrimaryButton onClick={startBattle} disabled={!canGo} className="min-w-36">
+              {canSpirit ? "出撃" : "闘気が足りない"}
+            </PrimaryButton>
           </div>
         </div>
       </div>
