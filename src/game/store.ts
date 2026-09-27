@@ -64,6 +64,8 @@ interface GameStore extends SaveState {
   summoning: boolean;
   debugUnlocked: boolean;
   debugOpen: boolean;
+  /** Session-only: rotate 16:9 stage in portrait frames (sandbox / phone preview). */
+  pseudoLandscape: boolean;
   trial: { kills: number; field: FieldKind } | null;
   /** Active arena bout metadata (spirit already spent; fee is reward baseline only). Separate from endless trial. */
   arena: { tier: ArenaTier; fee: number; reward: number; seed: number } | null;
@@ -94,6 +96,7 @@ interface GameStore extends SaveState {
   trainFuseOther: (baseId: string, materialId: string) => FuseResult | null;
   unlockDebug: () => void;
   setDebugOpen: (v: boolean) => void;
+  setPseudoLandscape: (v: boolean) => void;
   debugAddGold: () => void;
   debugFillSpirit: () => void;
   /** Reconcile 闘気 regen from spiritAt; returns current spirit after tick. */
@@ -163,6 +166,7 @@ export const useGame = create<GameStore>((set, get) => ({
   summoning: false,
   debugUnlocked: true,
   debugOpen: false,
+  pseudoLandscape: false,
   trial: null,
   arena: null,
   catalogSource: "default",
@@ -200,6 +204,7 @@ export const useGame = create<GameStore>((set, get) => ({
         screen: "title",
         debugUnlocked: true,
         debugOpen: false,
+        pseudoLandscape: false,
         catalogSource,
         catalogOpen: false,
         cardEditorOpen: false,
@@ -702,6 +707,8 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   setDebugOpen: (debugOpen) => set({ debugOpen }),
+
+  setPseudoLandscape: (pseudoLandscape) => set({ pseudoLandscape }),
 
   debugAddGold: () => {
     set({ gold: get().gold + 5000 });

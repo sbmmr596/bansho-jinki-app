@@ -34,6 +34,7 @@ export function GameApp() {
   const helpOpen = useGame((s) => s.helpOpen);
   const persist = useGame((s) => s.persist);
   const debugOpen = useGame((s) => s.debugOpen);
+  const pseudoLandscape = useGame((s) => s.pseudoLandscape);
   const catalogOpen = useGame((s) => s.catalogOpen);
   const cardEditorOpen = useGame((s) => s.cardEditorOpen);
   const setCardEditorOpen = useGame((s) => s.setCardEditorOpen);
@@ -178,6 +179,7 @@ export function GameApp() {
         padR: cssPx("--sar"),
         padT: cssPx("--sat"),
         padB: cssPx("--sab"),
+        pseudoLandscape,
       });
       // Clear the inset shorthand before left/top. Assigning inset afterwards
       // wipes left/top, so a pinch pan snaps the frame back to the layout origin.
@@ -191,16 +193,23 @@ export function GameApp() {
 
       stage.style.width = `${DESIGN_W}px`;
       stage.style.height = `${DESIGN_H}px`;
-      stage.style.transformOrigin = "top left";
-      stage.style.transform = `scale(${box.scale})`;
       stage.style.left = `${box.stageLeft}px`;
       stage.style.top = `${box.stageTop}px`;
+      if (box.rotate90) {
+        stage.style.transformOrigin = "center center";
+        stage.style.transform = `translate(-50%, -50%) rotate(90deg) scale(${box.scale})`;
+      } else {
+        stage.style.transformOrigin = "top left";
+        stage.style.transform = `scale(${box.scale})`;
+      }
       // Drive mild inverse text scale in CSS (--text-scale on .game-stage).
       // When scale > 1, CSS keeps --text-scale at 1 so fonts enlarge with the stage.
       stage.style.setProperty("--stage-scale", String(box.scale));
 
       const portrait = box.frameHeight > box.frameWidth;
-      setShowLandscapeHint(portrait && box.scale < PORTRAIT_TIP_SCALE);
+      setShowLandscapeHint(
+        portrait && !box.rotate90 && box.scale < PORTRAIT_TIP_SCALE,
+      );
       if (zoomed) resetPinchZoom();
     };
     const blockPinch = (event: Event) => {
@@ -244,7 +253,7 @@ export function GameApp() {
       document.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("wheel", onWheel);
     };
-  }, [hydrated]);
+  }, [hydrated, pseudoLandscape]);
 
   if (!hydrated) return null;
 
