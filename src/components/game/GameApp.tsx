@@ -208,9 +208,11 @@ export function GameApp() {
       if (box.rotate90) {
         stage.style.transformOrigin = "center center";
         stage.style.transform = `translate(-50%, -50%) rotate(90deg) scale(${box.scale})`;
+        stage.classList.add("is-rotated");
       } else {
         stage.style.transformOrigin = "top left";
         stage.style.transform = `scale(${box.scale})`;
+        stage.classList.remove("is-rotated");
       }
       // Drive mild inverse text scale in CSS (--text-scale on .game-stage).
       // When scale > 1, CSS keeps --text-scale at 1 so fonts enlarge with the stage.
@@ -262,6 +264,84 @@ export function GameApp() {
       document.removeEventListener("gestureend", onGestureEnd);
       document.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("wheel", onWheel);
+      stageRef.current?.classList.remove("is-rotated");
+    };
+  }, [hydrated, pseudoLandscape]);
+
+  // Pseudo-landscape rotates the stage 90°. overflow-y then runs horizontally on
+  // screen, so phone up/down swipes do nothing useful. Remap screen-vertical
+  // (and the stage-native horizontal) into scrollTop for scroll regions.
+  useEffect(() => {
+    if (!hydrated || !pseudoLandscape) return;
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    type Drag = { el: HTMLElement; y0: number; x0: number; top0: number };
+    let drag: Drag | null = null;
+
+    const scrollable = (start: EventTarget | null): HTMLElement | null => {
+      let n = start as HTMLElement | null;
+      while (n && n !== stage) {
+        if (
+          n.classList?.contains("stage-scroll") ||
+          n.classList?.contains("formation-tray-scroll")
+        ) {
+          return n;
+        }
+        const style = n instanceof HTMLElement ? getComputedStyle(n) : null;
+        if (
+          style &&
+          (style.overflowY === "auto" || style.overflowY === "scroll") &&
+          n.scrollHeight > n.clientHeight + 1
+        ) {
+          return n;
+        }
+        n = n.parentElement;
+      }
+      return null;
+    };
+
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) {
+        drag = null;
+        return;
+      }
+      const el = scrollable(e.target);
+      if (!el) {
+        drag = null;
+        return;
+      }
+      drag = {
+        el,
+        y0: e.touches[0]!.clientY,
+        x0: e.touches[0]!.clientX,
+        top0: el.scrollTop,
+      };
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!drag || e.touches.length !== 1) return;
+      if (!stage.classList.contains("is-rotated")) return;
+      const dy = e.touches[0]!.clientY - drag.y0;
+      const dx = e.touches[0]!.clientX - drag.x0;
+      // Prefer phone-vertical (what users try first). Fall back to screen-horizontal
+      // which matches the rotated stage's native overflow-y axis (CW 90° → -X).
+      const delta = Math.abs(dy) >= Math.abs(dx) ? dy : -dx;
+      drag.el.scrollTop = drag.top0 - delta;
+      e.preventDefault();
+    };
+    const onEnd = () => {
+      drag = null;
+    };
+
+    stage.addEventListener("touchstart", onStart, { passive: true });
+    stage.addEventListener("touchmove", onMove, { passive: false });
+    stage.addEventListener("touchend", onEnd);
+    stage.addEventListener("touchcancel", onEnd);
+    return () => {
+      stage.removeEventListener("touchstart", onStart);
+      stage.removeEventListener("touchmove", onMove);
+      stage.removeEventListener("touchend", onEnd);
+      stage.removeEventListener("touchcancel", onEnd);
     };
   }, [hydrated, pseudoLandscape]);
 

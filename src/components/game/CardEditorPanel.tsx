@@ -33,7 +33,7 @@ import {
   CHAR_ART_FILES,
   charArtPath,
 } from "@/game/art-assets";
-import { SKILL_KIND_LABEL } from "@/game/skillNames";
+import { isStockSkillDesc, SKILL_KIND_DESC, SKILL_KIND_LABEL } from "@/game/skillNames";
 import type { Card, ElementType, Faction, Formation, Rarity, SkillKind } from "@/game/types";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { useGame } from "@/game/store";
@@ -559,11 +559,31 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
       return HERO_CARDS.filter((c) => c.id !== selectedId).map((c) => ({ ...c }));
     }
     const next = draftToCard(draft);
-    const withoutOld = HERO_CARDS.filter((c) => c.id !== selectedId && c.id !== next.id).map(
-      (c) => ({ ...c }),
-    );
-    withoutOld.push(next);
-    return withoutOld;
+    const list = HERO_CARDS.map((c) => ({ ...c }));
+    const idx = list.findIndex((c) => c.id === selectedId);
+    if (idx >= 0) {
+      // Drop any other entry that already has the new id (rename collision).
+      for (let i = list.length - 1; i >= 0; i--) {
+        if (i !== idx && list[i]!.id === next.id) list.splice(i, 1);
+      }
+      const at = list.findIndex((c) => c.id === selectedId);
+      if (at >= 0) list[at] = next;
+      else list.push(next);
+      return list;
+    }
+    // Brand-new id: append once (avoid duplicating if next.id already exists).
+    const existing = list.findIndex((c) => c.id === next.id);
+    if (existing >= 0) list[existing] = next;
+    else list.push(next);
+    return list;
+  };
+
+  const setBasicKind = (kind: SkillKind) => {
+    setDraft((d) => ({
+      ...d,
+      basicKind: kind,
+      basicDesc: isStockSkillDesc(d.basicDesc) ? SKILL_KIND_DESC[kind] : d.basicDesc,
+    }));
   };
 
   const openSlotCount = formDraft.slots.filter(Boolean).length;
@@ -1249,7 +1269,11 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                     基本技は行動抽選の基本枠。回復・加速・減速はダメージなし（加速と減速はATB）。未設定の古いデータは通常攻撃。
                   </p>
                   <Field label="基本技 攻撃方法">
-                    <select className={inputCls} value={draft.basicKind} onChange={(e) => patch("basicKind", e.target.value as SkillKind)}>
+                    <select
+                      className={inputCls}
+                      value={draft.basicKind}
+                      onChange={(e) => setBasicKind(e.target.value as SkillKind)}
+                    >
                       {SKILL_KIND_IDS.map((id) => (
                         <option key={id} value={id}>{skillKindDraft[id] || SKILL_KIND_LABEL[id]}（{id}）</option>
                       ))}
