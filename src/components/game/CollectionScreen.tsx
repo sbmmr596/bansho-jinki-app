@@ -18,7 +18,9 @@ export function CollectionScreen() {
     () => CARDS.filter((c) => faction === "all" || c.faction === faction),
     [faction, catalogEpoch],
   );
-  const card = focus ? CARDS.find((c) => c.id === focus) : null;
+  // Prefer live lookup so detail tracks catalogEpoch (CARDS.find alone can race splices).
+  const card = focus ? CARD_BY_ID[focus] ?? null : null;
+  void catalogEpoch;
   const own = card ? owned[card.id] : null;
   const form = card ? FORMATIONS[card.formation] : null;
 

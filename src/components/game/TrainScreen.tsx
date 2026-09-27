@@ -31,11 +31,13 @@ export function TrainScreen() {
   const [materialId, setMaterialId] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lastResult, setLastResult] = useState<FuseResult | null>(null);
+  const catalogEpoch = useGame((s) => s.catalogEpoch);
 
   const tray = Object.keys(owned)
     .map((id) => CARD_BY_ID[id])
     .filter((c): c is NonNullable<typeof c> => !!c && !c.fodder)
     .sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name, "ja"));
+  void catalogEpoch;
   const focusId = selected && owned[selected] ? selected : (tray[0]?.id ?? null);
   const card = focusId ? CARD_BY_ID[focusId] : null;
   const own = focusId ? owned[focusId] : null;
@@ -59,7 +61,7 @@ export function TrainScreen() {
       .filter((id) => id !== focusId && (owned[id]?.count ?? 0) > 0 && CARD_BY_ID[id])
       .map((id) => CARD_BY_ID[id]!)
       .sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name, "ja"));
-  }, [owned, focusId]);
+  }, [owned, focusId, catalogEpoch]);
 
   const matOwn = materialId ? owned[materialId] : null;
   const matCard = materialId ? CARD_BY_ID[materialId] : null;

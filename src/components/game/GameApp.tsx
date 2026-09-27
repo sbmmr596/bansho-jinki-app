@@ -63,8 +63,14 @@ export function GameApp() {
     void loadDriveCatalog()
       .then((result) => {
         if (cancelled || !result.ok || result.status !== "loaded") return;
+        // Local editor / localStorage custom catalog wins over silent Drive hydrate.
+        const src = useGame.getState().catalogSource;
+        if (src === "custom") return;
         const n = applyCatalog(JSON.parse(result.payload) as unknown);
-        if (n) setCatalogSource("drive");
+        if (n) {
+          setCatalogSource("drive");
+          useGame.getState().bumpCatalog();
+        }
       })
       .catch(() => undefined)
       .finally(() => {
@@ -78,15 +84,19 @@ export function GameApp() {
   useEffect(() => {
     if (!hydrated || !driveTried || authPending || !user) return;
     const src = useGame.getState().catalogSource;
-    if (src === "drive") return;
+    // Don't clobber Drive or a local custom catalog the user already has.
+    if (src === "drive" || src === "custom") return;
     let cancelled = false;
     void loadUserCatalog()
       .then((remote) => {
         if (cancelled || !remote) return;
         const now = useGame.getState().catalogSource;
-        if (now === "drive") return;
+        if (now === "drive" || now === "custom") return;
         const n = applyCatalog(JSON.parse(remote) as unknown);
-        if (n) setCatalogSource("custom");
+        if (n) {
+          setCatalogSource("custom");
+          useGame.getState().bumpCatalog();
+        }
       })
       .catch(() => undefined);
     return () => {

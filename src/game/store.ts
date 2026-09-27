@@ -179,6 +179,7 @@ export const useGame = create<GameStore>((set, get) => ({
     // Never await remote catalog here — GameApp loads it post-hydrate.
     // A hung auth/DB request used to leave #boot-splash forever.
     let catalogSource: "default" | "custom" = "default";
+    let catalogEpoch = 0;
     let existing = false;
     let loaded = defaultSave();
     try {
@@ -187,7 +188,11 @@ export const useGame = create<GameStore>((set, get) => ({
         const local = localStorage.getItem(CATALOG_KEY);
         if (local) {
           const n = applyCatalog(JSON.parse(local) as unknown);
-          if (n) catalogSource = "custom";
+          if (n) {
+            catalogSource = "custom";
+            // Bump so screens don't keep card object refs from before local apply.
+            catalogEpoch = 1;
+          }
         }
       } catch {
         /* keep default */
@@ -206,11 +211,13 @@ export const useGame = create<GameStore>((set, get) => ({
         debugOpen: false,
         pseudoLandscape: false,
         catalogSource,
+        catalogEpoch,
         catalogOpen: false,
         cardEditorOpen: false,
       });
     }
   },
+
 
   newGame: (difficulty = "normal") => {
     unlockAudio();
