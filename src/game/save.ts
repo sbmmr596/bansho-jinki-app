@@ -1,12 +1,13 @@
 import {
   CARD_BY_ID,
   FORMATIONS,
+  HOME_ID,
+  NODE_BY_ID,
   STARTER_IDS,
   MAX_LEVEL,
   MAX_SKILL_LV,
 } from "./data";
-import { costCapForRank, rankForXp, xpForStage } from "./rank";
-import { soloStage } from "./solo-map";
+import { costCapForRank, xpForStage } from "./rank";
 import {
   SAVE_VERSION,
   clampBattleSpeed,
@@ -92,8 +93,8 @@ export function defaultSave(): SaveState {
     owned,
     party,
     leaderId,
-    captured: [soloStage(rankForXp(0), 1).homeId],
-    battleSpeed: 0.1, // temporary for ATB debug / verification
+    captured: [HOME_ID],
+    battleSpeed: 1,
     navSide: "right",
     difficulty: "normal",
     stage: 1,
@@ -151,14 +152,15 @@ export function loadSave(): SaveState {
       typeof parsed.stage === "number" && parsed.stage >= 1 ? Math.floor(parsed.stage) : 1;
     const xp =
       typeof parsed.xp === "number" && parsed.xp >= 0 ? Math.floor(parsed.xp) : xpForStage(stage);
-    const freshMap = typeof parsed.stage !== "number";
-    const homeId = soloStage(rankForXp(xp), stage).homeId;
     const holdWins: Record<string, number> = {};
-    if (!freshMap && parsed.holdWins && typeof parsed.holdWins === "object") {
+    if (parsed.holdWins && typeof parsed.holdWins === "object") {
       for (const [id, n] of Object.entries(parsed.holdWins)) {
         if (typeof n === "number" && n > 0) holdWins[id] = Math.floor(n);
       }
     }
+    const rawCaptured = Array.isArray(parsed.captured) ? parsed.captured.filter((id): id is string => typeof id === "string") : [];
+    // Drop solo-map ids (s1-home …); keep only 神域大戦 nodes.
+    const captured = rawCaptured.filter((id) => NODE_BY_ID[id]);
     return sanitizeParty({
       version: SAVE_VERSION,
       gold: typeof parsed.gold === "number" ? parsed.gold : base.gold,
@@ -167,7 +169,7 @@ export function loadSave(): SaveState {
       owned,
       party,
       leaderId: parsed.leaderId ?? base.leaderId,
-      captured: freshMap ? [homeId] : Array.isArray(parsed.captured) ? parsed.captured : [homeId],
+      captured: captured.includes(HOME_ID) ? captured : [HOME_ID, ...captured],
       battleSpeed: clampBattleSpeed(parsed.battleSpeed),
       navSide: clampNavSide(parsed.navSide),
       difficulty: clampDifficulty(parsed.difficulty),

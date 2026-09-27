@@ -81,12 +81,15 @@ describe("solo map", () => {
     assert.ok(last.captured.includes(hold.id));
   });
 
-  it("branches instead of lining up in rows", () => {
+  it("spreads evenly with home on the west edge", () => {
     const map = soloStage("rookie", 1);
-    const rows = new Set(map.nodes.map((n) => Math.round(n.y / 6)));
-    assert.ok(rows.size >= 8, `row buckets ${rows.size}`);
+    const xs = map.nodes.map((n) => n.x);
+    const ys = map.nodes.map((n) => n.y);
+    assert.ok(Math.max(...xs) - Math.min(...xs) > 40);
+    assert.ok(Math.max(...ys) - Math.min(...ys) > 40);
     const home = map.byId[map.homeId];
-    assert.ok(Math.hypot(home.x - 50, home.y - 50) < 18);
+    assert.ok(home.x < 35, `home x ${home.x}`);
+    assert.ok(Math.abs(home.y - 50) < 30, `home y ${home.y}`);
   });
 
   it("uses one terrain per stage, with no extra rule", () => {
