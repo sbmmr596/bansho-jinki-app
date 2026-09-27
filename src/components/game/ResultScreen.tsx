@@ -4,12 +4,11 @@ import { CardFace, PrimaryButton, Shell } from "./pieces";
 
 export function ResultScreen() {
   const result = useGame((s) => s.result);
-  const captured = useGame((s) => s.captured);
   const afterResult = useGame((s) => s.afterResult);
   if (!result) return null;
   const win = result.winner === "player";
   const card = result.cardGain ? CARD_BY_ID[result.cardGain] : null;
-  const capital = captured.includes("capital") && win;
+  const partial = win && result.holdProgress && result.holdProgress.have < result.holdProgress.need;
 
   return (
     <Shell
@@ -40,11 +39,13 @@ export function ResultScreen() {
                     : result.winner === "draw"
                       ? "引き分け"
                       : result.nodeName + " 敗北"
-                  : capital
-                    ? "帝都制覇"
-                    : win
-                      ? result.nodeName + " を奪取"
-                      : "撤退した"}
+                  : result.stageClear
+                    ? "この段を制した"
+                    : partial
+                      ? result.nodeName + " を削った"
+                      : win
+                        ? result.nodeName + " を奪取"
+                        : "撤退した"}
             </p>
             <p className="mt-2 text-sm text-muted">
               {result.trial
@@ -75,6 +76,17 @@ export function ResultScreen() {
             ) : win ? (
               <div className="mt-4 space-y-1 text-sm">
                 <p className="text-brass tabular">+{result.goldGain} 金</p>
+                {partial && result.holdProgress ? (
+                  <p className="text-muted">
+                    拠点はまだ占領ではない（{result.holdProgress.have}/{result.holdProgress.need}）。
+                  </p>
+                ) : null}
+                {result.stageClear ? (
+                  <p className="text-muted">マスと拠点をすべて占領した。次の段へ進む。</p>
+                ) : null}
+                {result.rankUpLabel ? (
+                  <p className="text-brass">位が{result.rankUpLabel}になった。地図が広くなる。</p>
+                ) : null}
                 {result.leveled.length ? (
                   <p className="text-muted">出陣したカードのレベルが上がった。</p>
                 ) : null}
@@ -83,7 +95,7 @@ export function ResultScreen() {
               <p className="mt-4 text-sm text-muted">編成と属性を見直して、再攻せよ。</p>
             )}
             <PrimaryButton onClick={afterResult} className="mt-5 min-w-40">
-              {result.arena ? "闘技場へ" : result.trial || capital ? "本拠へ" : "地図へ"}
+              {result.arena ? "闘技場へ" : result.trial ? "本拠へ" : result.stageClear ? "次の段へ" : "地図へ"}
             </PrimaryButton>
           </div>
           {win && card ? (

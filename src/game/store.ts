@@ -3,6 +3,8 @@ import { sfx, unlockAudio } from "./audio";
 import { enemyToMembers, formationOfLeader, simulateBattle } from "./combat";
 import { beginTrial, clearTrial } from "./trial";
 import { clampDifficulty } from "./difficulty";
+import { rankForStage, rankLabel } from "./rank";
+import { applyVictory, findStageNode, soloStage } from "./solo-map";
 import {
   ARENA_TIER_META,
   SPIRIT_MAX,
@@ -24,8 +26,6 @@ import {
   HERO_CARDS,
   MAX_LEVEL,
   MAX_SKILL_LV,
-  NODE_BY_ID,
-  NODES,
   SPECIAL_FODDER,
   SUMMON_COST,
   SUMMON_INCLUDE_FODDER,
@@ -264,6 +264,8 @@ export const useGame = create<GameStore>((set, get) => ({
       battleSpeed: clampBattleSpeed(s.battleSpeed),
       navSide: clampNavSide(s.navSide),
       difficulty: clampDifficulty(s.difficulty),
+      stage: s.stage,
+      holdWins: s.holdWins,
     });
   },
 
@@ -367,7 +369,7 @@ export const useGame = create<GameStore>((set, get) => ({
 
   startBattle: () => {
     const s = get();
-    const node = s.scoutNodeId ? NODE_BY_ID[s.scoutNodeId] : null;
+    const node = s.scoutNodeId ? findStageNode(rankForStage(s.stage), s.stage, s.scoutNodeId) : null;
     if (!node || node.home) return;
     const player = s.party
       .map((id, slot) =>
@@ -447,7 +449,8 @@ export const useGame = create<GameStore>((set, get) => ({
       return;
     }
 
-    const node = s.scoutNodeId ? NODE_BY_ID[s.scoutNodeId] : null;
+    const map = soloStage(rankForStage(s.stage), s.stage);
+    const node = s.scoutNodeId ? map.byId[s.scoutNodeId] : null;
     let goldGain = 0;
     let cardGain: string | null = null;
     let cardWasNew = false;
@@ -455,6 +458,9 @@ export const useGame = create<GameStore>((set, get) => ({
     let gold = s.gold;
     let owned = s.owned;
     let captured = s.captured;
+    let holdWins = s.holdWins;
+    let holdProgress: { have: number; need: number } | undefined;
+    let stageClear = false;
     if (end.winner === "player" && node && !node.home) {
       goldGain = node.reward.gold;
       gold += goldGain;
@@ -471,18 +477,25 @@ export const useGame = create<GameStore>((set, get) => ({
           };
         }
       }
-      if (!captured.includes(node.id)) captured = [...captured, node.id];
-      const deployed = s.party.filter((id): id is string => !!id);
-      owned = { ...owned };
-      for (const id of deployed) {
-        const cur = owned[id];
-        if (!cur || cur.level >= MAX_LEVEL) continue;
-        owned[id] = { ...cur, level: cur.level + 1 };
-        leveled.push(id);
+      const applied = applyVictory(node, captured, holdWins);
+      captured = applied.captured;
+      holdWins = applied.holdWins;
+      holdProgress = { have: applied.have, need: applied.need };
+      stageClear = applied.took && captured.length >= map.nodes.length;
+      if (applied.took) {
+        const deployed = s.party.filter((id): id is string => !!id);
+        owned = { ...owned };
+        for (const id of deployed) {
+          const cur = owned[id];
+          if (!cur || cur.level >= MAX_LEVEL) continue;
+          owned[id] = { ...cur, level: cur.level + 1 };
+          leveled.push(id);
+        }
       }
     }
     if (end.winner === "player") sfx("win");
     else sfx("lose");
+    const nextRank = stageClear ? rankForStage(s.stage + 1) : null;
     const result: BattleResult = {
       winner: end.winner,
       reason: end.reason,
@@ -491,8 +504,12 @@ export const useGame = create<GameStore>((set, get) => ({
       cardWasNew,
       leveled,
       nodeName: node?.name ?? "",
+      holdProgress,
+      stageClear,
+      rankUpLabel:
+        stageClear && nextRank && nextRank !== rankForStage(s.stage) ? rankLabel(nextRank) : null,
     };
-    set({ gold, owned, captured, result, screen: "result" });
+    set({ gold, owned, captured, holdWins, result, screen: "result" });
     get().persist();
   },
 
@@ -501,9 +518,22 @@ export const useGame = create<GameStore>((set, get) => ({
     const s = get();
     const trialDone = !!s.result?.trial;
     const arenaDone = !!s.result?.arena;
-    const wonCapital =
-      s.result?.winner === "player" && s.scoutNodeId === "capital";
-    const toPalace = trialDone || wonCapital;
+    const toPalace = trialDone;
+    if (s.result?.stageClear) {
+      const stage = s.stage + 1;
+      const rank = rankForStage(stage);
+      set({
+        stage,
+        captured: [soloStage(rank, stage).homeId],
+        holdWins: {},
+        screen: "map",
+        battle: null,
+        scoutNodeId: null,
+        result: null,
+      });
+      get().persist();
+      return;
+    }
     set({
       screen: arenaDone ? "arena" : toPalace ? "palace" : "map",
       battle: null,
@@ -737,7 +767,9 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   debugCaptureAll: () => {
-    set({ captured: NODES.map((n) => n.id) });
+    const s = get();
+    const map = soloStage(rankForStage(s.stage), s.stage);
+    set({ captured: map.nodes.map((n) => n.id), holdWins: {} });
     get().persist();
   },
 
@@ -753,7 +785,7 @@ export const useGame = create<GameStore>((set, get) => ({
   debugCaptureNode: () => {
     const s = get();
     if (!s.scoutNodeId) return;
-    const node = NODE_BY_ID[s.scoutNodeId];
+    const node = findStageNode(rankForStage(s.stage), s.stage, s.scoutNodeId);
     if (!node || node.home) return;
     let gold = s.gold + node.reward.gold;
     let owned = s.owned;

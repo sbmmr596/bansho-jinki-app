@@ -8,6 +8,7 @@ export type FieldKind = "grass" | "snow" | "magma" | "forest" | "waste";
 export type BattleSpeed = 0.1 | 1 | 2 | 4;
 export type NavSide = "left" | "right";
 export type Difficulty = "easy" | "normal" | "hard";
+export type { PlayerRank } from "./rank";
 export type Screen =
   | "title"
   | "palace"
@@ -113,6 +114,8 @@ export interface MapNode {
   enemy: EnemyUnit[];
   reward: { gold: number; cardId?: string };
   home?: boolean;
+  /** 占領に必要な勝利回数。省略時は 1。拠点は 2 以上。 */
+  holdNeed?: number;
 }
 
 export interface Unit {
@@ -191,6 +194,11 @@ export interface BattleResult {
   arena?: boolean;
   waves?: number;
   kills?: number;
+  /** 拠点を削っただけで、まだ占領していない。 */
+  holdProgress?: { have: number; need: number };
+  /** この段のマスと拠点をすべて占領した。 */
+  stageClear?: boolean;
+  rankUpLabel?: string | null;
 }
 
 export const SAVE_VERSION = 1;
@@ -210,6 +218,10 @@ export interface SaveState {
   navSide: NavSide;
   /** Set at new game; continue uses saved value. Default normal for old saves. */
   difficulty: Difficulty;
+  /** 一人用の段。位は段から決まる。 */
+  stage: number;
+  /** 拠点への勝利回数。占領すると消える。 */
+  holdWins: Record<string, number>;
 }
 
 export function clampBattleSpeed(n: unknown): BattleSpeed {

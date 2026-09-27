@@ -1,6 +1,8 @@
-import { CARD_BY_ID, COUNTER_OF, FORMATIONS, NODE_BY_ID, TYPE_LABEL } from "@/game/data";
+import { CARD_BY_ID, COUNTER_OF, FORMATIONS, TYPE_LABEL } from "@/game/data";
 import { scaleEnemyLevel } from "@/game/difficulty";
 import { formationOfLeader, typeMod } from "@/game/combat";
+import { rankForStage } from "@/game/rank";
+import { findStageNode } from "@/game/solo-map";
 import { currentCostCap, partyCost, useGame } from "@/game/store";
 import { CardFace, GhostButton, PrimaryButton, Shell, TypeBadge } from "./pieces";
 import { cn } from "@/lib/utils";
@@ -13,7 +15,9 @@ export function ScoutScreen() {
   const setScreen = useGame((s) => s.setScreen);
   const startBattle = useGame((s) => s.startBattle);
   const difficulty = useGame((s) => s.difficulty);
-  const node = scoutNodeId ? NODE_BY_ID[scoutNodeId] : null;
+  const stage = useGame((s) => s.stage);
+  const holdWins = useGame((s) => s.holdWins);
+  const node = scoutNodeId ? findStageNode(rankForStage(stage), stage, scoutNodeId) : null;
   if (!node) return null;
 
   const enemyLeader = node.enemy.find((e) => e.leader)?.cardId ?? null;
@@ -73,6 +77,11 @@ export function ScoutScreen() {
           </div>
           <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
             <p className="text-sm leading-relaxed text-muted">{node.blurb}</p>
+            {(node.holdNeed ?? 1) > 1 ? (
+              <p className="text-sm text-brass">
+                占領まで {node.holdNeed! - (holdWins[node.id] ?? 0)} 勝
+              </p>
+            ) : null}
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <span className="text-muted">敵の傾向</span>
               <TypeBadge type={node.hint} />
