@@ -79,13 +79,12 @@ describe("solo map", () => {
     assert.ok(last.captured.includes(hold.id));
   });
 
-  it("scatters cells across the board", () => {
+  it("branches instead of lining up in rows", () => {
     const map = soloStage("rookie", 1);
-    const quads = [0, 0, 0, 0];
-    for (const n of map.nodes) {
-      quads[(n.x < 50 ? 0 : 1) + (n.y < 50 ? 0 : 2)]++;
-    }
-    for (const q of quads) assert.ok(q >= map.nodes.length * 0.12, quads.join(","));
+    const rows = new Set(map.nodes.map((n) => Math.round(n.y / 6)));
+    assert.ok(rows.size >= 8, `row buckets ${rows.size}`);
+    const home = map.byId[map.homeId];
+    assert.ok(Math.hypot(home.x - 50, home.y - 50) < 18);
   });
 
   it("raises rank every two stages", () => {

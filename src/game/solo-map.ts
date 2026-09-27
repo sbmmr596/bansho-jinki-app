@@ -77,96 +77,107 @@ function link(adj: number[][], a: number, b: number) {
   adj[b].push(a);
 }
 
-/** Even lattice inside the rank's field. Percent x/y, no scenic backdrop. */
-function evenPositions(n: number, rng: () => number, spread: number): { x: number; y: number }[] {
-  const aspect = 16 / 9;
-  let cols = Math.max(2, Math.round(Math.sqrt(n * aspect)));
-  let rows = Math.max(2, Math.ceil(n / cols));
-  while (cols * rows < n) rows++;
-  const use = new Array<boolean>(cols * rows).fill(true);
-  let extra = cols * rows - n;
-  const stride = extra > 0 ? (cols * rows) / extra : 0;
-  for (let k = 0; k < extra; k++) {
-    let idx = Math.min(cols * rows - 1, Math.floor((k + 0.5) * stride));
-    while (!use[idx] && idx > 0) idx--;
-    use[idx] = false;
-  }
-  const margin = (1 - spread) / 2;
-  const jitter = 0.22;
-  const pts: { x: number; y: number }[] = [];
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (!use[r * cols + c]) continue;
-      const gx = cols === 1 ? 0.5 : c / (cols - 1);
-      const gy = rows === 1 ? 0.5 : r / (rows - 1);
-      const jx = ((rng() - 0.5) * jitter) / Math.max(1, cols - 1);
-      const jy = ((rng() - 0.5) * jitter) / Math.max(1, rows - 1);
-      const x = (margin + Math.min(1, Math.max(0, gx + jx)) * spread) * 100;
-      const y = (margin + Math.min(1, Math.max(0, gy + jy)) * spread) * 100;
-      pts.push({
-        x: Math.min(96, Math.max(4, x)),
-        y: Math.min(94, Math.max(6, y)),
-      });
-    }
-  }
-  return pts.slice(0, n);
-}
-
-function visualDist(a: { x: number; y: number }, b: { x: number; y: number }): number {
-  const dx = (a.x - b.x) * 16;
-  const dy = (a.y - b.y) * 9;
-  return dx * dx + dy * dy;
-}
-
-/** Home sits near the middle. Roads join nearby cells so the net stays local. */
-function connectEven(pos: { x: number; y: number }[]): number[][] {
-  const n = pos.length;
-  let home = 0;
-  let bestHome = Infinity;
-  for (let i = 0; i < n; i++) {
-    const d = visualDist(pos[i], { x: 50, y: 50 });
-    if (d < bestHome) {
-      bestHome = d;
-      home = i;
-    }
-  }
-  if (home !== 0) {
-    const swap = pos[0];
-    pos[0] = pos[home];
-    pos[home] = swap;
-  }
+/** Low-degree tree from the home, laid out as forked rays. Not a row lattice. */
+function growBranches(
+  n: number,
+  rng: () => number,
+  spread: number,
+): { pos: { x: number; y: number }[]; adj: number[][] } {
   const adj: number[][] = Array.from({ length: n }, () => []);
-  const seen = new Set<number>([0]);
-  while (seen.size < n) {
-    let best = Infinity;
-    let a = 0;
-    let b = 1;
-    for (const i of seen) {
-      for (let j = 0; j < n; j++) {
-        if (seen.has(j)) continue;
-        const d = visualDist(pos[i], pos[j]);
-        if (d < best) {
-          best = d;
-          a = i;
-          b = j;
-        }
+  const kidsOf = (c: number) => adj[c].length - (c === 0 ? 0 : 1);
+  for (let i = 1; i < n; i++) {
+    if (i <= 3) {
+      link(adj, 0, i);
+      continue;
+    }
+    const tips: number[] = [];
+    const forks: number[] = [];
+    for (let c = 0; c < i; c++) {
+      const kids = kidsOf(c);
+      const cap = c === 0 ? 3 : 2;
+      if (kids >= cap) continue;
+      if (kids === 0) tips.push(c);
+      else forks.push(c);
+    }
+    const pool = forks.length && rng() < 0.62 ? forks : tips.length ? tips : forks;
+    link(adj, pool[Math.floor(rng() * pool.length)], i);
+  }
+
+  const W = 1000;
+  const H = 562;
+  const pos = Array.from({ length: n }, () => ({ x: W / 2, y: H / 2 }));
+  const kids: number[][] = Array.from({ length: n }, () => []);
+  const seen = new Set([0]);
+  const q = [0];
+  for (let qi = 0; qi < q.length; qi++) {
+    const id = q[qi];
+    for (const nb of adj[id]) {
+      if (seen.has(nb)) continue;
+      seen.add(nb);
+      kids[id].push(nb);
+      q.push(nb);
+    }
+  }
+  const place = (id: number, x: number, y: number, angle: number, sweep: number, step: number) => {
+    pos[id] = { x, y };
+    const ch = kids[id];
+    ch.forEach((k, i) => {
+      const a = angle - sweep / 2 + (sweep * (i + 0.5)) / ch.length + (rng() - 0.5) * 0.35;
+      const childSweep = Math.max(0.45, sweep / Math.max(1, ch.length)) * 1.25;
+      place(k, x + Math.cos(a) * step, y + Math.sin(a) * step, a, childSweep, step * 0.92);
+    });
+  };
+  place(0, W / 2, H / 2, rng() * Math.PI * 2, Math.PI * 1.85, Math.max(70, 980 / Math.sqrt(n)));
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const p of pos) {
+    minX = Math.min(minX, p.x);
+    maxX = Math.max(maxX, p.x);
+    minY = Math.min(minY, p.y);
+    maxY = Math.max(maxY, p.y);
+  }
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  const sx = (W * spread * 0.92) / Math.max(1, maxX - minX);
+  const sy = (H * spread * 0.92) / Math.max(1, maxY - minY);
+  for (const p of pos) {
+    p.x = W / 2 + (p.x - cx) * sx;
+    p.y = H / 2 + (p.y - cy) * sy;
+  }
+
+  const min = 36;
+  for (let iter = 0; iter < 48; iter++) {
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        let dx = pos[j].x - pos[i].x;
+        let dy = pos[j].y - pos[i].y;
+        const d = Math.hypot(dx, dy) || 0.01;
+        if (d >= min) continue;
+        const push = (min - d) / 2;
+        dx /= d;
+        dy /= d;
+        pos[i].x -= dx * push;
+        pos[i].y -= dy * push;
+        pos[j].x += dx * push;
+        pos[j].y += dy * push;
       }
     }
-    link(adj, a, b);
-    seen.add(b);
-  }
-  for (let i = 0; i < n; i++) {
-    const near: { d: number; j: number }[] = [];
-    for (let j = 0; j < n; j++) {
-      if (i !== j) near.push({ d: visualDist(pos[i], pos[j]), j });
+    for (const p of pos) {
+      p.x = Math.min(W * 0.96, Math.max(W * 0.04, p.x));
+      p.y = Math.min(H * 0.94, Math.max(H * 0.06, p.y));
     }
-    near.sort((p, q) => p.d - q.d);
-    const first = near[0];
-    const second = near[1];
-    if (first && adj[i].length < 3) link(adj, i, first.j);
-    if (second && adj[i].length < 3 && second.d < first.d * 2.4) link(adj, i, second.j);
   }
-  return adj;
+
+  return {
+    pos: pos.map((p) => ({
+      x: Math.round((p.x / W) * 1000) / 10,
+      y: Math.round((p.y / H) * 1000) / 10,
+    })),
+    adj,
+  };
 }
 
 function graphDist(adj: number[][], from: number, to: number): number {
@@ -220,8 +231,9 @@ function buildSoloStage(rank: PlayerRank, stage: number): SoloStage {
   const n = meta.cells;
   const rng = mulberry32(stageSeed(rank, Math.max(1, stage)));
   const field = FIELDS[(Math.max(1, stage) - 1) % FIELDS.length];
-  const pos = evenPositions(n, rng, meta.spread);
-  const adj = connectEven(pos);
+  const grown = growBranches(n, rng, meta.spread);
+  const pos = grown.pos;
+  const adj = grown.adj;
   const holds = pickStrongholds(adj, meta.strongholds, rng);
   const level = 1 + rankIndex(rank);
   const nodes: MapNode[] = [];
