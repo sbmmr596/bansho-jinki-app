@@ -4,7 +4,7 @@ import { staggeredPoints } from "./stagger";
 import type { ElementType, EnemyUnit, FieldKind, MapNode } from "./types";
 
 /** Bump when layout / enemy rules change so in-memory cache invalidates. */
-const STAGE_CACHE_VER = 5;
+const STAGE_CACHE_VER = 6;
 
 /** 拠点は数回勝たないと占領できない。開発中の固定値。 */
 export const STRONGHOLD_WINS = 3;
@@ -59,6 +59,9 @@ export interface SoloStage {
   nodes: MapNode[];
   byId: Record<string, MapNode>;
   homeId: string;
+  /** Field size in map-frame screens (node x/y are % of this whole field). */
+  fieldW: number;
+  fieldH: number;
 }
 
 const cache = new Map<string, SoloStage>();
@@ -101,27 +104,36 @@ function link(adj: number[][], a: number, b: number) {
 }
 
 /** Zig-zag (staggered) layout inside the rank's field — not a checkerboard. */
-function evenPositions(n: number, rng: () => number, spread: number): { x: number; y: number }[] {
+function evenPositions(
+  n: number,
+  rng: () => number,
+  spread: number,
+  fieldW = 1,
+  fieldH = 1,
+): { x: number; y: number }[] {
   const margin = ((1 - spread) / 2) * 100;
   // Fit inside the safe box instead of clamping, so edge cells never bunch up.
-  const x0 = Math.max(4, margin);
-  const x1 = Math.min(96, 100 - margin);
-  const y0 = Math.max(7, margin);
-  const y1 = Math.min(93, 100 - margin);
-  return staggeredPoints(n, { aspect: 16 / 9, rng, jitter: 0.36 }).map((p) => ({
+  // The safe edge is a fixed share of one screen, so it shrinks (in %) on wide fields.
+  const x0 = Math.max(4 / fieldW, margin);
+  const x1 = Math.min(100 - 4 / fieldW, 100 - margin);
+  const y0 = Math.max(7 / fieldH, margin);
+  const y1 = Math.min(100 - 7 / fieldH, 100 - margin);
+  const aspect = (16 * fieldW) / (9 * fieldH);
+  return staggeredPoints(n, { aspect, rng, jitter: 0.36 }).map((p) => ({
     x: x0 + p.x * (x1 - x0),
     y: y0 + p.y * (y1 - y0),
   }));
 }
 
-function visualDist(a: { x: number; y: number }, b: { x: number; y: number }): number {
-  const dx = (a.x - b.x) * 16;
-  const dy = (a.y - b.y) * 9;
+/** Distance as seen on screen (field aspect included). */
+function visualDist(a: { x: number; y: number }, b: { x: number; y: number }, fw = 1, fh = 1): number {
+  const dx = (a.x - b.x) * 16 * fw;
+  const dy = (a.y - b.y) * 9 * fh;
   return dx * dx + dy * dy;
 }
 
 /** Home on the left (campaign feel). Roads join nearby cells. */
-function connectEven(pos: { x: number; y: number }[]): number[][] {
+function connectEven(pos: { x: number; y: number }[], fw = 1, fh = 1): number[][] {
   const n = pos.length;
   let home = 0;
   let bestHome = Infinity;
@@ -147,7 +159,7 @@ function connectEven(pos: { x: number; y: number }[]): number[][] {
     for (const i of seen) {
       for (let j = 0; j < n; j++) {
         if (seen.has(j)) continue;
-        const d = visualDist(pos[i], pos[j]);
+        const d = visualDist(pos[i], pos[j], fw, fh);
         if (d < best) {
           best = d;
           a = i;
@@ -161,7 +173,7 @@ function connectEven(pos: { x: number; y: number }[]): number[][] {
   for (let i = 0; i < n; i++) {
     const near: { d: number; j: number }[] = [];
     for (let j = 0; j < n; j++) {
-      if (i !== j) near.push({ d: visualDist(pos[i], pos[j]), j });
+      if (i !== j) near.push({ d: visualDist(pos[i], pos[j], fw, fh), j });
     }
     near.sort((p, q) => p.d - q.d);
     const first = near[0];
@@ -259,8 +271,8 @@ function buildSoloStage(rank: PlayerRank, stage: number): SoloStage {
   const n = meta.cells;
   const rng = mulberry32(stageSeed(rank, Math.max(1, stage)));
   const field = SOLO_FIELDS[(Math.max(1, stage) - 1) % SOLO_FIELDS.length];
-  const pos = evenPositions(n, rng, meta.spread);
-  const adj = connectEven(pos);
+  const pos = evenPositions(n, rng, meta.spread, meta.fieldW, meta.fieldH);
+  const adj = connectEven(pos, meta.fieldW, meta.fieldH);
   const holds = pickStrongholds(adj, meta.strongholds, rng);
   const nodes: MapNode[] = [];
   let holdN = 0;
@@ -305,7 +317,7 @@ function buildSoloStage(rank: PlayerRank, stage: number): SoloStage {
     });
   }
   const byId = Object.fromEntries(nodes.map((node) => [node.id, node]));
-  return { rank, stage, field, nodes, byId, homeId: nodes[0].id };
+  return { rank, stage, field, nodes, byId, homeId: nodes[0].id, fieldW: meta.fieldW, fieldH: meta.fieldH };
 }
 
 /** 勝利1回分。拠点は holdNeed に達するまで占領しない。 */

@@ -121,8 +121,8 @@ describe("solo map", () => {
           for (const nb of n.neighbors) {
             if (nb < n.id) continue;
             const o = map.byId[nb];
-            const dx = Math.abs(o.x - n.x) * 16;
-            const dy = Math.abs(o.y - n.y) * 9;
+            const dx = Math.abs(o.x - n.x) * 16 * map.fieldW;
+            const dy = Math.abs(o.y - n.y) * 9 * map.fieldH;
             // A road is "straight" when it is almost purely horizontal or vertical.
             if (dx < dy * 0.35 || dy < dx * 0.35) straight++;
             else diagonal++;
@@ -137,12 +137,29 @@ describe("solo map", () => {
           for (let j = i + 1; j < map.nodes.length; j++) {
             const a = map.nodes[i];
             const b = map.nodes[j];
-            const d = Math.hypot((a.x - b.x) * 16, (a.y - b.y) * 9);
+            const d = Math.hypot((a.x - b.x) * 16 * map.fieldW, (a.y - b.y) * 9 * map.fieldH);
             assert.ok(d > 80, `${rank}/${stage} ${a.id} and ${b.id} too close (${d.toFixed(1)})`);
           }
         }
       }
     }
+  });
+
+  it("widens the field for high ranks so the map scrolls", () => {
+    let prev = 0;
+    for (const rank of RANK_ORDER) {
+      const map = soloStage(rank, 1);
+      const area = map.fieldW * map.fieldH;
+      assert.ok(area >= prev, `${rank} field shrank`);
+      prev = area;
+      assert.ok(map.fieldW >= 1 && map.fieldH >= 1);
+      for (const n of map.nodes) {
+        assert.ok(n.x > 0 && n.x < 100 && n.y > 0 && n.y < 100, `${rank} ${n.id} off field`);
+      }
+    }
+    assert.equal(soloStage("rookie", 1).fieldW, 1);
+    assert.ok(soloStage("master", 1).fieldW > 1.4, "master scrolls sideways");
+    assert.ok(soloStage("master", 1).fieldH > 1, "master scrolls up/down");
   });
 
   it("uses one terrain per stage, with no extra rule", () => {

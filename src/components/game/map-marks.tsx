@@ -1,7 +1,8 @@
 /**
  * 冒険マップのマス表示。
  * - 本拠: 金の大きな城紋（「本拠」リボン付き）
- * - 拠点: 盾形の砦紋。状態で色が変わる（攻略可=紅 / 占領済=翠 / 未踏=墨）。下に勝利数の菱形。
+ * - 拠点: 盾形の砦紋。状態で色が変わる（攻略可=紅 / 占領済=翠 / 未到達=灰＋錠）。下に勝利数の菱形。
+ *   拠点は隣接していなくても表示する（未到達は灰色で錠前付き、押せない）。
  * - 道: 小さな丸（MapScreen 側）
  * 神羅万象風に、太い黒縁・硬い陰・宝石色。
  */
@@ -21,12 +22,12 @@ const PATHS: Record<string, string> = {
   原: "M3 16h18v2H3v-2Zm1-4h16v2H4v-2Zm2-4h12v2H6V8Z",
 };
 
-export type HoldState = "open" | "mine" | "idle";
+export type HoldState = "open" | "mine" | "locked";
 
 const HOLD_FILL: Record<HoldState, { hi: string; lo: string; rim: string; icon: string }> = {
   open: { hi: "#ff4a5a", lo: "#9a0f24", rim: "#ffd86a", icon: "#fff6e0" },
   mine: { hi: "#34e08a", lo: "#0b7a44", rim: "#ffe8a0", icon: "#f4fff6" },
-  idle: { hi: "#5a5064", lo: "#231c2a", rim: "#b8a07a", icon: "#d8cfc0" },
+  locked: { hi: "#8a8494", lo: "#4a4452", rim: "#6e6878", icon: "#bdb6c4" },
 };
 
 const SHIELD = "M32 3 L59 11 V35 C59 52 47 62 32 69 C17 62 5 52 5 35 V11 Z";
@@ -51,8 +52,14 @@ export function HoldBadge({
   const shown = state === "mine" ? need : Math.min(wins, need);
   const pipW = 13;
   const pipsX = 32 - ((need - 1) * pipW) / 2;
+  const locked = state === "locked";
   return (
-    <svg viewBox="0 0 64 84" className="h-full w-full overflow-visible" aria-hidden>
+    <svg
+      viewBox="0 0 64 84"
+      className="h-full w-full overflow-visible"
+      style={locked ? { opacity: 0.88 } : undefined}
+      aria-hidden
+    >
       <defs>
         <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor={f.hi} />
@@ -62,7 +69,13 @@ export function HoldBadge({
         </linearGradient>
       </defs>
       <ellipse cx="34" cy="70" rx="22" ry="5" fill="rgba(0,0,0,0.45)" />
-      <path d={SHIELD} fill={`url(#${gid})`} stroke={OUTLINE} strokeWidth="5" strokeLinejoin="round" />
+      <path
+        d={SHIELD}
+        fill={`url(#${gid})`}
+        stroke={OUTLINE}
+        strokeWidth="5"
+        strokeLinejoin="round"
+      />
       <path
         d="M32 9 L53 15.5 V35 C53 48.5 44 56.5 32 62.5 C20 56.5 11 48.5 11 35 V15.5 Z"
         fill="none"
@@ -75,7 +88,25 @@ export function HoldBadge({
         <path d={d} fill={OUTLINE} stroke={OUTLINE} strokeWidth="2.6" strokeLinejoin="round" />
         <path d={d} fill={f.icon} />
       </g>
-      {need > 1
+      {locked ? (
+        /* padlock: not reachable yet */
+        <g transform="translate(40 40)">
+          <path d="M4 9 V5.5 a6 6 0 0 1 12 0 V9" fill="none" stroke={OUTLINE} strokeWidth="6" />
+          <path d="M4 9 V5.5 a6 6 0 0 1 12 0 V9" fill="none" stroke="#e8e0c8" strokeWidth="2.6" />
+          <rect
+            x="0"
+            y="8.5"
+            width="20"
+            height="15"
+            rx="2.5"
+            fill="#e8c24a"
+            stroke={OUTLINE}
+            strokeWidth="3"
+          />
+          <rect x="8.6" y="12.5" width="2.8" height="6" rx="1.2" fill={OUTLINE} />
+        </g>
+      ) : null}
+      {need > 1 && !locked
         ? Array.from({ length: need }, (_, i) => {
             const cx = pipsX + i * pipW;
             const on = i < shown;
@@ -132,7 +163,13 @@ export function HomeBadge() {
         <path d="M17 58 H55 L52 53 H20 Z" fill="#9aa0a8" />
       </g>
       <g>
-        <path d="M8 70 H64 L60 77 L64 84 H8 L12 77 Z" fill="#b01828" stroke={OUTLINE} strokeWidth="3" strokeLinejoin="round" />
+        <path
+          d="M8 70 H64 L60 77 L64 84 H8 L12 77 Z"
+          fill="#b01828"
+          stroke={OUTLINE}
+          strokeWidth="3"
+          strokeLinejoin="round"
+        />
         <text
           x="36"
           y="81.5"
