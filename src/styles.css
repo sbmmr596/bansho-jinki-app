@@ -779,15 +779,27 @@ body {
 .card-rarity-sp {
   --card-rarity-edge: #d45a12; /* 濃いオレンジ */
 }
+/* 太めの縁：カード内側はくっきり、外側へ向かって透明にフェード */
+.card-face {
+  box-shadow:
+    0 0 0 2px var(--card-rarity-edge),
+    0 0 6px 3px color-mix(in oklab, var(--card-rarity-edge) 85%, transparent),
+    0 0 14px 6px color-mix(in oklab, var(--card-rarity-edge) 45%, transparent),
+    0 0 22px 8px color-mix(in oklab, var(--card-rarity-edge) 0%, transparent);
+}
 .card-layer-frame {
-  box-shadow: inset 0 0 0 2.5px var(--card-rarity-edge);
+  box-shadow:
+    inset 0 0 0 4px var(--card-rarity-edge),
+    inset 0 0 8px 5px color-mix(in oklab, var(--card-rarity-edge) 55%, transparent);
   border-radius: inherit;
   pointer-events: none;
 }
-.card-face-selected .card-layer-frame {
+.card-face-selected {
   box-shadow:
-    inset 0 0 0 2.5px var(--card-rarity-edge),
-    0 0 0 2px color-mix(in oklab, var(--color-brass) 85%, white);
+    0 0 0 2px var(--card-rarity-edge),
+    0 0 6px 3px color-mix(in oklab, var(--card-rarity-edge) 85%, transparent),
+    0 0 0 5px color-mix(in oklab, var(--color-brass) 85%, white),
+    0 0 16px 8px color-mix(in oklab, var(--color-brass) 40%, transparent);
 }
 
 /* Rarity prism / holo sweep — plays once on first mount (iteration-count: 1) */
