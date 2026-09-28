@@ -10,15 +10,28 @@ export const STAGES_PER_RANK = 2;
 /** 段クリアごとの経験。閾値とコスト上限はあとで調整する。 */
 export const XP_PER_CLEAR = 100;
 
+/**
+ * fieldW / fieldH: フィールドの広さ（マップ枠 1 画面 = 1）。1 を超える位はスクロールで動かす。
+ * 地形画像は端がつながるタイルなので、広さに合わせて繰り返し敷く。
+ */
 export const RANK_META: Record<
   PlayerRank,
-  { label: string; cells: number; strongholds: number; spread: number; xp: number; cost: number }
+  {
+    label: string;
+    cells: number;
+    strongholds: number;
+    spread: number;
+    xp: number;
+    cost: number;
+    fieldW: number;
+    fieldH: number;
+  }
 > = {
-  rookie: { label: "ルーキー", cells: 30, strongholds: 5, spread: 0.62, xp: 0, cost: 10 },
-  middle: { label: "ミドル", cells: 35, strongholds: 6, spread: 0.72, xp: 200, cost: 12 },
-  high: { label: "ハイ", cells: 40, strongholds: 8, spread: 0.82, xp: 400, cost: 14 },
-  ace: { label: "エース", cells: 45, strongholds: 9, spread: 0.9, xp: 600, cost: 17 },
-  master: { label: "マスター", cells: 50, strongholds: 10, spread: 0.98, xp: 800, cost: 20 },
+  rookie: { label: "ルーキー", cells: 30, strongholds: 5, spread: 0.62, xp: 0, cost: 10, fieldW: 1, fieldH: 1 },
+  middle: { label: "ミドル", cells: 35, strongholds: 6, spread: 0.72, xp: 200, cost: 12, fieldW: 1, fieldH: 1 },
+  high: { label: "ハイ", cells: 40, strongholds: 8, spread: 0.9, xp: 400, cost: 14, fieldW: 1.25, fieldH: 1 },
+  ace: { label: "エース", cells: 45, strongholds: 9, spread: 0.92, xp: 600, cost: 17, fieldW: 1.45, fieldH: 1.15 },
+  master: { label: "マスター", cells: 50, strongholds: 10, spread: 0.94, xp: 800, cost: 20, fieldW: 1.65, fieldH: 1.3 },
 };
 
 export function clampRank(v: unknown): PlayerRank {

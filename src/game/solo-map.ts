@@ -1,9 +1,10 @@
 import { FODDER_CARDS, FORMATIONS } from "./data";
 import { RANK_META, rankIndex, type PlayerRank } from "./rank";
+import { staggeredPoints } from "./stagger";
 import type { ElementType, EnemyUnit, FieldKind, MapNode } from "./types";
 
 /** Bump when layout / enemy rules change so in-memory cache invalidates. */
-const STAGE_CACHE_VER = 4;
+const STAGE_CACHE_VER = 6;
 
 /** 拠点は数回勝たないと占領できない。開発中の固定値。 */
 export const STRONGHOLD_WINS = 3;
@@ -22,16 +23,16 @@ export const FIELD_LABEL: Record<FieldKind, string> = {
   magma: "岩漿",
 };
 
-/** Ground art for the map and the battle of that stage. */
+/** Top-down map art for each stage terrain (the battle uses its own photos). */
 export const FIELD_SRC: Record<FieldKind, string> = {
-  grass: "/bg/terrain-grass.jpg",
-  desert: "/bg/terrain-desert.jpg",
-  snow: "/bg/terrain-snow.jpg",
-  ice: "/bg/terrain-ice.jpg",
-  forest: "/bg/terrain-forest.jpg",
-  volcano: "/bg/terrain-volcano.jpg",
-  waste: "/bg/terrain-desert.jpg",
-  magma: "/bg/terrain-volcano.jpg",
+  grass: "/bg/map-grass.webp",
+  desert: "/bg/map-desert.webp",
+  snow: "/bg/map-snow.webp",
+  ice: "/bg/map-ice.webp",
+  forest: "/bg/map-forest.webp",
+  volcano: "/bg/map-volcano.webp",
+  waste: "/bg/map-desert.webp",
+  magma: "/bg/map-volcano.webp",
 };
 
 /** Shown under the image while it loads. */
@@ -58,6 +59,9 @@ export interface SoloStage {
   nodes: MapNode[];
   byId: Record<string, MapNode>;
   homeId: string;
+  /** Field size in map-frame screens (node x/y are % of this whole field). */
+  fieldW: number;
+  fieldH: number;
 }
 
 const cache = new Map<string, SoloStage>();
@@ -99,50 +103,37 @@ function link(adj: number[][], a: number, b: number) {
   adj[b].push(a);
 }
 
-/** Even lattice inside the rank's field — balanced spacing like the earlier board. */
-function evenPositions(n: number, rng: () => number, spread: number): { x: number; y: number }[] {
-  const aspect = 16 / 9;
-  let cols = Math.max(2, Math.round(Math.sqrt(n * aspect)));
-  let rows = Math.max(2, Math.ceil(n / cols));
-  while (cols * rows < n) rows++;
-  const use = new Array<boolean>(cols * rows).fill(true);
-  let extra = cols * rows - n;
-  const stride = extra > 0 ? (cols * rows) / extra : 0;
-  for (let k = 0; k < extra; k++) {
-    let idx = Math.min(cols * rows - 1, Math.floor((k + 0.5) * stride));
-    while (!use[idx] && idx > 0) idx--;
-    use[idx] = false;
-  }
-  const margin = (1 - spread) / 2;
-  // Mild jitter so cells stay evenly spaced (older board feel).
-  const jitter = 0.12;
-  const pts: { x: number; y: number }[] = [];
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (!use[r * cols + c]) continue;
-      const gx = cols === 1 ? 0.5 : c / (cols - 1);
-      const gy = rows === 1 ? 0.5 : r / (rows - 1);
-      const jx = ((rng() - 0.5) * jitter) / Math.max(1, cols - 1);
-      const jy = ((rng() - 0.5) * jitter) / Math.max(1, rows - 1);
-      const x = (margin + Math.min(1, Math.max(0, gx + jx)) * spread) * 100;
-      const y = (margin + Math.min(1, Math.max(0, gy + jy)) * spread) * 100;
-      pts.push({
-        x: Math.min(96, Math.max(4, x)),
-        y: Math.min(94, Math.max(6, y)),
-      });
-    }
-  }
-  return pts.slice(0, n);
+/** Zig-zag (staggered) layout inside the rank's field — not a checkerboard. */
+function evenPositions(
+  n: number,
+  rng: () => number,
+  spread: number,
+  fieldW = 1,
+  fieldH = 1,
+): { x: number; y: number }[] {
+  const margin = ((1 - spread) / 2) * 100;
+  // Fit inside the safe box instead of clamping, so edge cells never bunch up.
+  // The safe edge is a fixed share of one screen, so it shrinks (in %) on wide fields.
+  const x0 = Math.max(4 / fieldW, margin);
+  const x1 = Math.min(100 - 4 / fieldW, 100 - margin);
+  const y0 = Math.max(7 / fieldH, margin);
+  const y1 = Math.min(100 - 7 / fieldH, 100 - margin);
+  const aspect = (16 * fieldW) / (9 * fieldH);
+  return staggeredPoints(n, { aspect, rng, jitter: 0.36 }).map((p) => ({
+    x: x0 + p.x * (x1 - x0),
+    y: y0 + p.y * (y1 - y0),
+  }));
 }
 
-function visualDist(a: { x: number; y: number }, b: { x: number; y: number }): number {
-  const dx = (a.x - b.x) * 16;
-  const dy = (a.y - b.y) * 9;
+/** Distance as seen on screen (field aspect included). */
+function visualDist(a: { x: number; y: number }, b: { x: number; y: number }, fw = 1, fh = 1): number {
+  const dx = (a.x - b.x) * 16 * fw;
+  const dy = (a.y - b.y) * 9 * fh;
   return dx * dx + dy * dy;
 }
 
 /** Home on the left (campaign feel). Roads join nearby cells. */
-function connectEven(pos: { x: number; y: number }[]): number[][] {
+function connectEven(pos: { x: number; y: number }[], fw = 1, fh = 1): number[][] {
   const n = pos.length;
   let home = 0;
   let bestHome = Infinity;
@@ -168,7 +159,7 @@ function connectEven(pos: { x: number; y: number }[]): number[][] {
     for (const i of seen) {
       for (let j = 0; j < n; j++) {
         if (seen.has(j)) continue;
-        const d = visualDist(pos[i], pos[j]);
+        const d = visualDist(pos[i], pos[j], fw, fh);
         if (d < best) {
           best = d;
           a = i;
@@ -182,7 +173,7 @@ function connectEven(pos: { x: number; y: number }[]): number[][] {
   for (let i = 0; i < n; i++) {
     const near: { d: number; j: number }[] = [];
     for (let j = 0; j < n; j++) {
-      if (i !== j) near.push({ d: visualDist(pos[i], pos[j]), j });
+      if (i !== j) near.push({ d: visualDist(pos[i], pos[j], fw, fh), j });
     }
     near.sort((p, q) => p.d - q.d);
     const first = near[0];
@@ -280,8 +271,8 @@ function buildSoloStage(rank: PlayerRank, stage: number): SoloStage {
   const n = meta.cells;
   const rng = mulberry32(stageSeed(rank, Math.max(1, stage)));
   const field = SOLO_FIELDS[(Math.max(1, stage) - 1) % SOLO_FIELDS.length];
-  const pos = evenPositions(n, rng, meta.spread);
-  const adj = connectEven(pos);
+  const pos = evenPositions(n, rng, meta.spread, meta.fieldW, meta.fieldH);
+  const adj = connectEven(pos, meta.fieldW, meta.fieldH);
   const holds = pickStrongholds(adj, meta.strongholds, rng);
   const nodes: MapNode[] = [];
   let holdN = 0;
@@ -326,7 +317,7 @@ function buildSoloStage(rank: PlayerRank, stage: number): SoloStage {
     });
   }
   const byId = Object.fromEntries(nodes.map((node) => [node.id, node]));
-  return { rank, stage, field, nodes, byId, homeId: nodes[0].id };
+  return { rank, stage, field, nodes, byId, homeId: nodes[0].id, fieldW: meta.fieldW, fieldH: meta.fieldH };
 }
 
 /** 勝利1回分。拠点は holdNeed に達するまで占領しない。 */
