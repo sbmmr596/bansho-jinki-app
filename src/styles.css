@@ -379,6 +379,70 @@ body {
   color: #7dff8a;
 }
 
+/* 追加効果 popups (防御↓ / 遅延 / 停止 / 攻撃↑ / ガード無効) — same lettering as affinity */
+@keyframes status-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(0.3em) scale(0.72);
+  }
+  16% {
+    opacity: 1;
+    transform: translateY(0) scale(1.12);
+  }
+  30%,
+  70% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-0.5em) scale(1);
+  }
+}
+.battle-status-pop {
+  font-family: var(--font-display);
+  font-size: calc(15px * var(--text-scale, 1));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  white-space: nowrap;
+  paint-order: stroke fill;
+  -webkit-text-stroke: 0.16em #0b0907;
+  text-shadow: 0 0.08em 0.12em rgb(0 0 0 / 0.6);
+  animation: 1.1s ease-out forwards status-pop;
+}
+.battle-status-pop.is-debuff {
+  color: #c99bff;
+}
+.battle-status-pop.is-stop {
+  color: #7fd6ff;
+}
+.battle-status-pop.is-buff {
+  color: #ffd35a;
+}
+.battle-status-pop.is-pierce {
+  color: #ffffff;
+}
+/* Persistent chips under the HP bar while a status is active */
+.battle-status-badge {
+  padding: 0 0.25em;
+  border-radius: 2px;
+  font-size: calc(10px * var(--text-scale, 1));
+  font-weight: 700;
+  line-height: 1.35;
+  color: #0b0907;
+  white-space: nowrap;
+}
+.battle-status-badge.is-debuff {
+  background: #c99bff;
+}
+.battle-status-badge.is-stop {
+  background: #7fd6ff;
+}
+.battle-status-badge.is-buff {
+  background: #ffd35a;
+}
+
 @keyframes fx-burst {
   0% {
     opacity: 1;

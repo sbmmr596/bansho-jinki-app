@@ -34,7 +34,8 @@ import {
   charArtPath,
 } from "@/game/art-assets";
 import { isStockSkillDesc, SKILL_KIND_DESC, SKILL_KIND_LABEL } from "@/game/skillNames";
-import type { Card, ElementType, Faction, Formation, Rarity, SkillKind } from "@/game/types";
+import { SKILL_EFFECT_IDS, SKILL_EFFECT_LABEL } from "@/game/skill-effects";
+import type { Card, ElementType, Faction, Formation, Rarity, SkillEffect, SkillKind } from "@/game/types";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { useGame } from "@/game/store";
 import { CardFace, CloseButton } from "./pieces";
@@ -59,11 +60,14 @@ type Draft = {
   basicKind: SkillKind;
   basicPower: number;
   basicHits: string;
+  /** "" = なし */
+  basicEffect: SkillEffect | "";
   basicDesc: string;
   skillName: string;
   skillKind: SkillKind;
   skillPower: number;
   skillHits: string;
+  skillEffect: SkillEffect | "";
   skillDesc: string;
   portrait: string;
   art: string;
@@ -97,11 +101,13 @@ function toDraft(card: Card): Draft {
     basicKind: basic.kind,
     basicPower: basic.power,
     basicHits: basic.hits != null ? String(basic.hits) : "",
+    basicEffect: basic.effect ?? "",
     basicDesc: basic.desc,
     skillName: card.skill.name,
     skillKind: card.skill.kind,
     skillPower: card.skill.power,
     skillHits: card.skill.hits != null ? String(card.skill.hits) : "",
+    skillEffect: card.skill.effect ?? "",
     skillDesc: card.skill.desc,
     portrait: card.portrait ?? card.id,
     art: fileNameOf(card.art, `${card.id}.png`),
@@ -129,11 +135,13 @@ function blankDraft(seed = 1): Draft {
     basicKind: BASIC_SKILL.kind,
     basicPower: BASIC_SKILL.power,
     basicHits: "",
+    basicEffect: "",
     basicDesc: BASIC_SKILL.desc,
     skillName: "攻撃",
     skillKind: "front",
     skillPower: 1,
     skillHits: "",
+    skillEffect: "",
     skillDesc: "",
     portrait: id,
     art: "kaien.png",
@@ -170,6 +178,7 @@ function draftToCard(d: Draft): Card {
       kind: d.basicKind,
       power: Number.isFinite(d.basicPower) ? d.basicPower : BASIC_SKILL.power,
       ...(basicHits != null ? { hits: basicHits } : {}),
+      ...(d.basicEffect ? { effect: d.basicEffect } : {}),
       desc: d.basicDesc.trim(),
     },
     skill: {
@@ -177,6 +186,7 @@ function draftToCard(d: Draft): Card {
       kind: d.skillKind,
       power: Number.isFinite(d.skillPower) ? d.skillPower : 1,
       ...(hits != null ? { hits } : {}),
+      ...(d.skillEffect ? { effect: d.skillEffect } : {}),
       desc: d.skillDesc.trim(),
     },
     portrait: d.portrait.trim() || d.id.trim(),
@@ -408,6 +418,20 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 const inputCls =
   "h-11 w-full rounded-md bg-raised px-2.5 text-sm text-fg hairline outline-none focus:ring-1 focus:ring-brass/60";
+
+/** 追加効果 picker — same control style as the other selects (なし = no effect field in JSON). */
+function EffectSelect({ value, onChange }: { value: SkillEffect | ""; onChange: (v: SkillEffect | "") => void }) {
+  return (
+    <select className={inputCls} value={value} onChange={(e) => onChange(e.target.value as SkillEffect | "")}>
+      <option value="">なし</option>
+      {SKILL_EFFECT_IDS.map((id) => (
+        <option key={id} value={id}>
+          {SKILL_EFFECT_LABEL[id]}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 function knownFile(name: string, list: readonly string[]) {
   const n = name.trim().replace(/^\/+/, "").split("/").pop() ?? "";
@@ -1267,6 +1291,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                   ) : null}
                   <p className="col-span-2 text-[13px] leading-snug text-muted">
                     基本技は行動抽選の基本枠。回復・加速・減速はダメージなし（加速と減速はATB）。未設定の古いデータは通常攻撃。
+                    追加効果はどの攻撃方法にも付けられる（例: 乱撃＋防御ダウン、全体＋遅延）。攻撃方法が攻撃系で威力0なら効果のみ。
                   </p>
                   <Field label="基本技 攻撃方法">
                     <select
@@ -1282,12 +1307,17 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                   <Field label="基本技 名前">
                     <input className={inputCls} value={draft.basicName} onChange={(e) => patch("basicName", e.target.value)} />
                   </Field>
-                  <Field label="基本技 威力">
-                    <input type="number" step="0.01" className={inputCls} value={draft.basicPower} onChange={(e) => patch("basicPower", Number(e.target.value))} />
-                  </Field>
-                  <Field label="基本技 ヒット数（空欄可）">
-                    <input className={inputCls} value={draft.basicHits} onChange={(e) => patch("basicHits", e.target.value)} />
-                  </Field>
+                  <div className="col-span-2 grid grid-cols-3 gap-2">
+                    <Field label="基本技 威力">
+                      <input type="number" step="0.01" className={inputCls} value={draft.basicPower} onChange={(e) => patch("basicPower", Number(e.target.value))} />
+                    </Field>
+                    <Field label="ヒット数（空欄可）">
+                      <input className={inputCls} value={draft.basicHits} onChange={(e) => patch("basicHits", e.target.value)} />
+                    </Field>
+                    <Field label="追加効果">
+                      <EffectSelect value={draft.basicEffect} onChange={(v) => patch("basicEffect", v)} />
+                    </Field>
+                  </div>
                   <div className="col-span-2">
                     <Field label="基本技 説明">
                       <input className={inputCls} value={draft.basicDesc} onChange={(e) => patch("basicDesc", e.target.value)} />
@@ -1303,12 +1333,17 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                   <Field label="必殺技1 名前">
                     <input className={inputCls} value={draft.skillName} onChange={(e) => patch("skillName", e.target.value)} />
                   </Field>
-                  <Field label="必殺技1 威力">
-                    <input type="number" step="0.01" className={inputCls} value={draft.skillPower} onChange={(e) => patch("skillPower", Number(e.target.value))} />
-                  </Field>
-                  <Field label="必殺技1 ヒット数（空欄可）">
-                    <input className={inputCls} value={draft.skillHits} onChange={(e) => patch("skillHits", e.target.value)} />
-                  </Field>
+                  <div className="col-span-2 grid grid-cols-3 gap-2">
+                    <Field label="必殺技1 威力">
+                      <input type="number" step="0.01" className={inputCls} value={draft.skillPower} onChange={(e) => patch("skillPower", Number(e.target.value))} />
+                    </Field>
+                    <Field label="ヒット数（空欄可）">
+                      <input className={inputCls} value={draft.skillHits} onChange={(e) => patch("skillHits", e.target.value)} />
+                    </Field>
+                    <Field label="追加効果">
+                      <EffectSelect value={draft.skillEffect} onChange={(v) => patch("skillEffect", v)} />
+                    </Field>
+                  </div>
                   <div className="col-span-2">
                     <Field label="必殺技1 説明">
                       <input className={inputCls} value={draft.skillDesc} onChange={(e) => patch("skillDesc", e.target.value)} />

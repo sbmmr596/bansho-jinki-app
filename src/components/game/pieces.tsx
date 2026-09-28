@@ -9,9 +9,10 @@ import {
   skillPowerScale,
 } from "@/game/data";
 import { commonSkillName, SKILL_KIND_LABEL } from "@/game/skillNames";
+import { kindWithEffectLabel } from "@/game/skill-effects";
 import { hpGaugeColor } from "@/game/hp-gauge";
 import { useGame } from "@/game/store";
-import type { Card, ElementType, Rarity, Screen, SkillKind } from "@/game/types";
+import type { Card, ElementType, Rarity, Screen, SkillEffect, SkillKind } from "@/game/types";
 import { cn } from "@/lib/utils";
 
 const TYPE_CLASS: Record<ElementType, string> = {
@@ -448,6 +449,7 @@ export function ArtZoom() {
               label="基本技"
               name={cardBasicSkill(card).name}
               kind={cardBasicSkill(card).kind}
+              effect={cardBasicSkill(card).effect}
               desc={cardBasicSkill(card).desc}
               power={cardBasicSkill(card).power}
               tone="basic"
@@ -457,6 +459,7 @@ export function ArtZoom() {
               label="必殺技1"
               name={card.skill.name}
               kind={card.skill.kind}
+              effect={card.skill.effect}
               desc={card.skill.desc}
               power={card.skill.power}
               lv={skill1Lv}
@@ -469,6 +472,7 @@ export function ArtZoom() {
               name={skill2Card ? commonSkillName(skill2Card.skill, skill2Card.rarity) : "-"}
               subName={skill2Card ? skill2Card.skill.name : undefined}
               kind={skill2Card?.skill.kind}
+              effect={skill2Card?.skill.effect}
               desc={skill2Card ? skill2Card.skill.desc : "未装着"}
               power={skill2Card?.skill.power}
               lv={skill2 ? skill2.lv : undefined}
@@ -535,6 +539,7 @@ export function SkillSlot({
   name,
   subName,
   kind,
+  effect,
   desc,
   power,
   lv,
@@ -549,6 +554,8 @@ export function SkillSlot({
   subName?: string;
   /** Attack / support method — shown so editor saves are visible on the card sheet. */
   kind?: SkillKind;
+  /** 追加効果 — shown as 乱撃＋防御ダウン. */
+  effect?: SkillEffect;
   desc: string;
   power?: number;
   lv?: number;
@@ -580,7 +587,7 @@ export function SkillSlot({
         <p className="text-[14px] text-faint">{subName}</p>
       ) : null}
       {kind && !empty ? (
-        <p className="text-[14px] text-brass">{SKILL_KIND_LABEL[kind]}</p>
+        <p className="text-[14px] text-brass">{kindWithEffectLabel(SKILL_KIND_LABEL[kind], effect)}</p>
       ) : null}
       <p className="mt-0.5 text-[15px] leading-snug text-muted">{desc}</p>
       {power != null && !empty ? (
@@ -601,6 +608,8 @@ export function CharSprite({
   hp,
   maxHp,
   float,
+  pops,
+  badges,
   flip,
   bust,
   leader,
@@ -617,6 +626,10 @@ export function CharSprite({
     affinity: "クリティカル" | "ガード" | null;
     key: number;
   } | null;
+  /** 追加効果 popups this beat (防御↓ / 遅延 / 停止 / 攻撃↑ / ガード無効). */
+  pops?: { text: string; tone: "buff" | "debuff" | "stop" | "pierce"; key: number }[];
+  /** Persistent status chips under the HP bar (攻↑ / 防↓ / 停). */
+  badges?: { text: string; tone: "buff" | "debuff" | "stop" }[];
   flip?: boolean;
   bust?: boolean;
   leader?: boolean;
@@ -652,6 +665,15 @@ export function CharSprite({
             <span className="h-[0.85em]" aria-hidden />
           )}
           <HpBar hp={hp} max={maxHp} thick />
+          {badges?.length ? (
+            <span className="flex gap-0.5" aria-label="状態">
+              {badges.map((b) => (
+                <span key={b.text} className={cn("battle-status-badge", `is-${b.tone}`)}>
+                  {b.text}
+                </span>
+              ))}
+            </span>
+          ) : null}
         </div>
       ) : null}
       <span
@@ -683,6 +705,15 @@ export function CharSprite({
           )}
         >
           {float.affinity}
+        </span>
+      ) : null}
+      {pops?.length ? (
+        <span className="pointer-events-none absolute left-1/2 top-[68%] z-[6] flex -translate-x-1/2 flex-col items-center gap-0.5">
+          {pops.map((p) => (
+            <span key={`pop-${p.key}`} className={cn("battle-status-pop", `is-${p.tone}`)}>
+              {p.text}
+            </span>
+          ))}
         </span>
       ) : null}
     </div>

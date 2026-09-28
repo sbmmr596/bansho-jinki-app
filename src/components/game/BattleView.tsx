@@ -3,13 +3,14 @@ import { sfx } from "@/game/audio";
 import { CARD_BY_ID } from "@/game/data";
 import { rankForXp } from "@/game/rank";
 import { FIELD_LABEL, findStageNode } from "@/game/solo-map";
-import { ATB_PER_SEC, atbRate, advanceGauges, GAUGE_MAX, affinityLabel } from "@/game/combat";
+import { advanceGauges, GAUGE_MAX, affinityLabel, stepUnitGauge } from "@/game/combat";
+import { cloneStatus, kindWithEffectLabel, SKILL_EFFECT_POP, statusBadges } from "@/game/skill-effects";
 import { activeTrial, pumpTrial } from "@/game/trial";
 import { BATTLE_PRELOAD_TIMEOUT_MS, preloadImages } from "@/game/preload";
 import { useGame } from "@/game/store";
 import { SKILL_KIND_LABEL } from "@/game/skillNames";
 import { BACKDROP_ART, BACKDROP_H, BACKDROP_W, BATTLE_FIELD_SRC, backdropLayout } from "@/game/battle-backdrop";
-import type { BattleEvent, BattleLog, ElementType, FieldKind, Side, SkillKind, Unit } from "@/game/types";
+import type { BattleEvent, BattleLog, ElementType, FieldKind, Side, SkillEffect, SkillKind, Unit } from "@/game/types";
 import { nextBattleSpeed } from "@/game/types";
 import { CharSprite, charSrc, CloseButton } from "./pieces";
 import { AffinityDiagram } from "./AffinityDiagram";
@@ -24,6 +25,7 @@ const DUR: Record<BattleEvent["kind"], number> = {
   shift: 240,
   spawn: 300,
   buff: 700,
+  effect: 720,
   end: 900,
 };
 
@@ -58,6 +60,9 @@ function collectBattleImageUrls(battle: BattleLog, field: FieldKind): string[] {
 type SkillFxState = {
   key: number;
   kind: SkillKind;
+  effect?: SkillEffect;
+  /** Effect-only skill landing on allies (e.g. 攻撃力アップ with power 0). */
+  support: boolean;
   type: ElementType;
   targetSide: Side;
   slots: number[];
@@ -75,6 +80,28 @@ type FloatFx = {
   key: number;
 };
 
+/** 追加効果 popups (防御↓ / 遅延 / 停止 / 攻撃↑ / ガード無効). Several per unit may stack. */
+type StatusPop = {
+  uid: string;
+  text: string;
+  tone: "buff" | "debuff" | "stop" | "pierce";
+  key: number;
+};
+
+function popTone(effect: SkillEffect): StatusPop["tone"] {
+  if (effect === "atkUp") return "buff";
+  if (effect === "stop") return "stop";
+  if (effect === "guardIgnore") return "pierce";
+  return "debuff";
+}
+
+/** Apply one sim `effect` event to a view unit (playback copy or live mirror). */
+function applyEffectToView(u: Unit, e: Extract<BattleEvent, { kind: "effect" }>): Unit {
+  const next: Unit = { ...u, status: cloneStatus(e.status) };
+  if (e.effect === "delay") next.gauge = Math.max(0, (u.gauge ?? 0) - e.value);
+  return next;
+}
+
 export function BattleView() {
   const battle = useGame((s) => s.battle);
   const finishBattle = useGame((s) => s.finishBattle);
@@ -87,6 +114,7 @@ export function BattleView() {
   const [units, setUnits] = useState<Unit[]>(() => battle?.units.map((u) => ({ ...u })) ?? []);
   /** Damage/heal numbers — multiple for pierce/sweep applied in one beat. */
   const [floats, setFloats] = useState<FloatFx[]>([]);
+  const [pops, setPops] = useState<StatusPop[]>([]);
   const [acting, setActing] = useState<string | null>(null);
   /** Uids flinching this beat (multi-target hits share one frame). */
   const [struck, setStruck] = useState<string[]>([]);
@@ -159,6 +187,7 @@ export function BattleView() {
     if (!battle || !assetsReady) return;
     setUnits(battle.units.map((u) => ({ ...u })));
     setFloats([]);
+    setPops([]);
     setActing(null);
     setStruck([]);
     setFx(null);
@@ -187,6 +216,7 @@ export function BattleView() {
         setFx(null);
         setStruck([]);
         setFloats([]);
+        setPops([]);
         setLunge(null);
         actingRef.current = null;
         setActing(null);
@@ -195,12 +225,16 @@ export function BattleView() {
         actingRef.current = ev.actorUid;
         setActing(ev.actorUid);
         setFloats([]);
+        setPops([]);
         setStruck([]);
         const live = activeTrial();
+        // Actor's buff/debuff after its action-start tick (expired / atkUp spent).
+        const withActorStatus = (u: Unit): Unit =>
+          ev.actorStatus ? { ...u, gauge: GAUGE_MAX, status: cloneStatus(ev.actorStatus) } : { ...u, gauge: GAUGE_MAX };
         if (live) {
           setUnits((prev) =>
             prev.map((u) => {
-              if (u.uid === ev.actorUid) return { ...u, gauge: GAUGE_MAX };
+              if (u.uid === ev.actorUid) return withActorStatus(u);
               if (u.uid === prevAct) return { ...u, gauge: 0 };
               const lu = live.units.find((x) => x.uid === u.uid);
               return lu ? { ...u, haste: lu.haste } : u;
@@ -209,7 +243,7 @@ export function BattleView() {
         } else {
           setUnits((prev) =>
             prev.map((u) =>
-              u.uid === ev.actorUid ? { ...u, gauge: GAUGE_MAX } : u.uid === prevAct ? { ...u, gauge: 0 } : u,
+              u.uid === ev.actorUid ? withActorStatus(u) : u.uid === prevAct ? { ...u, gauge: 0 } : u,
             ),
           );
         }
@@ -239,8 +273,22 @@ export function BattleView() {
               : u.side === "player"
                 ? "enemy"
                 : "player";
+          /** Hits/heals/buff define the FX; effects only do for effect-only skills. */
+          let primary = false;
           for (let i = idxRef.current + 1; i < eventsRef.current.length; i++) {
             const ne = eventsRef.current[i];
+            if (ne.kind === "effect") {
+              if (primary) continue;
+              const tu =
+                unitsRef.current.find((x) => x.uid === ne.targetUid) ??
+                activeTrial()?.units.find((x) => x.uid === ne.targetUid);
+              if (tu) {
+                slots.push(tu.slot);
+                targetSide = tu.side;
+              }
+              continue;
+            }
+            if (ne.kind === "hit" || ne.kind === "heal" || ne.kind === "buff") primary = true;
             if (ne.kind === "hit" || ne.kind === "heal") {
               const tu =
                 unitsRef.current.find((x) => x.uid === ne.targetUid) ??
@@ -257,49 +305,85 @@ export function BattleView() {
             } else if (ne.kind === "ko") continue;
             else break;
           }
+          const support = !primary && targetSide === u.side && kind !== "heal" && kind !== "haste";
           setFx({
             key: idxRef.current,
             kind,
+            effect: ev.skillEffect,
+            support,
             type: u.type,
             targetSide,
             slots,
             actorSlot: u.slot,
             actorSide: u.side,
           });
-          const dest = lungePos(u, slots, targetSide, kind);
+          const dest = lungePos(u, slots, targetSide, support ? "heal" : kind);
           setLunge({ uid: u.uid, x: dest.x, y: dest.y });
         }
-      } else if (ev.kind === "hit") {
+      } else if (ev.kind === "hit" || ev.kind === "effect") {
         // Pierce / sweep / multi-hit: apply consecutive hit (+ interleaved ko) in one beat.
+        // 追加効果 events that follow the hits land in the same beat (or alone for effect-only skills).
         const events = eventsRef.current;
         let i = idxRef.current;
         const hits: Extract<BattleEvent, { kind: "hit" }>[] = [];
         const kos: Extract<BattleEvent, { kind: "ko" }>[] = [];
+        const effs: Extract<BattleEvent, { kind: "effect" }>[] = [];
         while (i < events.length) {
           const e = events[i];
-          if (e.kind === "hit") {
+          if (e.kind === "hit" && !effs.length) {
             hits.push(e);
             i++;
-          } else if (e.kind === "ko") {
+          } else if (e.kind === "ko" && !effs.length) {
             kos.push(e);
+            i++;
+          } else if (e.kind === "effect") {
+            effs.push(e);
             i++;
           } else break;
         }
         batchEndRef.current = i - 1;
         const hpAfter = new Map(hits.map((h) => [h.targetUid, h.hpAfter]));
+        const statusAfterHit = new Map(
+          hits.filter((h) => h.targetStatus).map((h) => [h.targetUid, h.targetStatus!]),
+        );
         const koSet = new Set(kos.map((k) => k.uid));
         setUnits((prev) => {
-          const next = prev.map((u) => {
+          let next = prev.map((u) => {
+            let nu = u;
+            if (statusAfterHit.has(u.uid)) nu = { ...nu, status: cloneStatus(statusAfterHit.get(u.uid)) };
             if (hpAfter.has(u.uid)) {
               const hp = hpAfter.get(u.uid)!;
-              return { ...u, hp, alive: hp > 0 && !koSet.has(u.uid) };
+              return { ...nu, hp, alive: hp > 0 && !koSet.has(u.uid) };
             }
-            if (koSet.has(u.uid)) return { ...u, alive: false, hp: 0 };
-            return u;
+            if (koSet.has(u.uid)) return { ...nu, alive: false, hp: 0 };
+            return nu;
           });
+          for (const e of effs) next = next.map((u) => (u.uid === e.targetUid ? applyEffectToView(u, e) : u));
           unitsRef.current = next;
           return next;
         });
+        setPops([
+          ...hits
+            .filter((h) => h.guardIgnored)
+            .map((h, n) => ({
+              uid: h.targetUid,
+              text: SKILL_EFFECT_POP.guardIgnore,
+              tone: popTone("guardIgnore"),
+              key: idxRef.current * 31 + n,
+            })),
+          ...effs.map((e, n) => ({
+            uid: e.targetUid,
+            text: SKILL_EFFECT_POP[e.effect],
+            tone: popTone(e.effect),
+            key: idxRef.current * 31 + 7 + n,
+          })),
+        ]);
+        if (!hits.length) {
+          setStruck(effs.filter((e) => e.effect !== "atkUp").map((e) => e.targetUid));
+          sfx(effs.some((e) => e.effect === "atkUp") ? "heal" : "hit");
+          const names = [...new Set(effs.map((e) => SKILL_EFFECT_POP[e.effect]))].join("・");
+          if (names) setLog((l) => [names, ...l].slice(0, 6));
+        }
         setFloats(
           hits.map((h, n) => ({
             uid: h.targetUid,
@@ -309,14 +393,16 @@ export function BattleView() {
             key: h.targetUid.length + h.damage + idxRef.current + n * 17,
           })),
         );
-        setStruck(hits.map((h) => h.targetUid));
+        if (hits.length) setStruck(hits.map((h) => h.targetUid));
         for (const k of kos) {
           const u = unitsRef.current.find((x) => x.uid === k.uid);
           setLog((l) => [`${u?.name ?? ""}　撃破`, ...l].slice(0, 6));
           if (trialRef.current && u?.side === "enemy") addKillsRef.current(1);
         }
         if (kos.length) sfx("ko");
-        if (hits.some((h) => h.mod >= 1.45)) {
+        if (!hits.length) {
+          /* effect-only beat: sfx already played */
+        } else if (hits.some((h) => h.mod >= 1.45)) {
           sfx("crit");
           setShake(true);
           setFlash(true);
@@ -328,17 +414,32 @@ export function BattleView() {
         const events = eventsRef.current;
         let i = idxRef.current;
         const heals: Extract<BattleEvent, { kind: "heal" }>[] = [];
-        while (i < events.length && events[i].kind === "heal") {
+        const effs: Extract<BattleEvent, { kind: "effect" }>[] = [];
+        while (i < events.length && events[i].kind === "heal" && !effs.length) {
           heals.push(events[i] as Extract<BattleEvent, { kind: "heal" }>);
+          i++;
+        }
+        // 回復＋追加効果 (e.g. 攻撃力アップ) shows in the same beat.
+        while (i < events.length && events[i].kind === "effect") {
+          effs.push(events[i] as Extract<BattleEvent, { kind: "effect" }>);
           i++;
         }
         batchEndRef.current = i - 1;
         const hpAfter = new Map(heals.map((h) => [h.targetUid, h.hpAfter]));
         setUnits((prev) => {
-          const next = prev.map((u) => (hpAfter.has(u.uid) ? { ...u, hp: hpAfter.get(u.uid)! } : u));
+          let next = prev.map((u) => (hpAfter.has(u.uid) ? { ...u, hp: hpAfter.get(u.uid)! } : u));
+          for (const e of effs) next = next.map((u) => (u.uid === e.targetUid ? applyEffectToView(u, e) : u));
           unitsRef.current = next;
           return next;
         });
+        setPops(
+          effs.map((e, n) => ({
+            uid: e.targetUid,
+            text: SKILL_EFFECT_POP[e.effect],
+            tone: popTone(e.effect),
+            key: idxRef.current * 31 + 7 + n,
+          })),
+        );
         setFloats(
           heals.map((h, n) => ({
             uid: h.targetUid,
@@ -449,7 +550,7 @@ export function BattleView() {
                   return u;
                 }
                 const lu = liveNow.units.find((x) => x.uid === u.uid);
-                return lu ? { ...u, gauge: lu.gauge, haste: lu.haste } : u;
+                return lu ? { ...u, gauge: lu.gauge, haste: lu.haste, status: cloneStatus(lu.status) } : u;
               }),
             );
           }
@@ -503,6 +604,7 @@ export function BattleView() {
           setLunge(null);
           setStruck([]);
           setFloats([]);
+          setPops([]);
           setSkillBanner(null);
           setUnits((prev) => {
             const next = prev.map((u) => (u.uid === doneId ? { ...u, gauge: 0 } : u));
@@ -525,13 +627,10 @@ export function BattleView() {
                 let changed = false;
                 const next = prev.map((u) => {
                   if (!u.alive) return u;
-                  const g = Math.min(
-                    GAUGE_MAX,
-                    (u.gauge ?? 0) + atbRate(u) * ATB_PER_SEC * step,
-                  );
-                  if (g === u.gauge) return u;
-                  changed = true;
-                  return { ...u, gauge: g };
+                  // Same fill as the sim; ATB停止 holds the token until its time runs out.
+                  const nu = stepUnitGauge(u, step);
+                  if (nu !== u) changed = true;
+                  return nu;
                 });
                 if (changed) unitsRef.current = next;
                 return changed ? next : prev;
@@ -566,10 +665,9 @@ export function BattleView() {
               let changed = false;
               const next = prev.map((u) => {
                 if (!u.alive) return u;
-                const g = Math.min(GAUGE_MAX, (u.gauge ?? 0) + atbRate(u) * ATB_PER_SEC * step);
-                if (g === u.gauge) return u;
-                changed = true;
-                return { ...u, gauge: g };
+                const nu = stepUnitGauge(u, step);
+                if (nu !== u) changed = true;
+                return nu;
               });
               if (changed) unitsRef.current = next;
               return changed ? next : prev;
@@ -592,7 +690,7 @@ export function BattleView() {
             setUnits((prev) => {
               const next = prev.map((u) => {
                 const lu = liveNow.units.find((x) => x.uid === u.uid);
-                return lu ? { ...u, gauge: lu.gauge, haste: lu.haste } : u;
+                return lu ? { ...u, gauge: lu.gauge, haste: lu.haste, status: cloneStatus(lu.status) } : u;
               });
               unitsRef.current = next;
               return next;
@@ -667,7 +765,7 @@ export function BattleView() {
           <span className="text-brass">{FIELD_LABEL[field]}</span>
           {trial ? <span className="tabular text-muted">撃破 {trial.kills}</span> : null}
           {log[0] ? <span className="min-w-0 truncate text-fg">{log[0]}</span> : null}
-          {fx ? <span className="font-display text-brass">{kindLabel(fx.kind)}</span> : null}
+          {fx ? <span className="font-display text-brass">{kindWithEffectLabel(kindLabel(fx.kind), fx.effect)}</span> : null}
         </div>
 
         <div className="relative min-h-0 flex-1">
@@ -678,6 +776,7 @@ export function BattleView() {
               acting={acting}
               struck={struck}
               floats={floats}
+              pops={pops}
               lunge={lunge}
             />
           ))}
@@ -688,6 +787,7 @@ export function BattleView() {
               acting={acting}
               struck={struck}
               floats={floats}
+              pops={pops}
               lunge={lunge}
             />
           ))}
@@ -834,12 +934,14 @@ function UnitSpot({
   acting,
   struck,
   floats,
+  pops,
   lunge,
 }: {
   unit: Unit;
   acting: string | null;
   struck: string[];
   floats: FloatFx[];
+  pops: StatusPop[];
   lunge: Lunge | null;
 }) {
   const p = visOf(unit.slot, unit.side);
@@ -849,10 +951,17 @@ function UnitSpot({
   const x = isLunge ? lunge.x : p.x;
   const y = isLunge ? lunge.y : p.y;
   const float = floats.find((f) => f.uid === unit.uid) ?? null;
+  const myPops = pops.filter((f) => f.uid === unit.uid);
+  const badges = unit.alive ? statusBadges(unit.status) : [];
   return (
     <div
       className={cn("unit-spot absolute h-[38%] w-[14%] -translate-x-1/2 -translate-y-1/2", isLunge && "is-lunge")}
-      style={{ left: `${x}%`, top: `${y}%`, zIndex: isLunge ? 8 : acting === unit.uid ? 6 : 2 }}
+      style={{
+        left: `${x}%`,
+        top: `${y}%`,
+        // 追加効果 popups sit above a lunging attacker so 停止 / 遅延 stay readable.
+        zIndex: myPops.length ? 9 : isLunge ? 8 : acting === unit.uid ? 6 : 2,
+      }}
     >
       <CharSprite
         card={card}
@@ -864,6 +973,8 @@ function UnitSpot({
         flip={unit.side === "player"}
         bust={unit.bust}
         float={float}
+        pops={myPops}
+        badges={badges}
         leader={unit.isLeader}
       />
     </div>
@@ -912,7 +1023,7 @@ function SkillFx({ fx }: { fx: SkillFxState }) {
       {shown.map((slot, i) => {
         const p = visOf(slot, fx.targetSide);
         const cls =
-          fx.kind === "heal" || fx.kind === "haste" || fx.kind === "slow"
+          fx.support || fx.kind === "heal" || fx.kind === "haste" || fx.kind === "slow"
             ? "fx-hit fx-hit-heal"
             : fx.kind === "pierce"
               ? "fx-hit fx-hit-wide"
@@ -925,7 +1036,7 @@ function SkillFx({ fx }: { fx: SkillFxState }) {
             style={{
               left: `${p.x}%`,
               top: `${p.y}%`,
-              background: fx.kind === "heal" ? undefined : color,
+              background: fx.kind === "heal" || fx.support ? undefined : color,
               color,
               animationDelay: `${i * 50}ms`,
             }}
