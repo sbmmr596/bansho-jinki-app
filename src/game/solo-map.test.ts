@@ -5,7 +5,7 @@ import { SORTIE_SPIRIT } from "./arena.ts";
 import { hpGaugeColor } from "./hp-gauge.ts";
 import { RANK_META, RANK_ORDER, XP_PER_CLEAR, costCapForRank, rankForStage, rankForXp } from "./rank.ts";
 import { SOLO_FIELDS, applyVictory, soloStage, STRONGHOLD_WINS } from "./solo-map.ts";
-import { WAR_CONCEPT, warConceptBalanced } from "./war-concept.ts";
+import { WAR_CONCEPT, warConceptBalanced, warConceptLayout } from "./war-concept.ts";
 
 const fodderIds = new Set(FODDER_CARDS.map((c) => c.id));
 
@@ -111,6 +111,40 @@ describe("solo map", () => {
     assert.ok(Math.abs(home.y - 50) < 30, `home y ${home.y}`);
   });
 
+  it("lays cells out zig-zag, not on a checkerboard", () => {
+    for (const rank of RANK_ORDER) {
+      for (const stage of [1, 2, 5]) {
+        const map = soloStage(rank, stage);
+        let diagonal = 0;
+        let straight = 0;
+        for (const n of map.nodes) {
+          for (const nb of n.neighbors) {
+            if (nb < n.id) continue;
+            const o = map.byId[nb];
+            const dx = Math.abs(o.x - n.x) * 16;
+            const dy = Math.abs(o.y - n.y) * 9;
+            // A road is "straight" when it is almost purely horizontal or vertical.
+            if (dx < dy * 0.35 || dy < dx * 0.35) straight++;
+            else diagonal++;
+          }
+        }
+        assert.ok(diagonal > straight, `${rank}/${stage} diagonal ${diagonal} vs straight ${straight}`);
+        // Rows are broken up: cells do not share a handful of y values.
+        const ys = new Set(map.nodes.map((n) => Math.round(n.y / 2)));
+        assert.ok(ys.size >= map.nodes.length * 0.4, `${rank}/${stage} distinct rows ${ys.size}`);
+        // …but cells never pile up on top of each other.
+        for (let i = 0; i < map.nodes.length; i++) {
+          for (let j = i + 1; j < map.nodes.length; j++) {
+            const a = map.nodes[i];
+            const b = map.nodes[j];
+            const d = Math.hypot((a.x - b.x) * 16, (a.y - b.y) * 9);
+            assert.ok(d > 80, `${rank}/${stage} ${a.id} and ${b.id} too close (${d.toFixed(1)})`);
+          }
+        }
+      }
+    }
+  });
+
   it("uses one terrain per stage, with no extra rule", () => {
     const seen = [1, 2, 3, 4, 5, 6].map((stage) => soloStage("rookie", stage).field);
     assert.deepEqual(seen, SOLO_FIELDS);
@@ -143,5 +177,16 @@ describe("war concept", () => {
   it("uses a -100 to 100 field with balanced counts", () => {
     assert.equal(warConceptBalanced(), true);
     assert.equal(WAR_CONCEPT.status, "concept");
+  });
+
+  it("places war cells zig-zag inside -100 to 100", () => {
+    const pts = warConceptLayout(7);
+    assert.equal(pts.length, WAR_CONCEPT.cells);
+    for (const p of pts) {
+      assert.ok(p.x >= -100 && p.x <= 100 && p.y >= -100 && p.y <= 100);
+    }
+    const ys = new Set(pts.map((p) => Math.round(p.y / 4)));
+    assert.ok(ys.size > 20, `distinct rows ${ys.size}`);
+    assert.deepEqual(warConceptLayout(7), pts);
   });
 });

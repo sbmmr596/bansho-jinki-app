@@ -8,6 +8,7 @@ import { activeTrial, pumpTrial } from "@/game/trial";
 import { BATTLE_PRELOAD_TIMEOUT_MS, preloadImages } from "@/game/preload";
 import { useGame } from "@/game/store";
 import { SKILL_KIND_LABEL } from "@/game/skillNames";
+import { BACKDROP_ART, BACKDROP_H, BACKDROP_W, BATTLE_FIELD_SRC, backdropLayout } from "@/game/battle-backdrop";
 import type { BattleEvent, BattleLog, ElementType, FieldKind, Side, SkillKind, Unit } from "@/game/types";
 import { nextBattleSpeed } from "@/game/types";
 import { CharSprite, charSrc, CloseButton } from "./pieces";
@@ -24,18 +25,6 @@ const DUR: Record<BattleEvent["kind"], number> = {
   spawn: 300,
   buff: 700,
   end: 900,
-};
-
-/** Battle keeps the earlier photos. New map terrains reuse the closest of those. */
-const BATTLE_FIELD_SRC: Record<FieldKind, string> = {
-  grass: "/bg/grass.jpg",
-  desert: "/bg/field.jpg",
-  snow: "/bg/snow.jpg",
-  ice: "/bg/snow.jpg",
-  forest: "/bg/forest.jpg",
-  volcano: "/bg/magma.jpg",
-  waste: "/bg/field.jpg",
-  magma: "/bg/magma.jpg",
 };
 
 const TYPE_FX: Record<ElementType, string> = {
@@ -651,12 +640,7 @@ export function BattleView() {
 
   return (
     <div className="relative flex h-full min-h-0 w-full overflow-hidden text-fg">
-      <img
-        src={BATTLE_FIELD_SRC[field]}
-        alt=""
-        crossOrigin="anonymous"
-        className="absolute inset-0 h-full w-full object-cover"
-      />
+      <BattleBackdrop src={BATTLE_FIELD_SRC[field]} />
       <div className="absolute inset-0 bg-gradient-to-t from-bg/55 via-transparent to-bg/30" />
       {flash ? <div className="fx-screen-flash pointer-events-none absolute inset-0 z-40" /> : null}
       {!assetsReady ? (
@@ -782,6 +766,39 @@ export function BattleView() {
 
 function kindLabel(kind: SkillKind): string {
   return SKILL_KIND_LABEL[kind];
+}
+
+/** 空を切り詰め、地面を広げた戦闘背景（上段のキャラが地に立って見えるように）。 */
+function BattleBackdrop({ src }: { src: string }) {
+  const art = BACKDROP_ART[src];
+  if (!art) {
+    return <img src={src} alt="" crossOrigin="anonymous" className="absolute inset-0 h-full w-full object-cover" />;
+  }
+  const l = backdropLayout(art);
+  const vb = (v: { x: number; y: number; w: number; h: number }) => `${v.x} ${v.y} ${v.w} ${v.h}`;
+  return (
+    <svg
+      className="pointer-events-none absolute inset-0 h-full w-full"
+      viewBox={`0 0 ${BACKDROP_W} ${BACKDROP_H}`}
+      preserveAspectRatio="xMidYMax slice"
+      aria-hidden
+    >
+      <svg x={0} y={0} width={BACKDROP_W} height={l.horizonY} viewBox={vb(l.sky)} preserveAspectRatio="none">
+        <image href={src} width={art.w} height={art.h} crossOrigin="anonymous" />
+      </svg>
+      {/* 1px overlap hides any hairline seam at the horizon. */}
+      <svg
+        x={0}
+        y={l.horizonY - 1}
+        width={BACKDROP_W}
+        height={BACKDROP_H - l.horizonY + 1}
+        viewBox={vb(l.ground)}
+        preserveAspectRatio="none"
+      >
+        <image href={src} width={art.w} height={art.h} crossOrigin="anonymous" />
+      </svg>
+    </svg>
+  );
 }
 
 function visOf(slot: number, side: Side) {

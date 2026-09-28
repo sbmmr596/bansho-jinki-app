@@ -5,7 +5,7 @@ import { rankForXp, rankLabel } from "@/game/rank";
 import { FIELD_BOARD, FIELD_LABEL, FIELD_SRC, soloStage } from "@/game/solo-map";
 import { useGame } from "@/game/store";
 import { GoldChip, Shell, SpiritChip, TypeBadge } from "./pieces";
-import { HoldMark, HomeMark } from "./map-marks";
+import { HoldBadge, HomeBadge } from "./map-marks";
 import { cn } from "@/lib/utils";
 
 export function MapScreen() {
@@ -68,27 +68,35 @@ export function MapScreen() {
           style={{ background: FIELD_BOARD[map.field] }}
         >
           <img src={FIELD_SRC[map.field]} alt="" className="absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute inset-0 bg-black/15" />
+          {/* Roads between cells: dark edge + sand core (gold when both ends are yours). */}
           <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-            {visible.flatMap((n) =>
-              n.neighbors
-                .filter((nb) => nb > n.id && isVisible(nb) && byId[nb])
-                .map((nb) => {
-                  const o = byId[nb]!;
-                  const mine = captured.includes(n.id) && captured.includes(o.id);
-                  return (
-                    <line
-                      key={`${n.id}-${nb}`}
-                      x1={n.x}
-                      y1={n.y}
-                      x2={o.x}
-                      y2={o.y}
-                      stroke={mine ? "var(--color-brass)" : "rgba(255,255,255,0.72)"}
-                      strokeWidth="0.45"
-                    />
-                  );
-                }),
-            )}
+            {(["edge", "core"] as const).map((layer) => (
+              <g key={layer}>
+                {visible.flatMap((n) =>
+                  n.neighbors
+                    .filter((nb) => nb > n.id && isVisible(nb) && byId[nb])
+                    .map((nb) => {
+                      const o = byId[nb]!;
+                      const mine = captured.includes(n.id) && captured.includes(o.id);
+                      return (
+                        <line
+                          key={`${layer}-${n.id}-${nb}`}
+                          x1={n.x}
+                          y1={n.y}
+                          x2={o.x}
+                          y2={o.y}
+                          vectorEffect="non-scaling-stroke"
+                          strokeLinecap="round"
+                          stroke={layer === "edge" ? "#140a06" : mine ? "#ffd24a" : "#f4e2b4"}
+                          strokeWidth={layer === "edge" ? 9 : 4.5}
+                          strokeDasharray={layer === "core" && !mine ? "9 6" : undefined}
+                        />
+                      );
+                    }),
+                )}
+              </g>
+            ))}
           </svg>
           {visible.map((n) => {
             const mine = captured.includes(n.id);
@@ -106,17 +114,30 @@ export function MapScreen() {
                   openScout(n.id);
                 }}
                 className={cn(
-                  "absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full shadow-md",
-                  base ? "h-14 w-14" : "h-11 w-11 border-[3px] border-fg/80 bg-ink/70",
-                  n.home && "bg-brass text-bg",
-                  mine && !n.home && "border-transparent bg-ok text-bg",
-                  open && base && "bg-crimson text-fg ring-2 ring-brass",
-                  open && !base && "border-brass bg-crimson text-fg",
-                  !mine && !open && base && !n.home && "bg-ink/85 text-fg hairline",
+                  "absolute flex -translate-x-1/2 items-center justify-center",
+                  base
+                    ? n.home
+                      ? "h-[88px] w-[72px] -translate-y-[42%]"
+                      : "h-[84px] w-16 -translate-y-[42%]"
+                    : "h-11 w-11 -translate-y-1/2 rounded-full border-[3px] border-[#140a06] shadow-[0_3px_0_rgba(0,0,0,0.45)]",
+                  !base && !mine && !open && "bg-ink/85",
+                  !base && mine && "bg-[#1fb06a] ring-2 ring-inset ring-[#bff5d6]",
+                  !base && open && "bg-[#d62a3c] ring-2 ring-inset ring-[#ffd86a]",
+                  open && base && "drop-shadow-[0_0_6px_rgba(255,90,90,0.9)]",
                 )}
-                style={{ left: `${n.x}%`, top: `${n.y}%` }}
+                style={{ left: `${n.x}%`, top: `${n.y}%`, zIndex: base ? 3 : 2 }}
               >
-                {n.home ? <HomeMark /> : stronghold ? <HoldMark kind={n.short} /> : null}
+                {n.home ? (
+                  <HomeBadge />
+                ) : stronghold ? (
+                  <HoldBadge
+                    id={n.id}
+                    kind={n.short}
+                    state={mine ? "mine" : open ? "open" : "idle"}
+                    wins={progress}
+                    need={n.holdNeed ?? 1}
+                  />
+                ) : null}
                 {stronghold && progress > 0 && !mine ? (
                   <span className="sr-only">
                     {progress}/{n.holdNeed}
