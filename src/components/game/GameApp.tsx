@@ -5,7 +5,6 @@ import { loadUserCatalog } from "@/game/catalog-api";
 import { loadDriveCatalog } from "@/game/drive-catalog";
 import { driveResumeAction, driveResumePending } from "@/game/drive-resume";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
-import { ArtTrialOverlay } from "./ArtTrialOverlay";
 import { BattleView } from "./BattleView";
 import { CatalogPanel } from "./CatalogPanel";
 import { CardEditorPanel } from "./CardEditorPanel";
@@ -41,7 +40,6 @@ export function GameApp() {
   const setCatalogOpen = useGame((s) => s.setCatalogOpen);
   const setCatalogSource = useGame((s) => s.setCatalogSource);
   const { user, isPending: authPending } = useCurrentUserState();
-  const [artOpen, setArtOpen] = useState(false);
   const [driveTried, setDriveTried] = useState(false);
   const [showLandscapeHint, setShowLandscapeHint] = useState(false);
   const frameRef = useRef<HTMLDivElement>(null);
@@ -129,12 +127,6 @@ export function GameApp() {
       window.setTimeout(() => el.remove(), 400);
     }, 3000);
     return () => window.clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    const open = () => setArtOpen(true);
-    window.addEventListener("bansho-art-trial", open);
-    return () => window.removeEventListener("bansho-art-trial", open);
   }, []);
 
   useEffect(() => {
@@ -370,7 +362,6 @@ export function GameApp() {
         {debugOpen ? <DebugPanel /> : null}
         {catalogOpen ? <CatalogPanel onClose={() => setCatalogOpen(false)} /> : null}
         {cardEditorOpen ? <CardEditorPanel onClose={() => setCardEditorOpen(false)} /> : null}
-        {artOpen ? <ArtTrialOverlay onClose={() => setArtOpen(false)} /> : null}
         <ArtZoom />
       </div>
     </div>
