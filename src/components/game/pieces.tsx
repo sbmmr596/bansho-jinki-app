@@ -649,7 +649,7 @@ export function CharSprite({
               ★
             </span>
           ) : (
-            <span className="h-[0.85em]" aria-hidden />
+            <span className="battle-leader-mark opacity-0" aria-hidden>★</span>
           )}
           <HpBar hp={hp} max={maxHp} thick />
         </div>
