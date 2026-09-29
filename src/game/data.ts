@@ -10,6 +10,7 @@ import type {
   Skill,
   SkillKind,
 } from "./types";
+import { parseSkillEffect } from "./skill-effects";
 import {
   applySkillKindLabels,
   resetSkillKindLabels,
@@ -1210,11 +1211,14 @@ function parseSkill(raw: unknown, fallback: Skill): Skill {
     typeof sk.kind === "string" && SKILL_KINDS.has(sk.kind) ? (sk.kind as SkillKind) : fallback.kind;
   const hits =
     sk.hits != null && sk.hits !== "" ? Math.max(1, Math.round(num(sk.hits, 1))) : undefined;
+  // Optional 追加効果. Missing / unknown / "none" → no effect (old JSON unchanged).
+  const effect = parseSkillEffect(sk.effect);
   return {
     name: typeof sk.name === "string" && sk.name.trim() ? sk.name.trim() : fallback.name,
     kind,
     power: num(sk.power, fallback.power),
     ...(hits != null ? { hits } : {}),
+    ...(effect ? { effect } : {}),
     desc: typeof sk.desc === "string" ? sk.desc : fallback.desc,
   };
 }
@@ -1324,6 +1328,7 @@ function serializeSkill(skill: Skill): Record<string, unknown> {
     power: skill.power,
     desc: skill.desc,
     ...(skill.hits != null ? { hits: skill.hits } : {}),
+    ...(skill.effect ? { effect: skill.effect } : {}),
   };
 }
 

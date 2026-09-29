@@ -47,6 +47,7 @@ QA スチル: `docs/qa/`
 - 全身: `public/chars/{id}.png`（カード・戦場）
 - バスト: `public/cards/{id}.jpg`（ATB レールなど）
 - ユーザー JSON の `art` が `/chars/…` なら標準絵。相対パス `chars/id.png` なら Drive 側
+- 技（`basicSkill` / `skill`）には任意で `effect` を付けられる: `delay`（ATB遅延）/ `stop`（ATB停止）/ `atkUp`（攻撃力アップ）/ `defDown`（防御力ダウン）/ `guardIgnore`（ガード無効）。日本語名（例 `"防御力ダウン"`）でも読める。省略・不明な値は効果なし。攻撃系の技で `power: 0` にすると効果だけの技になる。効果量と持続は `src/game/skill-effects.ts`（原作メモは `docs/sinraf-skills.md`）
 
 ## 注意
 

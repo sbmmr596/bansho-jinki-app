@@ -1,5 +1,15 @@
 import { CARD_BY_ID, FORMATIONS, cardBasicSkill, scaledStat, skillPowerScale } from "./data";
 import { commonSkillName } from "./skillNames";
+import {
+  ATTACK_KINDS,
+  cloneStatus,
+  EFFECT_RANK,
+  effectLvMult,
+  effectMagnitude,
+  hasStatus,
+  STATUS_LEFT,
+  tickStatus,
+} from "./skill-effects";
 import type {
   BattleEvent,
   BattleLog,
@@ -8,6 +18,7 @@ import type {
   EnemyUnit,
   Formation,
   OwnedSkill2,
+  Rarity,
   Side,
   Skill,
   Unit,
@@ -140,13 +151,31 @@ function selectTargets(actor: Unit, units: Unit[], skill: Skill): Unit[] {
   }
 }
 
-function dealDamage(actor: Unit, target: Unit, skill: Skill, skillLv: number): { damage: number; mod: number } {
-  const mod = typeMod(actor.type, target.type);
+export interface DamageOpts {
+  /** 攻撃力アップ multiplier on the attacker (1 = none). */
+  atkMul?: number;
+  /** 防御力ダウン multiplier on the target (1 = none). */
+  defMul?: number;
+  /** ガード無効: type guard (<1) becomes neutral. Crits are kept. */
+  guardIgnore?: boolean;
+}
+
+export function dealDamage(
+  actor: Unit,
+  target: Unit,
+  skill: Skill,
+  skillLv: number,
+  opts: DamageOpts = {},
+): { damage: number; mod: number; guardIgnored: boolean } {
+  const typed = typeMod(actor.type, target.type);
+  const guardIgnored = !!opts.guardIgnore && typed < 1;
+  const mod = guardIgnored ? 1 : typed;
   const power = skill.power * skillPowerScale(skillLv);
   const raw = actor.atk * power;
   const reduced = raw * (90 / (90 + target.def));
-  const damage = Math.max(1, Math.floor(reduced * mod));
-  return { damage, mod };
+  const boost = (opts.atkMul ?? 1) * (opts.defMul ?? 1);
+  const damage = Math.max(1, Math.floor(reduced * mod * boost));
+  return { damage, mod, guardIgnored };
 }
 
 export type ActionSkillSlot = "basic" | "s1" | "s2";
@@ -155,6 +184,8 @@ export interface PickedActionSkill {
   skill: Skill;
   skillLv: number;
   slot: ActionSkillSlot;
+  /** Specials only: rarity that sets the effect rank (s1 = card, s2 = source card). */
+  rarity?: Rarity;
 }
 
 /**
@@ -202,11 +233,106 @@ export function pickActionSkill(actor: Unit): PickedActionSkill {
   if (hasS2 && s2Lv != null) {
     const pS1 = s1Lv / (s1Lv + s2Lv);
     if (Math.random() < pS1) {
-      return { skill: actor.skill, skillLv: s1Lv, slot: "s1" };
+      return { skill: actor.skill, skillLv: s1Lv, slot: "s1", rarity: cardRarity(actor) };
     }
-    return { skill: actor.skill2!.skill, skillLv: s2Lv, slot: "s2" };
+    return { skill: actor.skill2!.skill, skillLv: s2Lv, slot: "s2", rarity: actor.skill2!.rarity };
   }
-  return { skill: actor.skill, skillLv: s1Lv, slot: "s1" };
+  return { skill: actor.skill, skillLv: s1Lv, slot: "s1", rarity: cardRarity(actor) };
+}
+
+function cardRarity(actor: Unit): Rarity {
+  return CARD_BY_ID[actor.cardId]?.rarity ?? "N";
+}
+
+/** True when an attack-kind skill carries an effect and no damage (効果のみ). */
+export function isPureEffectSkill(skill: Skill): boolean {
+  return !!skill.effect && skill.effect !== "guardIgnore" && ATTACK_KINDS.has(skill.kind) && !(skill.power > 0);
+}
+
+/** Effect rank per the original: 基本技 10 (with attack) / 20 (effect only); specials by rarity. */
+export function effectRankFor(picked: Pick<PickedActionSkill, "skill" | "slot" | "rarity">): number {
+  if (picked.slot === "basic") {
+    return isPureEffectSkill(picked.skill) || !ATTACK_KINDS.has(picked.skill.kind)
+      ? EFFECT_RANK.basicPure
+      : EFFECT_RANK.basicAttack;
+  }
+  return EFFECT_RANK.special[picked.rarity ?? "N"];
+}
+
+function uniqueAlive(list: Unit[]): Unit[] {
+  const seen = new Set<string>();
+  const out: Unit[] = [];
+  for (const u of list) {
+    if (!u.alive || seen.has(u.uid)) continue;
+    seen.add(u.uid);
+    out.push(u);
+  }
+  return out;
+}
+
+/**
+ * Who receives the add-on effect.
+ * - atkUp (buff): heal/haste → the skill's allies; attack with damage / slow → self;
+ *   effect-only attack → all allies for 全体, else random ally(ies).
+ * - debuffs: the foes this skill hit/targeted; heal/haste → the front foe.
+ */
+function effectRecipients(
+  actor: Unit,
+  units: Unit[],
+  skill: Skill,
+  primary: Unit[],
+  pure: boolean,
+): Unit[] {
+  const effect = skill.effect;
+  if (!effect || effect === "guardIgnore") return [];
+  const ally = actor.side;
+  if (effect === "atkUp") {
+    if (skill.kind === "heal" || skill.kind === "haste") return uniqueAlive(primary);
+    if (!pure) return actor.alive ? [actor] : [];
+    if (skill.kind === "all") return living(units, ally);
+    return uniqueAlive(pickRandom(units, ally, skill.kind === "random" ? (skill.hits ?? 1) : 1));
+  }
+  if (skill.kind === "heal" || skill.kind === "haste") {
+    return uniqueAlive(selectTargets(actor, units, { ...skill, kind: "front" }));
+  }
+  return uniqueAlive(primary).filter((t) => t.side !== ally);
+}
+
+function applySkillEffect(actor: Unit, recipients: Unit[], picked: PickedActionSkill): BattleEvent[] {
+  const effect = picked.skill.effect;
+  if (!effect || effect === "guardIgnore") return [];
+  const lvMult = picked.slot === "basic" ? 1 : effectLvMult(picked.skillLv);
+  const mag = effectMagnitude(effectRankFor(picked), lvMult);
+  const events: BattleEvent[] = [];
+  for (const t of recipients) {
+    if (!t.alive) continue;
+    let value = 0;
+    if (effect === "delay") {
+      const amount = Math.round(mag.delay * GAUGE_MAX);
+      value = Math.min(t.gauge, amount);
+      t.gauge = Math.max(0, t.gauge - amount);
+    } else if (effect === "stop") {
+      value = mag.stopSec;
+      const s = (t.status ??= {});
+      // No stacking: keep whichever freeze lasts longer.
+      s.stop = Math.max(s.stop ?? 0, mag.stopSec);
+    } else {
+      value = mag.mul;
+      const s = (t.status ??= {});
+      const prev = s[effect];
+      // Overwrite (never stack): stronger multiplier wins, duration refreshes.
+      s[effect] = { mul: Math.max(prev?.mul ?? 1, mag.mul), left: STATUS_LEFT };
+    }
+    events.push({
+      kind: "effect",
+      actorUid: actor.uid,
+      targetUid: t.uid,
+      effect,
+      value,
+      status: cloneStatus(t.status) ?? {},
+    });
+  }
+  return events;
 }
 
 function applyFormation(
@@ -301,7 +427,15 @@ export function enemyToMembers(enemy: EnemyUnit[], difficulty: Difficulty = "nor
 }
 
 export function performAction(actor: Unit, units: Unit[]): BattleEvent[] {
-  const { skill, skillLv, slot } = pickActionSkill(actor);
+  const picked = pickActionSkill(actor);
+  const { skill, skillLv, slot } = picked;
+  // Action start: expire / count down the actor's one-shot buffs & debuffs.
+  const hadStatus = hasStatus(actor.status);
+  tickStatus(actor);
+  const pure = isPureEffectSkill(skill);
+  const dealsDamage = ATTACK_KINDS.has(skill.kind) && !pure;
+  const atkUp = dealsDamage ? actor.status?.atkUp : undefined;
+  if (atkUp && actor.status) delete actor.status.atkUp;
   const events: BattleEvent[] = [
     {
       kind: "skill",
@@ -310,6 +444,8 @@ export function performAction(actor: Unit, units: Unit[]): BattleEvent[] {
       side: actor.side,
       slot,
       skillKind: skill.kind,
+      ...(skill.effect ? { skillEffect: skill.effect } : {}),
+      ...(hadStatus || hasStatus(actor.status) ? { actorStatus: cloneStatus(actor.status) ?? {} } : {}),
     },
   ];
   let targets = selectTargets(actor, units, skill);
@@ -335,6 +471,7 @@ export function performAction(actor: Unit, units: Unit[]): BattleEvent[] {
         hpAfter: t.hp,
       });
     }
+    events.push(...applySkillEffect(actor, effectRecipients(actor, units, skill, targets, pure), picked));
     return events;
   }
   if (skill.kind === "haste" || skill.kind === "slow") {
@@ -343,11 +480,26 @@ export function performAction(actor: Unit, units: Unit[]): BattleEvent[] {
       t.haste = Math.max(0.5, Math.min(2, (t.haste ?? 1) * mul));
     }
     events.push({ kind: "buff", actorUid: actor.uid, mode: skill.kind });
+    events.push(...applySkillEffect(actor, effectRecipients(actor, units, skill, targets, pure), picked));
     return events;
   }
-  for (const t of targets) {
-    if (!t.alive) continue;
-    const { damage, mod } = dealDamage(actor, t, skill, skillLv);
+  if (pure) {
+    // 効果のみ（威力0）: no hit events, just the effect on the targeted units.
+    events.push(...applySkillEffect(actor, effectRecipients(actor, units, skill, targets, pure), picked));
+    return events;
+  }
+  const guardIgnore = skill.effect === "guardIgnore";
+  targets.forEach((t, i) => {
+    if (!t.alive) return;
+    // 原作: 与ダメアップは連続攻撃なら1撃目だけ。範囲攻撃は全員に乗る。
+    const atkMul = atkUp && (skill.kind !== "random" || i === 0) ? atkUp.mul : 1;
+    const defDown = t.status?.defDown;
+    if (defDown && t.status) delete t.status.defDown;
+    const { damage, mod, guardIgnored } = dealDamage(actor, t, skill, skillLv, {
+      atkMul,
+      defMul: defDown?.mul ?? 1,
+      guardIgnore,
+    });
     t.hp = Math.max(0, t.hp - damage);
     events.push({
       kind: "hit",
@@ -356,12 +508,15 @@ export function performAction(actor: Unit, units: Unit[]): BattleEvent[] {
       damage,
       mod,
       hpAfter: t.hp,
+      ...(guardIgnored ? { guardIgnored: true } : {}),
+      ...(defDown ? { targetStatus: cloneStatus(t.status) ?? {} } : {}),
     });
     if (t.hp <= 0 && t.alive) {
       t.alive = false;
       events.push({ kind: "ko", uid: t.uid, wasLeader: t.isLeader });
     }
-  }
+  });
+  events.push(...applySkillEffect(actor, effectRecipients(actor, units, skill, targets, pure), picked));
   return events;
 }
 
@@ -373,16 +528,54 @@ export function atbRate(u: Unit): number {
   return Math.max(1, u.spd * Math.max(0.1, u.haste ?? 1));
 }
 
+/** Remaining ATB停止 seconds (0 when not stopped). */
+export function stopLeft(u: Pick<Unit, "status">): number {
+  return Math.max(0, u.status?.stop ?? 0);
+}
+
+/**
+ * Gauge + stop after `sec` seconds of ATB time. ATB停止 eats time first,
+ * then the gauge fills at the normal rate.
+ */
+export function gaugeAfter(u: Unit, sec: number): { gauge: number; stop: number } {
+  const t = Math.max(0, sec);
+  const s = stopLeft(u);
+  const run = Math.max(0, t - s);
+  return {
+    gauge: Math.min(GAUGE_MAX, (u.gauge ?? 0) + atbRate(u) * ATB_PER_SEC * run),
+    stop: Math.max(0, s - t),
+  };
+}
+
+/** Immutable variant for view state: returns the same object when nothing changed. */
+export function stepUnitGauge(u: Unit, sec: number): Unit {
+  const { gauge, stop } = gaugeAfter(u, sec);
+  const s = stopLeft(u);
+  if (gauge === u.gauge && stop === s) return u;
+  if (stop === s) return { ...u, gauge };
+  const status = { ...(u.status ?? {}) };
+  if (stop > 0) status.stop = stop;
+  else delete status.stop;
+  return { ...u, gauge, status };
+}
+
+function setStop(u: Unit, stop: number) {
+  if (stop > 0) (u.status ??= {}).stop = stop;
+  else if (u.status) delete u.status.stop;
+}
+
 export function advanceGauges(units: Unit[], dt: number) {
-  const k = ATB_PER_SEC * Math.max(0, dt);
+  const sec = Math.max(0, dt);
   for (const u of units) {
     if (!u.alive) continue;
-    u.gauge = Math.min(GAUGE_MAX, u.gauge + atbRate(u) * k);
+    const { gauge, stop } = gaugeAfter(u, sec);
+    u.gauge = gauge;
+    if (stop !== stopLeft(u)) setStop(u, stop);
   }
 }
 
 export function takeReadyActor(units: Unit[]): Unit | null {
-  const ready = units.filter((u) => u.alive && u.gauge >= GAUGE_MAX);
+  const ready = units.filter((u) => u.alive && u.gauge >= GAUGE_MAX && stopLeft(u) <= 0);
   if (!ready.length) return null;
   ready.sort((a, b) => atbRate(b) - atbRate(a) || (a.side === "player" ? -1 : 1));
   const actor = ready[0]!;
@@ -392,10 +585,12 @@ export function takeReadyActor(units: Unit[]): Unit | null {
 export function pickNextActor(units: Unit[]): Unit | null {
   const alive = units.filter((u) => u.alive);
   if (!alive.length) return null;
+  // Time here is in "rate units" (gauge += t * atbRate); ATB停止 seconds convert by ATB_PER_SEC.
+  const timeToAct = (u: Unit) => stopLeft(u) * ATB_PER_SEC + (GAUGE_MAX - u.gauge) / atbRate(u);
   let best = alive[0];
-  let bestT = (GAUGE_MAX - best.gauge) / atbRate(best);
+  let bestT = timeToAct(best);
   for (const u of alive) {
-    const t = (GAUGE_MAX - u.gauge) / atbRate(u);
+    const t = timeToAct(u);
     if (t < bestT - 1e-9) {
       best = u;
       bestT = t;
@@ -407,8 +602,12 @@ export function pickNextActor(units: Unit[]): Unit | null {
     }
   }
   for (const u of alive) {
-    u.gauge = Math.min(GAUGE_MAX, u.gauge + bestT * atbRate(u));
+    const { gauge, stop } = gaugeAfter(u, bestT / ATB_PER_SEC);
+    u.gauge = gauge;
+    if (stop !== stopLeft(u)) setStop(u, stop);
   }
+  best.gauge = GAUGE_MAX;
+  setStop(best, 0);
   return best;
 }
 

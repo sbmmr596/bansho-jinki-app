@@ -2,6 +2,11 @@ export type ElementType = "power" | "skill" | "magic" | "void" | "heaven" | "ear
 export type Faction = "koryu" | "tekki" | "tensho" | "metsujin" | "reiju" | "yukei";
 export type Rarity = "N" | "S" | "H" | "SP";
 export type SkillKind = "front" | "pierce" | "sweep" | "random" | "all" | "heal" | "haste" | "slow";
+/**
+ * Optional add-on effect for any skill (基本技・必殺技). Orthogonal to SkillKind
+ * (the 8 kinds stay fixed). See src/game/skill-effects.ts.
+ */
+export type SkillEffect = "delay" | "stop" | "atkUp" | "defDown" | "guardIgnore";
 export type Side = "player" | "enemy";
 export type FieldKind =
   | "grass"
@@ -34,7 +39,19 @@ export interface Skill {
   kind: SkillKind;
   power: number;
   hits?: number;
+  /** 追加効果. Omitted = none (old JSON stays valid). */
+  effect?: SkillEffect;
   desc: string;
+}
+
+/** Temporary battle status. Buff/debuff are one-shot and never stack (overwrite). */
+export interface UnitStatus {
+  /** 攻撃力アップ: next damaging action ×mul. left = own actions before it expires. */
+  atkUp?: { mul: number; left: number };
+  /** 防御力ダウン: next hit taken ×mul. */
+  defDown?: { mul: number; left: number };
+  /** ATB停止: seconds of ATB time left frozen. */
+  stop?: number;
 }
 
 export interface Formation {
@@ -152,6 +169,8 @@ export interface Unit {
   gauge: number;
   haste: number;
   bust?: boolean;
+  /** 攻撃力アップ／防御力ダウン／ATB停止. */
+  status?: UnitStatus;
 }
 
 export type BattleEvent =
@@ -164,6 +183,9 @@ export type BattleEvent =
       slot: "basic" | "s1" | "s2";
       /** Kind actually used this action (basic and special can differ). */
       skillKind: SkillKind;
+      skillEffect?: SkillEffect;
+      /** Actor status after the action-start tick / atkUp consumption. */
+      actorStatus?: UnitStatus;
     }
   | {
       kind: "hit";
@@ -172,6 +194,10 @@ export type BattleEvent =
       damage: number;
       mod: number;
       hpAfter: number;
+      /** ガード無効 turned a type guard into a normal hit. */
+      guardIgnored?: boolean;
+      /** Target status after this hit (defDown consumed). */
+      targetStatus?: UnitStatus;
     }
   | {
       kind: "heal";
@@ -184,6 +210,16 @@ export type BattleEvent =
   | { kind: "shift"; uid: string; slot: number }
   | { kind: "spawn"; unit: Unit }
   | { kind: "buff"; actorUid: string; mode: "haste" | "slow" }
+  | {
+      kind: "effect";
+      actorUid: string;
+      targetUid: string;
+      effect: Exclude<SkillEffect, "guardIgnore">;
+      /** delay: gauge amount pushed back; stop: seconds; atkUp/defDown: multiplier. */
+      value: number;
+      /** Target status after applying. */
+      status: UnitStatus;
+    }
   | { kind: "end"; winner: Side | "draw"; reason: "leader" | "wipe" | "timeout" };
 
 export interface BattleLog {
