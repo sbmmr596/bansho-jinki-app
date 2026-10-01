@@ -190,6 +190,7 @@ export function CardFace({
   maxHp,
   onClick,
   className,
+  faceRight,
 }: {
   card: Card;
   level?: number;
@@ -205,8 +206,12 @@ export function CardFace({
   maxHp?: number;
   onClick?: () => void;
   className?: string;
+  /** 立ち絵の向きを揃える（CharSprite と同じ spriteNeedsFlip）。true=右向き(自陣) / false=左向き(敵陣)。未指定=素材のまま。 */
+  faceRight?: boolean;
 }) {
   const { src, onError } = useCardImg(card);
+  const flipChar =
+    faceRight != null && !!src && spriteNeedsFlip(card, faceRight, src !== charSrc(card));
   const setZoomCard = useGame((s) => s.setZoomCard);
   const hold = useRef(0);
   const held = useRef(false);
@@ -297,7 +302,10 @@ export function CardFace({
           src={src}
           alt=""
           onError={onError}
-          className="card-layer-char pointer-events-none absolute inset-x-0 bottom-[4%] top-[16%] z-[3] mx-auto w-full object-contain object-bottom"
+          className={cn(
+            "card-layer-char pointer-events-none absolute inset-x-0 bottom-[4%] top-[16%] z-[3] mx-auto w-full object-contain object-bottom",
+            flipChar && "-scale-x-100",
+          )}
         />
       )}
       {leader ? (

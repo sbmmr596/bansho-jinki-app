@@ -45,60 +45,7 @@ export function ScoutScreen() {
   return (
     <Shell title={node.name} onBack={() => setScreen("map")} nav="map" wide extra={<SpiritChip spirit={spirit} max={SPIRIT_MAX} />}>
       <div className="flex h-full min-h-0 w-full items-stretch gap-4 overflow-hidden px-1 py-1">
-        {/*
-          3×3 of 2:3 cells ⇒ board ≈ 2:3. Size by container height+width so the
-          board always fits between header and bottom nav (no top/bottom clip).
-        */}
-        <div className="flex min-h-0 w-[min(42%,22rem)] shrink-0 flex-col overflow-hidden">
-          <p className="mb-1 shrink-0 text-[14px] leading-none text-faint">
-            敵陣 {eForm.name}　前←
-          </p>
-          <div
-            className="relative min-h-0 min-w-0 flex-1 overflow-hidden"
-            style={{ containerType: "size" }}
-          >
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div
-                className="grid grid-cols-3 gap-1"
-                style={{ width: "min(100cqw, calc(100cqh * 2 / 3))" }}
-              >
-                {[0, 1, 2].map((row) =>
-                  [2, 1, 0].map((col) => {
-                    const slot = row * 3 + col;
-                    const id = enemyParty[slot];
-                    const card = id ? CARD_BY_ID[id] : null;
-                    const eu = node.enemy.find((e) => e.slot === slot);
-                    const occupied = !!card && !!eu;
-                    const open = !!eForm.slots[slot];
-                    return (
-                      <div
-                        key={slot}
-                        className={cn(
-                          "flex aspect-[2/3] w-full items-center justify-center overflow-hidden rounded-md border border-dashed p-0.5",
-                          open ? "border-crimson/40 bg-surface/70" : "border-transparent opacity-30",
-                        )}
-                      >
-                        {occupied ? (
-                          <CardFace
-                            card={card}
-                            level={scaleEnemyLevel(eu.level, difficulty)}
-                            size="xs"
-                            leader={!!eu.leader}
-                            className="!h-full !w-full max-h-full max-w-full"
-                          />
-                        ) : open ? (
-                          <span className="text-[13px] text-faint">空</span>
-                        ) : null}
-                      </div>
-                    );
-                  }),
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-2 overflow-y-auto pr-1">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-2 overflow-y-auto pl-1">
           <p className="text-sm leading-relaxed text-muted">{node.blurb}</p>
           {(node.holdNeed ?? 1) > 1 ? (
             <p className="text-sm text-brass">
@@ -135,6 +82,61 @@ export function ScoutScreen() {
             </PrimaryButton>
           </div>
         </div>
+        {/*
+          敵陣は画面右・左向き（戦闘画面と同じ向かい合わせ）。列は [2,1,0] の順で、前列(col 2)が中央寄り(左)。
+          3×3 of 2:3 cells ⇒ board ≈ 2:3. Size by container height+width so the
+          board always fits between header and bottom nav (no top/bottom clip).
+        */}
+        <div className="flex min-h-0 w-[min(42%,22rem)] shrink-0 flex-col overflow-hidden">
+          <p className="mb-1 shrink-0 text-right text-[14px] leading-none text-faint">
+            敵陣 {eForm.name}　前←
+          </p>
+          <div
+            className="relative min-h-0 min-w-0 flex-1 overflow-hidden"
+            style={{ containerType: "size" }}
+          >
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div
+                className="grid grid-cols-3 gap-1"
+                style={{ width: "min(100cqw, calc(100cqh * 2 / 3))" }}
+              >
+                {[0, 1, 2].map((row) =>
+                  [2, 1, 0].map((col) => {
+                    const slot = row * 3 + col;
+                    const id = enemyParty[slot];
+                    const card = id ? CARD_BY_ID[id] : null;
+                    const eu = node.enemy.find((e) => e.slot === slot);
+                    const occupied = !!card && !!eu;
+                    const open = !!eForm.slots[slot];
+                    return (
+                      <div
+                        key={slot}
+                        className={cn(
+                          "flex aspect-[2/3] w-full items-center justify-center overflow-hidden rounded-md border border-dashed p-0.5",
+                          open ? "border-crimson/40 bg-surface/70" : "border-transparent opacity-30",
+                        )}
+                      >
+                        {occupied ? (
+                          <CardFace
+                            card={card}
+                            level={scaleEnemyLevel(eu.level, difficulty)}
+                            size="xs"
+                            leader={!!eu.leader}
+                            faceRight={false}
+                            className="!h-full !w-full max-h-full max-w-full"
+                          />
+                        ) : open ? (
+                          <span className="text-[13px] text-faint">空</span>
+                        ) : null}
+                      </div>
+                    );
+                  }),
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </Shell>
   );
