@@ -970,7 +970,7 @@ function UnitSpot({
         dimmed={!unit.alive}
         hp={unit.hp}
         maxHp={unit.maxHp}
-        flip={unit.side === "player"}
+        faceRight={unit.side === "player"}
         bust={unit.bust}
         float={float}
         pops={myPops}

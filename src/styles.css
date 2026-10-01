@@ -827,9 +827,10 @@ body {
   text-shadow: 0 0.05em 0.1em rgb(0 0 0 / 0.55);
 }
 
-/* Rarity frame colors on card faces (drawn on .card-layer-frame above art) */
+/* Rarity frame colors on card faces (drawn on .card-layer-frame, the bottom-most layer under art and text) */
 .card-face {
   --card-rarity-edge: #9eb8d4;
+  --card-edge-w: 4px;
 }
 .card-rarity-n {
   --card-rarity-edge: #9eb8d4; /* 薄い青 */
@@ -851,10 +852,9 @@ body {
     0 0 14px 6px color-mix(in oklab, var(--card-rarity-edge) 45%, transparent),
     0 0 22px 8px color-mix(in oklab, var(--card-rarity-edge) 0%, transparent);
 }
+/* 縁取りは最下層（背景・名前・Lv・バッジより下）。背景を縁の幅だけ内側に寄せて、縁の色が見えるようにする */
 .card-layer-frame {
-  box-shadow:
-    inset 0 0 0 4px var(--card-rarity-edge),
-    inset 0 0 8px 5px color-mix(in oklab, var(--card-rarity-edge) 55%, transparent);
+  background: var(--card-rarity-edge);
   border-radius: inherit;
   pointer-events: none;
 }
