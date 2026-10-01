@@ -399,7 +399,7 @@ function FormationGrid({
     <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden">
       <div className="grid w-full max-w-full grid-cols-3 gap-1 @sm:gap-1.5">
         {[0, 1, 2].map((row) =>
-          [2, 1, 0].map((col) => {
+          [0, 1, 2].map((col) => {
             const slot = row * 3 + col;
             const open = formation.slots[slot];
             const id = party[slot];

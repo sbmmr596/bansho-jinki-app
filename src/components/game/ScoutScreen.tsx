@@ -51,7 +51,7 @@ export function ScoutScreen() {
         */}
         <div className="flex min-h-0 w-[min(42%,22rem)] shrink-0 flex-col overflow-hidden">
           <p className="mb-1 shrink-0 text-[14px] leading-none text-faint">
-            敵陣 {eForm.name}　→前
+            敵陣 {eForm.name}　前←
           </p>
           <div
             className="relative min-h-0 min-w-0 flex-1 overflow-hidden"
@@ -63,7 +63,7 @@ export function ScoutScreen() {
                 style={{ width: "min(100cqw, calc(100cqh * 2 / 3))" }}
               >
                 {[0, 1, 2].map((row) =>
-                  [0, 1, 2].map((col) => {
+                  [2, 1, 0].map((col) => {
                     const slot = row * 3 + col;
                     const id = enemyParty[slot];
                     const card = id ? CARD_BY_ID[id] : null;

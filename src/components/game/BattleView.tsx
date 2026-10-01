@@ -901,10 +901,14 @@ function BattleBackdrop({ src }: { src: string }) {
   );
 }
 
+/**
+ * Battle-stage position (% of the field) for a formation slot.
+ * 自陣は画面左・右向き、敵陣は画面右・左向き。前列(col 2)は常に中央寄り(敵に近い側)。
+ */
 function visOf(slot: number, side: Side) {
   const row = Math.floor(slot / 3);
   const col = slot % 3;
-  const x = side === "player" ? 90 - col * 13 : 10 + col * 13;
+  const x = side === "player" ? 10 + col * 13 : 90 - col * 13;
   const y = 22 + row * 28;
   return { x, y, row, col };
 }
@@ -914,7 +918,8 @@ function lungePos(actor: Unit, slots: number[], targetSide: Side, kind: SkillKin
   if (!slots.length) return home;
   const tp = visOf(slots[0], targetSide);
   if (kind === "front") {
-    const dx = targetSide === "enemy" ? 4 : -4;
+    // Stand just in front of the target, on the attacker's side (player = left, enemy = right).
+    const dx = targetSide === "enemy" ? -4 : 4;
     return { x: tp.x + dx, y: tp.y };
   }
   if (kind === "pierce" || kind === "sweep") {
@@ -926,7 +931,7 @@ function lungePos(actor: Unit, slots: number[], targetSide: Side, kind: SkillKin
   if (kind === "heal" || kind === "haste" || kind === "slow") {
     return { x: (home.x + tp.x) / 2, y: (home.y + tp.y) / 2 };
   }
-  return { x: home.x + (actor.side === "player" ? -4 : 4), y: home.y };
+  return { x: home.x + (actor.side === "player" ? 4 : -4), y: home.y };
 }
 
 function UnitSpot({

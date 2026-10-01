@@ -515,7 +515,7 @@ function ZoomFormationPreview({ slots }: { slots: boolean[] }) {
   return (
     <div className="grid h-14 w-14 shrink-0 grid-cols-3 grid-rows-3 gap-0.5" aria-hidden>
       {[0, 1, 2].map((row) =>
-        [2, 1, 0].map((col) => {
+        [0, 1, 2].map((col) => {
           const slot = row * 3 + col;
           const open = slots[slot];
           return (
@@ -602,9 +602,18 @@ export function SkillSlot({
 
 /**
  * 立ち絵の素の向き。ここに載っている portrait は素材が「左向き」。それ以外（胸像・未登録含む）は「右向き」扱い。
- * 自陣=右向き / 敵陣=左向き になるよう、素の向きと一致しなければ左右反転する（目視ベースの暫定表。違えばここだけ直す）。
+ * 自陣=右向き / 敵陣=左向き になるよう、素の向きと一致しなければ左右反転する（目視ベースの暫定表。向きが逆に見える立ち絵があればここに足す／外す）。
  */
-const NATIVE_FACES_LEFT = new Set(["vel", "kaien", "daruk", "mizuki", "maki", "leo"]);
+const NATIVE_FACES_LEFT = new Set([
+  "vel",
+  "kaien",
+  "daruk",
+  "mizuki",
+  "maki",
+  "leo",
+  "azuha",
+  "yuki",
+]);
 
 export function spriteNeedsFlip(card: Card, faceRight: boolean, bust?: boolean) {
   const nativeRight = bust || !card.portrait || !NATIVE_FACES_LEFT.has(card.portrait);
