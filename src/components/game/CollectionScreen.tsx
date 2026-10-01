@@ -165,7 +165,7 @@ function FormationPreview({ slots }: { slots: boolean[] }) {
       aria-hidden
     >
       {[0, 1, 2].map((row) =>
-        [2, 1, 0].map((col) => {
+        [0, 1, 2].map((col) => {
           const slot = row * 3 + col;
           const open = slots[slot];
           return (

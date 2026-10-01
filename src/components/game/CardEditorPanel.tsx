@@ -275,12 +275,12 @@ function draftToFormation(d: FormationDraft): Formation | null {
   });
 }
 
-/** Tiny 3×3. Same facing as the battle grid (front column on the left). */
+/** Tiny 3×3. Same layout as the player side of the battle (front column on the right, toward the enemy). */
 function MiniFormation({ slots }: { slots: boolean[] }) {
   return (
     <span className="grid h-6 w-6 shrink-0 grid-cols-3 grid-rows-3 gap-px" aria-hidden>
       {[0, 1, 2].map((row) =>
-        [2, 1, 0].map((col) => {
+        [0, 1, 2].map((col) => {
           const open = slots[row * 3 + col];
           return (
             <span

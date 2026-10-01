@@ -190,6 +190,7 @@ export function CardFace({
   maxHp,
   onClick,
   className,
+  faceRight,
 }: {
   card: Card;
   level?: number;
@@ -205,8 +206,12 @@ export function CardFace({
   maxHp?: number;
   onClick?: () => void;
   className?: string;
+  /** 立ち絵の向きを揃える（CharSprite と同じ spriteNeedsFlip）。true=右向き(自陣) / false=左向き(敵陣)。未指定=素材のまま。 */
+  faceRight?: boolean;
 }) {
   const { src, onError } = useCardImg(card);
+  const flipChar =
+    faceRight != null && !!src && spriteNeedsFlip(card, faceRight, src !== charSrc(card));
   const setZoomCard = useGame((s) => s.setZoomCard);
   const hold = useRef(0);
   const held = useRef(false);
@@ -261,11 +266,12 @@ export function CardFace({
         className,
       )}
     >
-      {/* Layer order bottom→top: bg → prism → name → char → foot (Lv only; type/cost off-card) */}
+      {/* Layer order bottom→top: rarity edge → bg → prism → name → char → badges → foot (Lv only; type/cost off-card) */}
+      <div aria-hidden className="card-layer-frame pointer-events-none absolute inset-0 z-0 rounded-[inherit]" />
       <img
         src={factionBg(card)}
         alt=""
-        className="card-layer-bg pointer-events-none absolute inset-0 z-0 h-full w-full object-cover"
+        className="card-layer-bg pointer-events-none absolute inset-[var(--card-edge-w)] z-0 h-[calc(100%-var(--card-edge-w)*2)] w-[calc(100%-var(--card-edge-w)*2)] rounded-[inherit] object-cover"
       />
       {card.rarity !== "N" ? (
         <span
@@ -296,10 +302,12 @@ export function CardFace({
           src={src}
           alt=""
           onError={onError}
-          className="card-layer-char pointer-events-none absolute inset-x-0 bottom-[4%] top-[16%] z-[3] mx-auto w-full object-contain object-bottom"
+          className={cn(
+            "card-layer-char pointer-events-none absolute inset-x-0 bottom-[4%] top-[16%] z-[3] mx-auto w-full object-contain object-bottom",
+            flipChar && "-scale-x-100",
+          )}
         />
       )}
-      <div className="card-layer-frame pointer-events-none absolute inset-0 z-[3] rounded-[inherit]" />
       {leader ? (
         <span className="card-leader pointer-events-none absolute inset-x-1 bottom-[18%] z-[4] py-px text-center text-[12px] font-semibold tracking-wide">
           LEADER
@@ -515,7 +523,7 @@ function ZoomFormationPreview({ slots }: { slots: boolean[] }) {
   return (
     <div className="grid h-14 w-14 shrink-0 grid-cols-3 grid-rows-3 gap-0.5" aria-hidden>
       {[0, 1, 2].map((row) =>
-        [2, 1, 0].map((col) => {
+        [0, 1, 2].map((col) => {
           const slot = row * 3 + col;
           const open = slots[slot];
           return (
@@ -600,6 +608,26 @@ export function SkillSlot({
   );
 }
 
+/**
+ * 立ち絵の素の向き。ここに載っている portrait は素材が「左向き」。それ以外（胸像・未登録含む）は「右向き」扱い。
+ * 自陣=右向き / 敵陣=左向き になるよう、素の向きと一致しなければ左右反転する（目視ベースの暫定表。向きが逆に見える立ち絵があればここに足す／外す）。
+ */
+const NATIVE_FACES_LEFT = new Set([
+  "vel",
+  "kaien",
+  "daruk",
+  "mizuki",
+  "maki",
+  "leo",
+  "azuha",
+  "yuki",
+]);
+
+export function spriteNeedsFlip(card: Card, faceRight: boolean, bust?: boolean) {
+  const nativeRight = bust || !card.portrait || !NATIVE_FACES_LEFT.has(card.portrait);
+  return faceRight !== nativeRight;
+}
+
 export function CharSprite({
   card,
   acting,
@@ -610,7 +638,7 @@ export function CharSprite({
   float,
   pops,
   badges,
-  flip,
+  faceRight,
   bust,
   leader,
 }: {
@@ -630,11 +658,13 @@ export function CharSprite({
   pops?: { text: string; tone: "buff" | "debuff" | "stop" | "pierce"; key: number }[];
   /** Persistent status chips under the HP bar (攻↑ / 防↓ / 停). */
   badges?: { text: string; tone: "buff" | "debuff" | "stop" }[];
-  flip?: boolean;
+  /** true = 右向きで描く（自陣）、false = 左向き（敵陣）。 */
+  faceRight?: boolean;
   bust?: boolean;
   leader?: boolean;
 }) {
   const { src, onError } = useCardImg(card, bust);
+  const flip = faceRight != null && spriteNeedsFlip(card, faceRight, bust);
   return (
     <div
       className={cn(
