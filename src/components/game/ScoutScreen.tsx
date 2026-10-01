@@ -45,41 +45,44 @@ export function ScoutScreen() {
   return (
     <Shell title={node.name} onBack={() => setScreen("map")} nav="map" wide extra={<SpiritChip spirit={spirit} max={SPIRIT_MAX} />}>
       <div className="flex h-full min-h-0 w-full items-stretch gap-4 overflow-hidden px-1 py-1">
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-2 overflow-y-auto pl-1">
-          <p className="text-sm leading-relaxed text-muted">{node.blurb}</p>
-          {(node.holdNeed ?? 1) > 1 ? (
-            <p className="text-sm text-brass">
-              占領まで {node.holdNeed! - (holdWins[node.id] ?? 0)} 勝
+        {/* 左端〜敵陣の間の空きエリアの中央に詳細/ボタンを置く（文字は左揃えのまま、はみ出す時はスクロール） */}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+          <div className="m-auto flex w-full max-w-[26rem] flex-col gap-2 text-left">
+            <p className="text-sm leading-relaxed text-muted">{node.blurb}</p>
+            {(node.holdNeed ?? 1) > 1 ? (
+              <p className="text-sm text-brass">
+                占領まで {node.holdNeed! - (holdWins[node.id] ?? 0)} 勝
+              </p>
+            ) : null}
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted">敵の傾向</span>
+              <TypeBadge type={node.hint} />
+              <span className="text-xs text-muted">
+                刺さる属性 {counters.map((t) => TYPE_LABEL[t]).join("・")}
+              </span>
+            </div>
+            <p className="text-xs text-faint">
+              報酬 {node.reward.gold}金
+              {node.reward.cardId ? `　${CARD_BY_ID[node.reward.cardId]?.name}` : ""}
             </p>
-          ) : null}
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-muted">敵の傾向</span>
-            <TypeBadge type={node.hint} />
-            <span className="text-xs text-muted">
-              刺さる属性 {counters.map((t) => TYPE_LABEL[t]).join("・")}
-            </span>
-          </div>
-          <p className="text-xs text-faint">
-            報酬 {node.reward.gold}金
-            {node.reward.cardId ? `　${CARD_BY_ID[node.reward.cardId]?.name}` : ""}
-          </p>
-          <p className="text-xs text-muted">
-            自陣 {pForm.name}　{cost}/{cap}
-            {!hasCounter ? "　有利属性がいない" : "　有利あり"}
-          </p>
-          {leaderId ? (
-            <p className="text-[14px] text-faint">{FORMATIONS[pForm.id]?.desc ?? pForm.desc}</p>
-          ) : (
-            <p className="text-xs text-crimson">リーダー未設定</p>
-          )}
-          <p className="text-xs text-muted">出撃で闘気を{SORTIE_SPIRIT}使う。足りないと出られない。</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <GhostButton onClick={() => setScreen("formation")} className="min-w-36">
-              編成を見直す
-            </GhostButton>
-            <PrimaryButton onClick={startBattle} disabled={!canGo} className="min-w-36">
-              {canSpirit ? "出撃" : "闘気が足りない"}
-            </PrimaryButton>
+            <p className="text-xs text-muted">
+              自陣 {pForm.name}　{cost}/{cap}
+              {!hasCounter ? "　有利属性がいない" : "　有利あり"}
+            </p>
+            {leaderId ? (
+              <p className="text-[14px] text-faint">{FORMATIONS[pForm.id]?.desc ?? pForm.desc}</p>
+            ) : (
+              <p className="text-xs text-crimson">リーダー未設定</p>
+            )}
+            <p className="text-xs text-muted">出撃で闘気を{SORTIE_SPIRIT}使う。足りないと出られない。</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <GhostButton onClick={() => setScreen("formation")} className="min-w-36">
+                編成を見直す
+              </GhostButton>
+              <PrimaryButton onClick={startBattle} disabled={!canGo} className="min-w-36">
+                {canSpirit ? "出撃" : "闘気が足りない"}
+              </PrimaryButton>
+            </div>
           </div>
         </div>
         {/*
