@@ -143,13 +143,16 @@ export function TitleScreen() {
               はじめる
             </PrimaryButton>
           )}
+          <GhostButton onClick={() => setHelp(true)} className="h-[72px] text-[22px] tracking-widest">
+            遊び方
+          </GhostButton>
           <GhostButton onClick={() => void onFullscreen()} className="h-[72px] text-[22px] tracking-widest">
             全画面
           </GhostButton>
           {displayHint ? (
             <p className="px-0.5 text-center text-[13px] leading-tight text-faint">{displayHint}</p>
           ) : null}
-          <div className="grid grid-cols-3 gap-1">
+          <div className="mt-1 grid grid-cols-2 gap-1">
             <button
               type="button"
               onPointerDown={(e) => {
@@ -157,21 +160,14 @@ export function TitleScreen() {
                 e.stopPropagation();
                 unlockDebug();
               }}
-              className="debug-hit h-[64px] rounded-md text-[15px] text-faint"
+              className="debug-hit h-[44px] rounded-md text-[15px] text-faint"
             >
               内部
             </button>
             <button
               type="button"
-              onClick={() => setHelp(true)}
-              className="h-[64px] rounded-md text-[15px] text-muted"
-            >
-              遊び方
-            </button>
-            <button
-              type="button"
               onClick={() => setCatalogOpen(true)}
-              className="h-[64px] whitespace-nowrap rounded-md text-[15px] text-muted"
+              className="h-[44px] whitespace-nowrap rounded-md text-[15px] text-muted"
             >
               マイデータ
             </button>
