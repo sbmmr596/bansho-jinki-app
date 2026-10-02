@@ -54,6 +54,10 @@ import { clampBattleSpeed, clampNavSide, type NavSide } from "./types";
 interface GameStore extends SaveState {
   hydrated: boolean;
   hasExisting: boolean;
+  /** True once a game was actually begun (newGame / continueGame). Until then
+   *  nothing may be written to SAVE_KEY, otherwise merely opening the title and
+   *  leaving the tab would create an empty save and surface つづきから. */
+  started: boolean;
   screen: Screen;
   helpOpen: boolean;
   scoutNodeId: string | null;
@@ -156,6 +160,7 @@ export const useGame = create<GameStore>((set, get) => ({
   ...defaultSave(),
   hydrated: false,
   hasExisting: false,
+  started: false,
   screen: "title",
   helpOpen: false,
   scoutNodeId: null,
@@ -206,6 +211,7 @@ export const useGame = create<GameStore>((set, get) => ({
         ...loaded,
         hydrated: true,
         hasExisting: existing,
+        started: false,
         screen: "title",
         debugUnlocked: true,
         debugOpen: false,
@@ -228,6 +234,7 @@ export const useGame = create<GameStore>((set, get) => ({
     set({
       ...fresh,
       hasExisting: true,
+      started: true,
       screen: "palace",
       helpOpen: true,
       scoutNodeId: null,
@@ -245,7 +252,7 @@ export const useGame = create<GameStore>((set, get) => ({
     sfx("click");
     const loaded = sanitizeParty(loadSave());
     const hydrated = applySpiritRegen(loaded.spirit, loaded.spiritAt);
-    set({ ...loaded, ...hydrated, screen: "palace", hasExisting: true });
+    set({ ...loaded, ...hydrated, screen: "palace", hasExisting: true, started: true });
   },
 
   setScreen: (screen) => {
@@ -257,6 +264,8 @@ export const useGame = create<GameStore>((set, get) => ({
 
   persist: () => {
     const s = get();
+    // Title screen with no game begun: do not create an empty default save.
+    if (!s.started) return;
     const hydrated = applySpiritRegen(
       clampSpirit(s.spirit ?? SPIRIT_MAX),
       typeof s.spiritAt === "number" ? s.spiritAt : Date.now(),
@@ -949,6 +958,7 @@ export const useGame = create<GameStore>((set, get) => ({
     set({
       ...fresh,
       hasExisting: false,
+      started: false,
       screen: "title",
       helpOpen: false,
       scoutNodeId: null,
