@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import {
   CARD_BY_ID,
   cardBasicSkill,
@@ -635,7 +635,7 @@ export function CharSprite({
   dimmed,
   hp,
   maxHp,
-  float,
+  floats,
   pops,
   badges,
   faceRight,
@@ -648,12 +648,13 @@ export function CharSprite({
   dimmed?: boolean;
   hp?: number;
   maxHp?: number;
-  float?: {
+  /** ダメージ/回復の数字。古い順。新しいものほど基準位置、古いものは少し上にずらして重ねて残す。 */
+  floats?: {
     text: string;
     kind: "damage" | "heal";
     affinity: "クリティカル" | "ガード" | null;
     key: number;
-  } | null;
+  }[];
   /** 追加効果 popups this beat (防御↓ / 遅延 / 停止 / 攻撃↑ / ガード無効). */
   pops?: { text: string; tone: "buff" | "debuff" | "stop" | "pierce"; key: number }[];
   /** Persistent status chips under the HP bar (攻↑ / 防↓ / 停). */
@@ -674,17 +675,6 @@ export function CharSprite({
         dimmed && "opacity-35 grayscale",
       )}
     >
-      {float ? (
-        <span
-          key={`num-${float.key}`}
-          className={cn(
-            "battle-float-num anim-float pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 tabular",
-            float.kind === "heal" ? "is-heal" : "is-dmg",
-          )}
-        >
-          {float.text}
-        </span>
-      ) : null}
       {hp != null && maxHp != null ? (
         <div className="absolute left-1/2 top-0 z-[3] flex w-[72%] -translate-x-1/2 flex-col items-center gap-0.5">
           {leader ? (
@@ -726,16 +716,50 @@ export function CharSprite({
       ) : (
         <Crest card={card} />
       )}
-      {float?.affinity ? (
-        <span
-          key={`aff-${float.key}`}
-          className={cn(
-            "battle-affinity pointer-events-none absolute left-1/2 top-[44%] z-[5]",
-            float.affinity === "クリティカル" ? "is-crit" : "is-guard",
-          )}
-        >
-          {float.affinity}
-        </span>
+      {floats?.length ? (
+        <>
+          {floats.map((f, i) => {
+            // i = 古い順。最新 (末尾) を基準位置にし、古いものほど上へ・左右に少しずらす。
+            const back = floats.length - 1 - i;
+            return (
+              <span
+                key={`num-${f.key}`}
+                className="battle-float-slot pointer-events-none absolute left-1/2 z-[7]"
+                style={
+                  {
+                    "--fx-x": `${back === 0 ? 0 : back % 2 ? -22 : 22}px`,
+                    "--fx-y": `${-back * 30}px`,
+                  } as CSSProperties
+                }
+              >
+                <span
+                  className={cn(
+                    "battle-float-num anim-float tabular",
+                    f.kind === "heal" ? "is-heal" : "is-dmg",
+                    f.affinity === "クリティカル" && "is-crit",
+                    f.affinity === "ガード" && "is-guard",
+                  )}
+                >
+                  {f.text}
+                </span>
+              </span>
+            );
+          })}
+          {(() => {
+            const last = [...floats].reverse().find((f) => f.affinity);
+            return last?.affinity ? (
+              <span
+                key={`aff-${last.key}`}
+                className={cn(
+                  "battle-affinity pointer-events-none absolute left-1/2 top-[52%] z-[5]",
+                  last.affinity === "クリティカル" ? "is-crit" : "is-guard",
+                )}
+              >
+                {last.affinity}
+              </span>
+            ) : null;
+          })()}
+        </>
       ) : null}
       {pops?.length ? (
         <span className="pointer-events-none absolute left-1/2 top-[68%] z-[6] flex -translate-x-1/2 flex-col items-center gap-0.5">

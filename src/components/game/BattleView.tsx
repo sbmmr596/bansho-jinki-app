@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { sfx } from "@/game/audio";
 import { CARD_BY_ID } from "@/game/data";
 import { rankForXp } from "@/game/rank";
@@ -80,6 +80,11 @@ type FloatFx = {
   key: number;
 };
 
+/** 数字を画面に残す時間 (ms)。CSS の .anim-float と合わせる。 */
+const FLOAT_LIFE_MS = 1700;
+/** 1ユニットに同時に残す数字の上限 (古いものから消す)。 */
+const FLOAT_MAX_PER_UNIT = 4;
+
 /** 追加効果 popups (防御↓ / 遅延 / 停止 / 攻撃↑ / ガード無効). Several per unit may stack. */
 type StatusPop = {
   uid: string;
@@ -115,6 +120,42 @@ export function BattleView() {
   /** Damage/heal numbers — multiple for pierce/sweep applied in one beat. */
   const [floats, setFloats] = useState<FloatFx[]>([]);
   const [pops, setPops] = useState<StatusPop[]>([]);
+  const floatSeqRef = useRef(0);
+  const floatTimersRef = useRef<number[]>([]);
+  /** Add damage/heal numbers; each lingers FLOAT_LIFE_MS on its own timer so later beats don't wipe it. */
+  const pushFloats = useCallback((items: Omit<FloatFx, "key">[]) => {
+    if (!items.length) return;
+    const added = items.map((f) => ({ ...f, key: ++floatSeqRef.current }));
+    setFloats((prev) => {
+      const next = [...prev, ...added];
+      // Cap per unit (oldest dropped first).
+      const counts = new Map<string, number>();
+      return next
+        .slice()
+        .reverse()
+        .filter((f) => {
+          const c = (counts.get(f.uid) ?? 0) + 1;
+          counts.set(f.uid, c);
+          return c <= FLOAT_MAX_PER_UNIT;
+        })
+        .reverse();
+    });
+    const keys = new Set(added.map((f) => f.key));
+    const t = window.setTimeout(() => {
+      floatTimersRef.current = floatTimersRef.current.filter((x) => x !== t);
+      setFloats((prev) => prev.filter((f) => !keys.has(f.key)));
+    }, FLOAT_LIFE_MS);
+    floatTimersRef.current.push(t);
+  }, []);
+  const clearFloats = useCallback(() => {
+    for (const t of floatTimersRef.current) window.clearTimeout(t);
+    floatTimersRef.current = [];
+    setFloats([]);
+  }, []);
+  useEffect(() => () => {
+    for (const t of floatTimersRef.current) window.clearTimeout(t);
+    floatTimersRef.current = [];
+  }, []);
   const [acting, setActing] = useState<string | null>(null);
   /** Uids flinching this beat (multi-target hits share one frame). */
   const [struck, setStruck] = useState<string[]>([]);
@@ -186,7 +227,7 @@ export function BattleView() {
   useEffect(() => {
     if (!battle || !assetsReady) return;
     setUnits(battle.units.map((u) => ({ ...u })));
-    setFloats([]);
+    clearFloats();
     setPops([]);
     setActing(null);
     setStruck([]);
@@ -215,7 +256,6 @@ export function BattleView() {
         setLog((l) => [`第${ev.n}合`, ...l].slice(0, 6));
         setFx(null);
         setStruck([]);
-        setFloats([]);
         setPops([]);
         setLunge(null);
         actingRef.current = null;
@@ -224,7 +264,6 @@ export function BattleView() {
         const prevAct = actingRef.current;
         actingRef.current = ev.actorUid;
         setActing(ev.actorUid);
-        setFloats([]);
         setPops([]);
         setStruck([]);
         const live = activeTrial();
@@ -384,13 +423,12 @@ export function BattleView() {
           const names = [...new Set(effs.map((e) => SKILL_EFFECT_POP[e.effect]))].join("・");
           if (names) setLog((l) => [names, ...l].slice(0, 6));
         }
-        setFloats(
-          hits.map((h, n) => ({
+        pushFloats(
+          hits.map((h) => ({
             uid: h.targetUid,
             text: String(h.damage),
             kind: "damage" as const,
             affinity: affinityLabel(h.mod),
-            key: h.targetUid.length + h.damage + idxRef.current + n * 17,
           })),
         );
         if (hits.length) setStruck(hits.map((h) => h.targetUid));
@@ -440,13 +478,12 @@ export function BattleView() {
             key: idxRef.current * 31 + 7 + n,
           })),
         );
-        setFloats(
-          heals.map((h, n) => ({
+        pushFloats(
+          heals.map((h) => ({
             uid: h.targetUid,
             text: `+${h.amount}`,
             kind: "heal" as const,
             affinity: null,
-            key: idxRef.current + n * 17,
           })),
         );
         setStruck(heals.map((h) => h.targetUid));
@@ -603,7 +640,6 @@ export function BattleView() {
           setFx(null);
           setLunge(null);
           setStruck([]);
-          setFloats([]);
           setPops([]);
           setSkillBanner(null);
           setUnits((prev) => {
@@ -728,7 +764,7 @@ export function BattleView() {
         bannerTimerRef.current = null;
       }
     };
-  }, [battle, assetsReady, finishBattle]);
+  }, [battle, assetsReady, finishBattle, pushFloats, clearFloats]);
 
   if (!battle) return null;
   const player = units.filter((u) => u.side === "player");
@@ -955,7 +991,7 @@ function UnitSpot({
   const isLunge = lunge?.uid === unit.uid;
   const x = isLunge ? lunge.x : p.x;
   const y = isLunge ? lunge.y : p.y;
-  const float = floats.find((f) => f.uid === unit.uid) ?? null;
+  const myFloats = floats.filter((f) => f.uid === unit.uid);
   const myPops = pops.filter((f) => f.uid === unit.uid);
   const badges = unit.alive ? statusBadges(unit.status) : [];
   return (
@@ -964,8 +1000,8 @@ function UnitSpot({
       style={{
         left: `${x}%`,
         top: `${y}%`,
-        // 追加効果 popups sit above a lunging attacker so 停止 / 遅延 stay readable.
-        zIndex: myPops.length ? 9 : isLunge ? 8 : acting === unit.uid ? 6 : 2,
+        // 追加効果 popups / ダメージ数字 sit above neighbours and a lunging attacker so they stay readable.
+        zIndex: myPops.length || myFloats.length ? 9 : isLunge ? 8 : acting === unit.uid ? 6 : 2,
       }}
     >
       <CharSprite
@@ -977,7 +1013,7 @@ function UnitSpot({
         maxHp={unit.maxHp}
         faceRight={unit.side === "player"}
         bust={unit.bust}
-        float={float}
+        floats={myFloats}
         pops={myPops}
         badges={badges}
         leader={unit.isLeader}
