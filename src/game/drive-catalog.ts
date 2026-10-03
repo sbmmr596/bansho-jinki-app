@@ -6,6 +6,7 @@ import {
   isLoginRequired,
 } from "@/lib/app-data";
 import type { CallToolResult } from "@/lib/app-data";
+import { driveFailureMessage } from "@/game/drive-errors";
 
 export const DRIVE_FOLDER = "万象陣記";
 
@@ -19,6 +20,8 @@ export type DriveCatalogResult =
       message: string;
       loginRequired?: boolean;
       loginUrl?: string;
+      /** ゲート/コネクタが返した原文（原因表示用）。 */
+      detail?: string;
     };
 
 const OPT = { connectorType: ConnectorType.GoogleDrive } as const;
@@ -29,20 +32,14 @@ type DriveFile = { id: string; name: string; mimeType: string };
 function driveFail(result: CallToolResult): DriveCatalogResult {
   const classified = classifyCallToolError(result);
   const kind = classified?.kind ?? "error";
-  const message =
-    kind === "login"
-      ? "Googleでドライブを許可すると続けられます。"
-      : kind === "not_connected"
-        ? "Googleドライブを接続してください。"
-        : kind === "access_denied"
-          ? "このドライブへの権限がありません。"
-          : result.errorMessage || "ドライブを読めなかった。";
+  const detail = result.errorMessage || undefined;
   return {
     ok: false,
     kind,
-    message,
+    message: driveFailureMessage(kind, detail),
     loginRequired: isLoginRequired(result) || undefined,
     loginUrl: result.loginUrl,
+    detail,
   };
 }
 

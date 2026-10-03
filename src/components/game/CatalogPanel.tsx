@@ -7,11 +7,13 @@ import { createDriveFolder, loadDriveCatalog, type DriveCatalogResult } from "@/
 import {
   beginDriveResume,
   clearDriveAuthAttempt,
-  driveAuthAttempted,
+  decideDriveLogin,
   driveResumeAction,
+  retryWhileLoginRequired,
   type DriveResumeAction,
 } from "@/game/drive-resume";
 import { redirectForDriveLogin } from "@/game/drive-login";
+import { stalledMessage } from "@/game/drive-errors";
 import { useGame } from "@/game/store";
 import { CloseButton } from "./pieces";
 
@@ -34,6 +36,10 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  /** 許可のあと続かなかった操作。別タブ/別画面で許可して戻ったとき、自動で続ける。 */
+  const [awaiting, setAwaiting] = useState<DriveResumeAction | null>(null);
+  const busyRef = useRef(false);
+  busyRef.current = busy;
 
   const handleDrive = (
     result: DriveCatalogResult,
@@ -44,9 +50,10 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
       if (result.loginRequired && result.loginUrl) {
         const again =
           action === "folder" ? "フォルダを作る" : action === "export" ? "JSONを書き出す" : "ドライブから読む";
-        const stay = opts?.resumed || driveAuthAttempted(action);
-        if (stay) {
-          setMsg(`許可のあと、まだ続けられていません。もう一度「${again}」を押してください。`);
+        const decision = decideDriveLogin(action, { resumed: opts?.resumed });
+        if (decision === "stay") {
+          setAwaiting(action);
+          setMsg(stalledMessage(again, result.detail, !opts?.resumed));
           return false;
         }
         setMsg(
@@ -57,10 +64,16 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
         redirectForDriveLogin(result.loginUrl, action);
         return false;
       }
+      if (result.loginRequired) {
+        // ログインURLが取れない（ゲート外で開いている等）。
+        setMsg(`${result.message}（許可画面のURLを取得できませんでした）`);
+        return false;
+      }
       setMsg(result.message);
       return false;
     }
     clearDriveAuthAttempt(action);
+    setAwaiting(null);
     if (result.status !== "loaded") {
       setMsg(result.message);
       return false;
@@ -125,16 +138,19 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const resumeOnce = useRef(false);
   useEffect(() => {
-    if (resumeOnce.current) return;
+    // beginDriveResume shares one in-flight job, so a StrictMode remount re-attaches to it
+    // instead of dropping the result (the first mount's cleanup cancels its own handlers).
     const hinted = driveResumeAction();
     const job = beginDriveResume(async (action) => ({
       action,
-      result: action === "folder" ? await createDriveFolder() : await loadDriveCatalog(),
+      // 許可の直後は反映が少し遅れることがあるので、数回だけ静かに再試行する。
+      result: await retryWhileLoginRequired(
+        () => (action === "folder" ? createDriveFolder() : loadDriveCatalog()),
+        (r) => !r.ok && !!r.loginRequired,
+      ),
     }));
     if (!job) return;
-    resumeOnce.current = true;
     let cancel = false;
     setBusy(true);
     if (hinted === "folder") setMsg("フォルダを作っています…");
@@ -155,6 +171,35 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
     // Resume once when this panel opens after the Google consent return.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 別タブ/システムブラウザで許可して戻ってきたら、押し直さなくても続ける。
+  useEffect(() => {
+    if (!awaiting) return;
+    const action = awaiting;
+    let last = 0;
+    const retry = () => {
+      if (document.visibilityState === "hidden" || busyRef.current) return;
+      const now = Date.now();
+      if (now - last < 2000) return;
+      last = now;
+      setBusy(true);
+      setMsg("ドライブを確認中…");
+      void (action === "folder" ? createDriveFolder() : loadDriveCatalog())
+        .then((r) => handleDrive(r, { resumed: true, action }))
+        .catch(() => setMsg("ドライブに届かなかった。"))
+        .finally(() => setBusy(false));
+    };
+    document.addEventListener("visibilitychange", retry);
+    window.addEventListener("focus", retry);
+    window.addEventListener("pageshow", retry);
+    return () => {
+      document.removeEventListener("visibilitychange", retry);
+      window.removeEventListener("focus", retry);
+      window.removeEventListener("pageshow", retry);
+    };
+    // handleDrive only closes over stable setters / store actions.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [awaiting]);
 
   const onMakeFolder = async () => {
     setBusy(true);

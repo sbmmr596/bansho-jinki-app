@@ -6,6 +6,10 @@ const STORAGE_KEY = "bansho-drive-resume";
 const AUTH_ATTEMPT_PREFIX = "bansho-drive-auth-";
 const AUTH_ATTEMPT_TTL_MS = 10 * 60 * 1000;
 const PARAM = "resume";
+/** localStorage copy of the pending intent: survives a new tab / a different webview of the same origin. */
+const INTENT_KEY = "bansho-drive-intent";
+const INTENT_TTL_MS = 15 * 60 * 1000;
+const STALL_PREFIX = "bansho-drive-stall-";
 
 export type DriveResumeAction = "read" | "folder" | "export";
 
@@ -28,15 +32,36 @@ function authAttemptKey(action: DriveResumeAction): string {
   return `${AUTH_ATTEMPT_PREFIX}${action}`;
 }
 
-export function markDriveResume(action: DriveResumeAction = "read"): void {
+export function markDriveResume(action: DriveResumeAction = "read", now = Date.now()): void {
   try {
     sessionStorage.setItem(STORAGE_KEY, action === "read" ? "1" : action);
   } catch {
     /* private mode */
   }
+  try {
+    localStorage.setItem(INTENT_KEY, JSON.stringify({ action, at: now }));
+  } catch {
+    /* private mode */
+  }
 }
 
-export function driveResumeAction(): DriveResumeAction | null {
+function intentFromLocal(now: number): DriveResumeAction | null {
+  try {
+    const raw = localStorage.getItem(INTENT_KEY);
+    if (!raw) return null;
+    const v = JSON.parse(raw) as { action?: unknown; at?: unknown };
+    const at = typeof v.at === "number" ? v.at : NaN;
+    if (!Number.isFinite(at) || now - at < 0 || now - at >= INTENT_TTL_MS) {
+      localStorage.removeItem(INTENT_KEY);
+      return null;
+    }
+    return actionFromValue(typeof v.action === "string" ? v.action : null);
+  } catch {
+    return null;
+  }
+}
+
+export function driveResumeAction(now = Date.now()): DriveResumeAction | null {
   if (typeof window === "undefined") return null;
   try {
     const fromQuery = actionFromValue(new URL(window.location.href).searchParams.get(PARAM));
@@ -45,10 +70,12 @@ export function driveResumeAction(): DriveResumeAction | null {
     /* ignore */
   }
   try {
-    return actionFromValue(sessionStorage.getItem(STORAGE_KEY));
+    const fromSession = actionFromValue(sessionStorage.getItem(STORAGE_KEY));
+    if (fromSession) return fromSession;
   } catch {
-    return null;
+    /* ignore */
   }
+  return intentFromLocal(now);
 }
 
 export function driveResumePending(): boolean {
@@ -58,6 +85,11 @@ export function driveResumePending(): boolean {
 export function clearDriveResume(): void {
   try {
     sessionStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+  try {
+    localStorage.removeItem(INTENT_KEY);
   } catch {
     /* ignore */
   }
@@ -76,6 +108,7 @@ export function clearDriveResume(): void {
 /** Remember that this Drive action already sent the user to Google in this tab. */
 export function markDriveAuthAttempt(action: DriveResumeAction, now = Date.now()): void {
   try {
+    sessionStorage.removeItem(`${STALL_PREFIX}${action}`);
     sessionStorage.setItem(authAttemptKey(action), String(now));
   } catch {
     /* private mode */
@@ -96,9 +129,59 @@ export function driveAuthAttempted(action: DriveResumeAction, now = Date.now()):
 export function clearDriveAuthAttempt(action: DriveResumeAction): void {
   try {
     sessionStorage.removeItem(authAttemptKey(action));
+    sessionStorage.removeItem(`${STALL_PREFIX}${action}`);
   } catch {
     /* ignore */
   }
+}
+
+export type DriveLoginDecision = "redirect" | "stay";
+
+/**
+ * 認証が必要と返ったとき、Googleへ送るか、この画面に留まるか。
+ * - 自動の続き（resumed）は絶対に自動で飛ばさない（ループ防止）。
+ * - まだ試していなければ飛ばす。
+ * - 試した直後の1回目の再押しは「反映待ち」として留まる。
+ * - それでも続かず2回目の再押しは、許可を取り直すためもう一度Googleへ送る
+ *   （従来は10分間ずっと留まって詰まっていた）。
+ */
+export function decideDriveLogin(
+  action: DriveResumeAction,
+  opts: { resumed?: boolean; now?: number } = {},
+): DriveLoginDecision {
+  const now = opts.now ?? Date.now();
+  const stallKey = `${STALL_PREFIX}${action}`;
+  if (opts.resumed) return "stay";
+  if (!driveAuthAttempted(action, now)) return "redirect";
+  let seen = false;
+  try {
+    seen = sessionStorage.getItem(stallKey) === "1";
+  } catch {
+    /* ignore */
+  }
+  if (seen) return "redirect";
+  try {
+    sessionStorage.setItem(stallKey, "1");
+  } catch {
+    /* ignore */
+  }
+  return "stay";
+}
+
+/** Retry a call that still says "login required" right after consent (the grant can lag a moment). */
+export async function retryWhileLoginRequired<T>(
+  run: () => Promise<T>,
+  isLoginRequired: (value: T) => boolean,
+  delaysMs: readonly number[] = [1200, 2500, 4000],
+  sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+): Promise<T> {
+  let value = await run();
+  for (const d of delaysMs) {
+    if (!isLoginRequired(value)) return value;
+    await sleep(d);
+    value = await run();
+  }
+  return value;
 }
 
 /** @deprecated Prefer markDriveAuthAttempt("folder") */
