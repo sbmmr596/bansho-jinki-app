@@ -17,13 +17,15 @@ describe("card editor Drive plan B (local + JSON export)", () => {
   );
   const download = readFileSync(join(root, "src/game/catalog-download.ts"), "utf8");
   const drive = readFileSync(join(root, "src/game/drive-catalog.ts"), "utf8");
+  const exportMod = readFileSync(join(root, "src/game/drive-export.ts"), "utf8");
 
   it("opens without Google sign-in gate", () => {
     assert.doesNotMatch(panel, /SignInButtons/);
     assert.doesNotMatch(panel, /resolveSignInGateState/);
     assert.doesNotMatch(panel, /gateState === "signed_out"/);
-    assert.doesNotMatch(panel, /useCurrentUserState/);
-    assert.doesNotMatch(panel, /saveUserCatalog/);
+    // The signed-in user only mirrors saves to the account; it never gates the editor.
+    assert.doesNotMatch(panel, /isPending\s*\?/);
+    assert.match(panel, /if \(user\) void saveUserCatalog/);
     assert.match(panel, /このカードを保存/);
     assert.match(panel, /JSONを書き出す/);
   });
@@ -50,9 +52,33 @@ describe("card editor Drive plan B (local + JSON export)", () => {
     assert.match(panel, /downloadCatalogJson/);
   });
 
-  it("mentions Drive reload via マイデータ ドライブから読む", () => {
-    assert.match(panel, /ドライブから読む/);
+  it("JSONを書き出す tries Drive first and falls back to a local download", () => {
+    assert.match(panel, /exportWithFallback\(/);
+    assert.match(panel, /saveDrive: \(\) => saveDriveCatalog/);
+    assert.match(panel, /download: \(\) => downloadCatalogJson\(\)/);
+    assert.match(exportMod, /deps\.saveDrive\(\)/);
+    assert.match(exportMod, /deps\.download\(\)/);
+    assert.match(exportMod, /端末にダウンロードした/);
+    // the export button must never send the user to the generic gate sign-in
+    assert.doesNotMatch(panel, /redirectForDriveLogin/);
+    assert.doesNotMatch(panel, /decideDriveLogin/);
+  });
+
+  it("always offers a plain local ダウンロード button", () => {
+    assert.match(panel, /onClick=\{onDownloadJson\}/);
+    assert.match(panel, /const onDownloadJson = \(\) =>/);
+    const btn = panel.slice(panel.indexOf("onClick={onDownloadJson}"));
+    assert.match(btn, /ダウンロード/);
+    assert.doesNotMatch(
+      panel.slice(panel.indexOf("const onDownloadJson"), panel.indexOf("onClick={onDownloadJson}")),
+      /saveDriveCatalog\(/,
+    );
+  });
+
+  it("explains Drive export, the local fallback and 万象陣記", () => {
     assert.match(panel, /万象陣記/);
+    assert.match(panel, /書けなければ端末にダウンロード/);
+    assert.match(panel, /「ダウンロード」は端末へ直接保存/);
   });
 
   it("Drive folder/file names remain 万象陣記 / chars.json", () => {
@@ -60,13 +86,20 @@ describe("card editor Drive plan B (local + JSON export)", () => {
     assert.match(drive, /chars\.json/);
   });
 
-  it("keeps sticky save footer and stage-scroll (#93)", () => {
-    assert.match(panel, /border-t border-white\/10 pt-2/);
+  it("exposes a values-free driveDiag server function", () => {
+    assert.match(drive, /export const driveDiag = createServerFn\(\{ method: "POST" \}\)/);
+    assert.match(catalog, /接続の診断/);
+  });
+
+  it("keeps the save / export / download toolbar above the scrolling body (#93)", () => {
     const scrollUses = panel.split("stage-scroll").length - 1;
     assert.ok(scrollUses >= 3, `expected >=3 stage-scroll, got ${scrollUses}`);
-    const footerIdx = panel.indexOf("border-t border-white/10 pt-2");
+    const toolbarIdx = panel.indexOf("ml-auto flex min-w-0 flex-wrap");
     const saveIdx = panel.lastIndexOf("このカードを保存");
     const exportIdx = panel.lastIndexOf("JSONを書き出す");
-    assert.ok(footerIdx > 0 && saveIdx > footerIdx && exportIdx > footerIdx);
+    const downloadIdx = panel.lastIndexOf("ダウンロード\n");
+    const bodyIdx = panel.indexOf("flex min-h-0 flex-1 flex-col overflow-hidden");
+    assert.ok(toolbarIdx > 0 && saveIdx > toolbarIdx);
+    assert.ok(exportIdx > saveIdx && downloadIdx > exportIdx && bodyIdx > downloadIdx);
   });
 });
