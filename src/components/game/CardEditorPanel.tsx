@@ -24,8 +24,10 @@ import { saveDriveCatalog } from "@/game/drive-catalog";
 import {
   beginDriveResume,
   clearDriveAuthAttempt,
-  driveAuthAttempted,
+  decideDriveLogin,
+  retryWhileLoginRequired,
 } from "@/game/drive-resume";
+import { stalledMessage } from "@/game/drive-errors";
 import { redirectForDriveLogin } from "@/game/drive-login";
 import {
   CARD_ART_FILES,
@@ -523,7 +525,10 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     const job = beginDriveResume(async (action) => {
       if (action !== "export") return null;
-      return saveDriveCatalog({ data: catalogDownloadText() });
+      return retryWhileLoginRequired(
+        () => saveDriveCatalog({ data: catalogDownloadText() }),
+        (r) => !r.ok && !!r.loginRequired,
+      );
     });
     if (!job) return;
     let cancel = false;
@@ -535,7 +540,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
         if (!result.ok) {
           setMsg(
             result.loginRequired
-              ? "許可のあと、まだ書き出せていません。もう一度「JSONを書き出す」を押してください。"
+              ? stalledMessage("JSONを書き出す", result.detail, false)
               : result.message,
           );
           return;
@@ -862,8 +867,8 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
     try {
       const result = await saveDriveCatalog({ data: catalogDownloadText() });
       if (!result.ok && result.loginRequired && result.loginUrl) {
-        if (driveAuthAttempted("export")) {
-          setMsg("許可のあと、まだ書き出せていません。もう一度「JSONを書き出す」を押してください。");
+        if (decideDriveLogin("export") === "stay") {
+          setMsg(stalledMessage("JSONを書き出す", result.detail, true));
           return;
         }
         setMsg("Googleでドライブを許可すると、万象陣記/chars.json に書き出します。");
