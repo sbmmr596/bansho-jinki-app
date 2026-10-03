@@ -7,6 +7,7 @@ import {
 } from "@/lib/app-data";
 import type { CallToolResult } from "@/lib/app-data";
 import { driveFailureMessage } from "@/game/drive-errors";
+import type { DriveDiag } from "@/game/drive-diag";
 
 export const DRIVE_FOLDER = "万象陣記";
 
@@ -356,3 +357,17 @@ export const saveDriveCatalog = createServerFn({ method: "POST" })
       message: `ドライブの「${DRIVE_FOLDER}/chars.json」に書き出した。`,
     };
   });
+
+/** 接続の診断。値は返さず、有無・名前・ホスト名だけ。 */
+export const driveDiag = createServerFn({ method: "POST" }).handler(async (): Promise<DriveDiag> => {
+  const { inboundPresence } = await import("@/lib/app-data/client.server");
+  const base = inboundPresence();
+  let authSession: boolean | null = null;
+  try {
+    const { getSessionUser } = await import("@/lib/auth/verify.server");
+    authSession = !!(await getSessionUser());
+  } catch {
+    authSession = null;
+  }
+  return { ...base, authSession };
+});

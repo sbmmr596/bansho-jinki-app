@@ -3,7 +3,8 @@ import { UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { applyCatalog, HERO_CARDS, loadChars, resetCatalog } from "@/game/data";
 import { CATALOG_KEY, clearUserCatalog, saveUserCatalog } from "@/game/catalog-api";
-import { createDriveFolder, loadDriveCatalog, type DriveCatalogResult } from "@/game/drive-catalog";
+import { createDriveFolder, driveDiag, loadDriveCatalog, type DriveCatalogResult } from "@/game/drive-catalog";
+import { formatDriveDiag } from "@/game/drive-diag";
 import {
   beginDriveResume,
   clearDriveAuthAttempt,
@@ -13,7 +14,7 @@ import {
   type DriveResumeAction,
 } from "@/game/drive-resume";
 import { redirectForDriveLogin } from "@/game/drive-login";
-import { stalledMessage } from "@/game/drive-errors";
+import { isMissingTokenDetail, isRetryableLogin, stalledMessage } from "@/game/drive-errors";
 import { useGame } from "@/game/store";
 import { CloseButton } from "./pieces";
 
@@ -38,6 +39,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   /** 許可のあと続かなかった操作。別タブ/別画面で許可して戻ったとき、自動で続ける。 */
   const [awaiting, setAwaiting] = useState<DriveResumeAction | null>(null);
+  const [diag, setDiag] = useState<string[] | null>(null);
   const busyRef = useRef(false);
   busyRef.current = busy;
 
@@ -47,17 +49,21 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
   ) => {
     const action = opts?.action ?? "read";
     if (!result.ok) {
+      const tokenMissing = isMissingTokenDetail(result.detail);
       if (result.loginRequired && result.loginUrl) {
         const again =
           action === "folder" ? "フォルダを作る" : action === "export" ? "JSONを書き出す" : "ドライブから読む";
-        const decision = decideDriveLogin(action, { resumed: opts?.resumed });
+        const decision = decideDriveLogin(action, { resumed: opts?.resumed, tokenMissing });
         if (decision === "stay") {
-          setAwaiting(action);
+          // トークンなしは待っても直らない。許可後の自動再確認は使わず、説明だけ出す。
+          setAwaiting(tokenMissing ? null : action);
           setMsg(stalledMessage(again, result.detail, !opts?.resumed));
           return false;
         }
         setMsg(
-          action === "folder"
+          tokenMissing
+            ? "Grokのログインを確認します。"
+            : action === "folder"
             ? "Googleでドライブを許可すると、フォルダ作成を続けます。"
             : "Googleでドライブを許可すると、読み込みを続けます。",
         );
@@ -66,7 +72,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
       }
       if (result.loginRequired) {
         // ログインURLが取れない（ゲート外で開いている等）。
-        setMsg(`${result.message}（許可画面のURLを取得できませんでした）`);
+        setMsg(tokenMissing ? result.message : `${result.message}（許可画面のURLを取得できませんでした）`);
         return false;
       }
       setMsg(result.message);
@@ -147,7 +153,7 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
       // 許可の直後は反映が少し遅れることがあるので、数回だけ静かに再試行する。
       result: await retryWhileLoginRequired(
         () => (action === "folder" ? createDriveFolder() : loadDriveCatalog()),
-        (r) => !r.ok && !!r.loginRequired,
+        isRetryableLogin,
       ),
     }));
     if (!job) return;
@@ -208,6 +214,18 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
       handleDrive(await createDriveFolder(), { action: "folder" });
     } catch {
       setMsg("フォルダを作れなかった。");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onDiag = async () => {
+    setBusy(true);
+    setDiag(["確認中…"]);
+    try {
+      setDiag(formatDriveDiag(await driveDiag()));
+    } catch {
+      setDiag(["診断に届かなかった。"]);
     } finally {
       setBusy(false);
     }
@@ -312,6 +330,26 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
         >
           カード編集を開く
         </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void onDiag()}
+          className="mt-2 h-9 w-full rounded-md bg-raised text-xs text-muted hairline disabled:opacity-40"
+        >
+          接続の診断
+        </button>
+        {diag ? (
+          <div
+            data-testid="drive-diag"
+            className="mt-2 select-text rounded-md bg-raised p-2 text-[12px] leading-relaxed text-muted hairline"
+          >
+            {diag.map((line, i) => (
+              <p key={i} className="break-all">
+                {line}
+              </p>
+            ))}
+          </div>
+        ) : null}
         <p className="mt-3 text-[14px] leading-relaxed text-faint">
           万象陣記 / chars.json。差し替え絵は chars/id.png か cards/id.jpg。JSON の art が /chars/… ならアプリ標準絵のまま。
         </p>

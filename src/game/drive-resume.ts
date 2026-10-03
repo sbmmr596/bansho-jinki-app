@@ -110,6 +110,7 @@ export function markDriveAuthAttempt(action: DriveResumeAction, now = Date.now()
   try {
     sessionStorage.removeItem(`${STALL_PREFIX}${action}`);
     sessionStorage.setItem(authAttemptKey(action), String(now));
+    sessionStorage.setItem(SIGNIN_TRIED_KEY, "1");
   } catch {
     /* private mode */
   }
@@ -130,6 +131,7 @@ export function clearDriveAuthAttempt(action: DriveResumeAction): void {
   try {
     sessionStorage.removeItem(authAttemptKey(action));
     sessionStorage.removeItem(`${STALL_PREFIX}${action}`);
+    sessionStorage.removeItem(SIGNIN_TRIED_KEY);
   } catch {
     /* ignore */
   }
@@ -137,21 +139,36 @@ export function clearDriveAuthAttempt(action: DriveResumeAction): void {
 
 export type DriveLoginDecision = "redirect" | "stay";
 
+const SIGNIN_TRIED_KEY = "bansho-drive-signin-tried";
+
+/** ドライブ用の許可に進んだことがある（このセッション中ずっと有効。時間切れなし）。 */
+export function driveSignInTried(): boolean {
+  try {
+    return sessionStorage.getItem(SIGNIN_TRIED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * 認証が必要と返ったとき、Googleへ送るか、この画面に留まるか。
  * - 自動の続き（resumed）は絶対に自動で飛ばさない（ループ防止）。
- * - まだ試していなければ飛ばす。
- * - 試した直後の1回目の再押しは「反映待ち」として留まる。
- * - それでも続かず2回目の再押しは、許可を取り直すためもう一度Googleへ送る
- *   （従来は10分間ずっと留まって詰まっていた）。
+ * - トークンなし（tokenMissing）は、汎用のゲートログインでは直らない。
+ *   このセッションで一度でも進んだ後は二度と飛ばさず、再確認と説明だけにする。
+ * - それ以外（トークンありの本物の401）は従来どおり：
+ *   まだ試していなければ飛ばす／直後の1回目の再押しは反映待ちで留まる／
+ *   それでも続かない2回目の再押しは許可を取り直すため再度Googleへ。
  */
 export function decideDriveLogin(
   action: DriveResumeAction,
-  opts: { resumed?: boolean; now?: number } = {},
+  opts: { resumed?: boolean; tokenMissing?: boolean; now?: number } = {},
 ): DriveLoginDecision {
   const now = opts.now ?? Date.now();
   const stallKey = `${STALL_PREFIX}${action}`;
   if (opts.resumed) return "stay";
+  if (opts.tokenMissing) {
+    return driveSignInTried() || driveAuthAttempted(action, now) ? "stay" : "redirect";
+  }
   if (!driveAuthAttempted(action, now)) return "redirect";
   let seen = false;
   try {

@@ -19,16 +19,15 @@ import {
   TYPE_LABEL,
 } from "@/game/data";
 import { CATALOG_KEY, saveUserCatalog } from "@/game/catalog-api";
-import { catalogDownloadText } from "@/game/catalog-download";
+import { catalogDownloadText, downloadCatalogJson } from "@/game/catalog-download";
 import { saveDriveCatalog } from "@/game/drive-catalog";
 import {
   beginDriveResume,
   clearDriveAuthAttempt,
-  decideDriveLogin,
   retryWhileLoginRequired,
 } from "@/game/drive-resume";
-import { stalledMessage } from "@/game/drive-errors";
-import { redirectForDriveLogin } from "@/game/drive-login";
+import { isRetryableLogin, shortDriveReason, stalledMessage } from "@/game/drive-errors";
+import { exportWithFallback, LOCAL_SAVED_MESSAGE } from "@/game/drive-export";
 import {
   CARD_ART_FILES,
   cardArtPath,
@@ -527,7 +526,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
       if (action !== "export") return null;
       return retryWhileLoginRequired(
         () => saveDriveCatalog({ data: catalogDownloadText() }),
-        (r) => !r.ok && !!r.loginRequired,
+        isRetryableLogin,
       );
     });
     if (!job) return;
@@ -538,10 +537,13 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
       .then((result) => {
         if (cancel || !result) return;
         if (!result.ok) {
+          // 自動ではダウンロードしない（ユーザー操作なしの保存を避ける）。押し直しで端末へ落ちる。
           setMsg(
-            result.loginRequired
-              ? stalledMessage("JSONを書き出す", result.detail, false)
-              : result.message,
+            `${
+              result.loginRequired
+                ? stalledMessage("JSONを書き出す", result.detail, false)
+                : result.message
+            }（${shortDriveReason(result)}）「ダウンロード」で端末に保存できます。`,
           );
           return;
         }
@@ -861,30 +863,31 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
+  /** ドライブに書く。だめなら自動で端末ダウンロードに切り替える。 */
   const onExportJson = async () => {
     setBusy(true);
     setMsg("ドライブの万象陣記に書き出しています…");
     try {
-      const result = await saveDriveCatalog({ data: catalogDownloadText() });
-      if (!result.ok && result.loginRequired && result.loginUrl) {
-        if (decideDriveLogin("export") === "stay") {
-          setMsg(stalledMessage("JSONを書き出す", result.detail, true));
-          return;
-        }
-        setMsg("Googleでドライブを許可すると、万象陣記/chars.json に書き出します。");
-        redirectForDriveLogin(result.loginUrl, "export");
-        return;
-      }
-      if (!result.ok) {
-        setMsg(result.message);
-        return;
-      }
-      clearDriveAuthAttempt("export");
-      setMsg(result.status === "saved" ? result.message : "ドライブに書き出した。");
+      const out = await exportWithFallback({
+        saveDrive: () => saveDriveCatalog({ data: catalogDownloadText() }),
+        download: () => downloadCatalogJson(),
+      });
+      if (out.via === "drive") clearDriveAuthAttempt("export");
+      setMsg(out.message);
     } catch {
-      setMsg("JSONの書き出しに失敗した。");
+      setMsg("JSONの書き出しに失敗した。「ダウンロード」を試してね。");
     } finally {
       setBusy(false);
+    }
+  };
+
+  /** ドライブを使わない、端末への直接ダウンロード。 */
+  const onDownloadJson = () => {
+    try {
+      downloadCatalogJson();
+      setMsg(LOCAL_SAVED_MESSAGE);
+    } catch {
+      setMsg("ダウンロードに失敗した。");
     }
   };
 
@@ -901,7 +904,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
 
         <p className="mb-2 shrink-0 text-[13px] leading-relaxed text-faint">
           いま読み込んでいるカタログ（標準・ドライブ・ファイル・端末）を編集する。カードの保存は端末。「JSONを書き出す」はドライブの万象陣記/chars.json
-          に書く。グラフィックは既存ファイル名を参照（絵のアップロードはしない）。
+          に書く（書けなければ端末にダウンロード）。「ダウンロード」は端末へ直接保存。グラフィックは既存ファイル名を参照（絵のアップロードはしない）。
         </p>
         {msg ? <p className="mb-2 shrink-0 text-xs text-brass">{msg}</p> : null}
 
@@ -981,6 +984,14 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
               className="inline-flex h-11 items-center justify-center shrink-0 rounded-md bg-raised px-3 text-sm text-fg hairline disabled:opacity-40"
             >
               JSONを書き出す
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onDownloadJson}
+              className="inline-flex h-11 items-center justify-center shrink-0 rounded-md bg-raised px-3 text-sm text-fg hairline disabled:opacity-40"
+            >
+              ダウンロード
             </button>
           </div>
         </div>

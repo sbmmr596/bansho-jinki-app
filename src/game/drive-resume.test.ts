@@ -241,6 +241,32 @@ describe("decideDriveLogin", () => {
     assert.equal(decideDriveLogin("read", { now: 4_000 }), "stay");
   });
 
+  it("with a missing token: redirects once, then never again in this session", () => {
+    install("https://app.grok.me/");
+    assert.equal(decideDriveLogin("read", { tokenMissing: true, now: 1_000 }), "redirect");
+    markDriveAuthAttempt("read", 1_000); // redirect marks the attempt
+    for (let i = 1; i <= 4; i++) {
+      assert.equal(decideDriveLogin("read", { tokenMissing: true, now: 1_000 + i * 1000 }), "stay");
+    }
+    // even long after the 10 minute attempt window, and for another action
+    assert.equal(decideDriveLogin("read", { tokenMissing: true, now: 1_000 + 30 * 60 * 1000 }), "stay");
+    assert.equal(decideDriveLogin("folder", { tokenMissing: true, now: 2_000 }), "stay");
+  });
+
+  it("with a missing token: a successful Drive call resets it", () => {
+    install("https://app.grok.me/");
+    markDriveAuthAttempt("read", 1_000);
+    clearDriveAuthAttempt("read");
+    assert.equal(decideDriveLogin("read", { tokenMissing: true, now: 2_000 }), "redirect");
+  });
+
+  it("a real 401 (token exists) keeps the stay-once-then-redirect behaviour", () => {
+    install("https://app.grok.me/");
+    markDriveAuthAttempt("read", 1_000);
+    assert.equal(decideDriveLogin("read", { tokenMissing: false, now: 2_000 }), "stay");
+    assert.equal(decideDriveLogin("read", { tokenMissing: false, now: 3_000 }), "redirect");
+  });
+
   it("is tracked per action", () => {
     install("https://app.grok.me/");
     markDriveAuthAttempt("read", 1_000);

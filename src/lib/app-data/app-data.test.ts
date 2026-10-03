@@ -131,7 +131,7 @@ describe("callTool failure memo", () => {
       401,
       {
         errorMessage: "login required",
-        loginUrl: "https://gate.invalid.example/__gate/signin?connector=GoogleDrive&scope=drive",
+        loginUrl: "https://gate.invalid.example/__gate/signin?connector=GoogleDrive&reason=tool_not_granted",
       },
       async () => {
         const result = await callTool(
@@ -143,7 +143,7 @@ describe("callTool failure memo", () => {
           },
         );
         assert.equal(result.loginRequired, true);
-        assert.match(result.loginUrl ?? "", /scope=drive/);
+        assert.match(result.loginUrl ?? "", /reason=tool_not_granted/);
       },
     );
   });

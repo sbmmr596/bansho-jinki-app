@@ -84,6 +84,42 @@ export function getConnectorAccessToken(): string | null {
   return inboundContext().token;
 }
 
+/**
+ * 接続の診断用。値は返さない（有無・Cookie名・ホスト名だけ）。
+ * Never return header/cookie values here.
+ */
+export function inboundPresence(): {
+  connectorToken: boolean;
+  gateIdentity: boolean;
+  cookieNames: string[];
+  forwardedHost: string | null;
+  host: string | null;
+  connectorsHost: string | null;
+} {
+  const req = tryGetRequest();
+  const hostOnly = (raw: string | null | undefined) =>
+    raw?.split(",")[0]?.trim().split(":")[0]?.toLowerCase() || null;
+  const cookieNames = (req?.headers.get("cookie") ?? "")
+    .split(";")
+    .map((p) => p.split("=")[0]?.trim() ?? "")
+    .filter((n) => /^[\w.!#$%&'*+^`|~-]{1,80}$/.test(n));
+  let connectorsHost: string | null = null;
+  try {
+    const base = inboundContext().connectorsBase;
+    connectorsHost = base ? new URL(base).host.toLowerCase() : null;
+  } catch {
+    connectorsHost = null;
+  }
+  return {
+    connectorToken: !!req?.headers.get(CONNECTOR_TOKEN_HEADER)?.trim(),
+    gateIdentity: !!req?.headers.get("x-grok-identity")?.trim(),
+    cookieNames: [...new Set(cookieNames)].slice(0, 30),
+    forwardedHost: hostOnly(req?.headers.get("x-forwarded-host")),
+    host: hostOnly(req?.headers.get("host")),
+    connectorsHost,
+  };
+}
+
 type GateJson = {
   ok?: boolean;
   data?: unknown;
