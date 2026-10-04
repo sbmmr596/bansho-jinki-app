@@ -972,7 +972,16 @@ export const useGame = create<GameStore>((set, get) => ({
   setCatalogSource: (v) => set({ catalogSource: v }),
   setCatalogOpen: (v) => set({ catalogOpen: v }),
   setCardEditorOpen: (v) => set({ cardEditorOpen: v }),
-  bumpCatalog: () => set((s) => ({ catalogEpoch: s.catalogEpoch + 1 })),
+  bumpCatalog: () =>
+    set((s) => {
+      const epoch = s.catalogEpoch + 1;
+      // A replaceAll catalog can drop cards the live party uses: re-sanitize only then.
+      const stale =
+        (s.leaderId && !CARD_BY_ID[s.leaderId]) || s.party.some((id) => id && !CARD_BY_ID[id]);
+      if (!stale) return { catalogEpoch: epoch };
+      const f = sanitizeParty(s);
+      return { catalogEpoch: epoch, party: f.party, leaderId: f.leaderId, owned: f.owned };
+    }),
   setZoomCard: (id) => set({ zoomCardId: id }),
 }));
 

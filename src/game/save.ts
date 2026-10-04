@@ -1,6 +1,7 @@
 import {
   CARD_BY_ID,
   FORMATIONS,
+  HERO_CARDS,
   STARTER_IDS,
   MAX_LEVEL,
   MAX_SKILL_LV,
@@ -50,23 +51,34 @@ export function migrateOwned(raw: Partial<OwnedCard> & { rank?: number } | null 
   return skill2 ? { level, count, skill1Lv, skill2 } : { level, count, skill1Lv };
 }
 
+/**
+ * New-game roster: STARTER_IDS that exist in the catalog come first; when fewer than
+ * STARTER_IDS.length are present (custom replaceAll catalogs), the rest is filled with
+ * the first available non-fodder heroes. Never empty while the catalog has a hero.
+ */
+export function pickStarterIds(): string[] {
+  const want = STARTER_IDS.length;
+  const ok = (id: string) => !!CARD_BY_ID[id] && !CARD_BY_ID[id]!.fodder;
+  const picks = STARTER_IDS.filter(ok);
+  for (const c of HERO_CARDS) {
+    if (picks.length >= want) break;
+    if (!c.fodder && !picks.includes(c.id)) picks.push(c.id);
+  }
+  return picks;
+}
+
 export function defaultSave(): SaveState {
   const owned: SaveState["owned"] = {};
-  for (const id of STARTER_IDS) {
-    if (!CARD_BY_ID[id]) continue;
-    owned[id] = blankOwned();
-  }
+  const picks = pickStarterIds();
+  for (const id of picks) owned[id] = blankOwned();
   const party: (string | null)[] = Array(9).fill(null);
-  const leaderId =
-    (STARTER_IDS.find((id) => id === "sora" && CARD_BY_ID[id]) ??
-      STARTER_IDS.find((id) => CARD_BY_ID[id]) ??
-      Object.keys(CARD_BY_ID)[0]) as string;
+  const leaderId = (picks.includes("sora") ? "sora" : picks[0]) as string;
   const leader = CARD_BY_ID[leaderId];
   if (!leader) {
     throw new Error("defaultSave: no cards in catalog");
   }
   const formation = FORMATIONS[leader.formation] ?? FORMATIONS.basic;
-  const starters = STARTER_IDS.filter((id) => id !== leaderId && CARD_BY_ID[id]);
+  const starters = picks.filter((id) => id !== leaderId);
   const slots = formation.slots
     .map((ok, i) => (ok ? i : -1))
     .filter((i) => i >= 0);
@@ -128,6 +140,12 @@ export function sanitizeParty(state: SaveState): SaveState {
       else leaderId = party.find((id) => !!id) ?? null;
     }
   }
+  // Every party member was removed from the catalog (or is fodder): restart from the default roster
+  // instead of leaving an empty party (keeps owned entries, adds the default picks).
+  if (state.party.some((id) => !!id) && !party.some((id) => !!id)) {
+    const base = defaultSave();
+    return { ...state, party: base.party, leaderId: base.leaderId, owned: { ...base.owned, ...state.owned } };
+  }
   return { ...state, party, leaderId };
 }
 
@@ -138,7 +156,13 @@ export function loadSave(): SaveState {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return base;
     const parsed = JSON.parse(raw) as Partial<SaveState>;
-    const ownedRaw = { ...base.owned, ...(parsed.owned ?? {}) };
+    // Existing saves only get STARTER_IDS back-filled (as before). Fill-in heroes that
+    // defaultSave picks for starter-less custom catalogs are for brand-new games only.
+    const starterOwned: SaveState["owned"] = {};
+    for (const id of STARTER_IDS) if (base.owned[id]) starterOwned[id] = base.owned[id];
+    // Ids no longer in the catalog (removed cards) stay in `owned` harmlessly: every
+    // lookup is guarded, and sanitizeParty drops them from party/leader.
+    const ownedRaw = { ...starterOwned, ...(parsed.owned ?? {}) };
     const owned: SaveState["owned"] = {};
     for (const [id, o] of Object.entries(ownedRaw)) {
       owned[id] = migrateOwned(o as Partial<OwnedCard> & { rank?: number });

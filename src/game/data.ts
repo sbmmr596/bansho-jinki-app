@@ -1276,12 +1276,16 @@ function parseHero(raw: unknown): Card | null {
 
 function rebuildCatalog(heroes: Card[], opts?: { replaceAll?: boolean }) {
   // Default: merge missing FALLBACK_HEROES so remote catalogs never drop starters.
-  // replaceAll (editor saves): honor the list, but always re-inject STARTER_IDS.
+  // replaceAll (editor saves / payload "replaceAll": true): honor the list as-is,
+  // so a player's JSON can fully exclude the default characters.
+  // Safety: if that leaves no playable (non-fodder) hero, fall back to STARTER_IDS.
   const byId = new Map<string, Card>();
   for (const h of heroes) byId.set(h.id, h);
   if (opts?.replaceAll) {
-    for (const fb of FALLBACK_HEROES) {
-      if (STARTER_IDS.includes(fb.id) && !byId.has(fb.id)) byId.set(fb.id, fb);
+    if (![...byId.values()].some((h) => !h.fodder)) {
+      for (const fb of FALLBACK_HEROES) {
+        if (STARTER_IDS.includes(fb.id) && !byId.has(fb.id)) byId.set(fb.id, fb);
+      }
     }
   } else {
     for (const fb of FALLBACK_HEROES) {
