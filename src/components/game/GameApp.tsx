@@ -3,6 +3,8 @@ import { useGame } from "@/game/store";
 import { applyCatalog } from "@/game/data";
 import { loadUserCatalog } from "@/game/catalog-api";
 import { loadDriveCatalog } from "@/game/drive-catalog";
+import { getSavedHostId, readHostParam, stripHostParam } from "@/game/host-catalog";
+import { loadHostCatalog } from "@/game/host-load";
 import { driveResumeAction, driveResumePending } from "@/game/drive-resume";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { BattleView } from "./BattleView";
@@ -40,6 +42,8 @@ export function GameApp() {
   const setCatalogOpen = useGame((s) => s.setCatalogOpen);
   const setCatalogSource = useGame((s) => s.setCatalogSource);
   const { user, isPending: authPending } = useCurrentUserState();
+  const [hostTried, setHostTried] = useState(false);
+  const hostStartedRef = useRef(false);
   const [driveTried, setDriveTried] = useState(false);
   const [showLandscapeHint, setShowLandscapeHint] = useState(false);
   const frameRef = useRef<HTMLDivElement>(null);
@@ -55,8 +59,39 @@ export function GameApp() {
     else setCatalogOpen(true);
   }, [hydrated, setCardEditorOpen, setCatalogOpen]);
 
+  // マイサーバー: ?host=ID / #host=ID か保存済みIDを、タイトルを止めずに裏で読む。失敗は静かに無視。
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || hostStartedRef.current) return;
+    hostStartedRef.current = true; // StrictMode の二重実行でも一度だけ（URLのIDは消すため）
+    const fromUrl = readHostParam(window.location);
+    if (fromUrl) {
+      try {
+        window.history.replaceState(window.history.state, "", stripHostParam(window.location));
+      } catch {
+        /* ignore */
+      }
+    }
+    const id = fromUrl || getSavedHostId();
+    if (!id) {
+      setHostTried(true);
+      return;
+    }
+    void loadHostCatalog(id)
+      .then(() => {
+        // QRなどのリンクから来たときだけ、結果が見えるようマイデータを開く。
+        if (fromUrl) setCatalogOpen(true);
+      })
+      .catch(() => undefined)
+      .finally(() => setHostTried(true));
+  }, [hydrated, setCatalogOpen]);
+
+  useEffect(() => {
+    if (!hydrated || !hostTried) return;
+    // マイサーバーを読めたら、ドライブやアカウントのデータで上書きしない。
+    if (useGame.getState().catalogSource === "host") {
+      setDriveTried(true);
+      return;
+    }
     let cancelled = false;
     void loadDriveCatalog()
       .then((result) => {
@@ -77,19 +112,19 @@ export function GameApp() {
     return () => {
       cancelled = true;
     };
-  }, [hydrated, setCatalogSource]);
+  }, [hydrated, hostTried, setCatalogSource]);
 
   useEffect(() => {
     if (!hydrated || !driveTried || authPending || !user) return;
     const src = useGame.getState().catalogSource;
     // Don't clobber Drive or a local custom catalog the user already has.
-    if (src === "drive" || src === "custom") return;
+    if (src === "drive" || src === "custom" || src === "host") return;
     let cancelled = false;
     void loadUserCatalog()
       .then((remote) => {
         if (cancelled || !remote) return;
         const now = useGame.getState().catalogSource;
-        if (now === "drive" || now === "custom") return;
+        if (now === "drive" || now === "custom" || now === "host") return;
         const n = applyCatalog(JSON.parse(remote) as unknown);
         if (n) {
           setCatalogSource("custom");

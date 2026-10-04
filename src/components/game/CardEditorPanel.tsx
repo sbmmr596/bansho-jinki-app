@@ -7,6 +7,7 @@ import {
   exportCatalogPayload,
   FACTION_IDS,
   FACTION_LABEL,
+  CARD_BY_ID,
   FORMATION_IDS,
   FORMATIONS,
   HERO_CARDS,
@@ -77,6 +78,9 @@ type Draft = {
 
 function fileNameOf(path: string | undefined, fallback: string): string {
   if (!path) return fallback;
+  // マイサーバーの画像URL（…api.php?id=…&f=img/x.png）は f= のファイル名を見せる。
+  const hostRel = /^https?:\/\//i.test(path) ? /[?&]f=(?:img\/)?([^&#/]+)/.exec(path)?.[1] : undefined;
+  if (hostRel) return hostRel;
   const cleaned = path.trim().split("?")[0] ?? "";
   const parts = cleaned.split("/");
   return parts[parts.length - 1] || fallback;
@@ -155,7 +159,14 @@ function hitsFromDraft(raw: string): number | undefined {
   return hitsRaw ? Math.max(1, Math.round(Number(hitsRaw)) || 1) : undefined;
 }
 
+/** 画像がマイサーバーなどの外部URLで、ファイル名を変えていなければそのまま残す。 */
+function keepRemoteSrc(prev: string | undefined, name: string): string | undefined {
+  if (!prev || !/^https?:\/\//i.test(prev)) return undefined;
+  return fileNameOf(prev, "") === name ? prev : undefined;
+}
+
 function draftToCard(d: Draft): Card {
+  const prev = CARD_BY_ID[d.id.trim()];
   const hits = hitsFromDraft(d.skillHits);
   const basicHits = hitsFromDraft(d.basicHits);
   const artName = d.art.trim() || `${d.id}.png`;
@@ -191,8 +202,8 @@ function draftToCard(d: Draft): Card {
       desc: d.skillDesc.trim(),
     },
     portrait: d.portrait.trim() || d.id.trim(),
-    art: charArtPath(artName),
-    bust: cardArtPath(bustName),
+    art: keepRemoteSrc(prev?.art, artName) ?? charArtPath(artName),
+    bust: keepRemoteSrc(prev?.bust, bustName) ?? cardArtPath(bustName),
     ...(d.fodder ? { fodder: true as const } : {}),
   };
 }
@@ -1185,7 +1196,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
                 <DraftArtPreview draft={draft} />
                 <DraftImgPreview
                   label="bust"
-                  src={draft.bust.trim() ? cardArtPath(draft.bust.trim()) : ""}
+                  src={draft.bust.trim() ? (keepRemoteSrc(CARD_BY_ID[draft.id.trim()]?.bust, draft.bust.trim()) ?? cardArtPath(draft.bust.trim())) : ""}
                   className="items-center"
                   boxClassName="aspect-[2/3] w-[7.5rem]"
                 />
