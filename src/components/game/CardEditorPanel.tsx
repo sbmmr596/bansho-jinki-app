@@ -713,7 +713,7 @@ export function CardEditorPanel({ onClose }: { onClose: () => void }) {
     setMsg("");
     try {
       const heroesList = buildHeroList("delete");
-      if (!heroesList.length) {
+      if (!heroesList.some((c) => !c.fodder)) {
         setMsg("これ以上削除できない。");
         return;
       }

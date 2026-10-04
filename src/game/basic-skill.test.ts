@@ -25,6 +25,12 @@ function member(cardId: string, slot: number, leader = false) {
   return { cardId, slot, level: 1, skill1Lv: 1, isLeader: leader };
 }
 
+/** replaceAll no longer re-injects starters; tests that fight "sora" keep it explicitly. */
+function soraRow() {
+  resetCatalog();
+  return exportCatalogPayload().chars.find((c) => c.id === "sora")!;
+}
+
 after(() => {
   resetCatalog();
 });
@@ -63,6 +69,7 @@ describe("basicSkill", () => {
     applyCatalog({
       replaceAll: true,
       chars: [
+        soraRow(),
         {
           id: "legacy_only",
           name: "旧兵",
@@ -89,6 +96,7 @@ describe("basicSkill", () => {
     applyCatalog({
       replaceAll: true,
       chars: [
+        soraRow(),
         {
           id: "sup_heal",
           name: "癒",
