@@ -36,6 +36,21 @@ export function isValidHostId(id: string): boolean {
   return HOST_ID_RE.test(id);
 }
 
+/** 他の端末で読めるゲームのリンク `<origin+pathname>?host=ID`。IDが不正なら ""。 */
+export function buildHostLink(loc: { origin: string; pathname: string }, id: string): string {
+  if (!isValidHostId(id)) return "";
+  return `${loc.origin}${loc.pathname || "/"}?host=${id}`;
+}
+
+/**
+ * QRや写真から読んだ文字列からIDを取り出す。ゲームのリンク、?id= つきURL、IDそのもの（大文字や前後の空白つき）に対応。
+ * IDとして正しくなければ ""。
+ */
+export function extractHostIdFromScan(text: string): string {
+  const id = normalizeHostId(text);
+  return isValidHostId(id) ? id : "";
+}
+
 type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 function safeStorage(): StorageLike | null {

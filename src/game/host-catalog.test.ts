@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  buildHostLink,
   DEFAULT_HOST_BASE,
+  extractHostIdFromScan,
   fetchHostCatalog,
   getHostBase,
   getSavedHostId,
@@ -122,5 +124,37 @@ describe("fetchHostCatalog", () => {
     const r = await fetchHostCatalog("short", { base: BASE, fetchImpl: async () => ((called = true), jsonRes(200, "{}")) });
     assert.ok(!r.ok && r.kind === "bad_id");
     assert.ok(!called);
+  });
+});
+
+describe("host QR link and scan text", () => {
+  const loc = { origin: "https://bansho-jinki.grok.me", pathname: "/" };
+  it("builds <origin+pathname>?host=ID and nothing for a bad id", () => {
+    assert.equal(buildHostLink(loc, ID), `https://bansho-jinki.grok.me/?host=${ID}`);
+    assert.equal(
+      buildHostLink({ origin: "http://localhost:8080", pathname: "/play/" }, ID),
+      `http://localhost:8080/play/?host=${ID}`,
+    );
+    assert.equal(buildHostLink(loc, ID.slice(1)), "");
+    assert.equal(buildHostLink(loc, ""), "");
+  });
+  it("a built link reads back through readHostParam and extractHostIdFromScan", () => {
+    const u = new URL(buildHostLink(loc, ID));
+    assert.equal(readHostParam({ search: u.search, hash: u.hash }), ID);
+    assert.equal(extractHostIdFromScan(u.href), ID);
+  });
+  it("extracts the id from scanned text in the usual shapes", () => {
+    assert.equal(extractHostIdFromScan(ID), ID);
+    assert.equal(extractHostIdFromScan(`  ${ID.toUpperCase()}\n`), ID);
+    assert.equal(extractHostIdFromScan(`https://x.example/app/#host=${ID}`), ID);
+    assert.equal(extractHostIdFromScan(`https://h/api.php?id=${ID}&f=chars.json`), ID);
+  });
+  it("returns empty for text that is not an id", () => {
+    assert.equal(extractHostIdFromScan(""), "");
+    assert.equal(extractHostIdFromScan("https://example.com/"), "");
+    assert.equal(extractHostIdFromScan("hello world"), "");
+    assert.equal(extractHostIdFromScan(ID.slice(0, 25)), "");
+    assert.equal(extractHostIdFromScan(`${ID}x`), "");
+    assert.equal(extractHostIdFromScan(`https://x/?host=${ID}z`), "");
   });
 });
