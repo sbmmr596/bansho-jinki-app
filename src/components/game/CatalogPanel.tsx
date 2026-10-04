@@ -16,12 +16,15 @@ import {
 import { redirectForDriveLogin } from "@/game/drive-login";
 import { isMissingTokenDetail, isRetryableLogin, stalledMessage } from "@/game/drive-errors";
 import { useGame } from "@/game/store";
+import { getSavedHostId, isValidHostId, normalizeHostId } from "@/game/host-catalog";
+import { getHostStatus, getHostTriedId, loadHostCatalog, unloadHostCatalog } from "@/game/host-load";
 import { CloseButton } from "./pieces";
 
 /** 廃止した GitHub 読み込みが残したリポジトリ指定。標準に戻すときだけ消す。 */
 const GH_REPO_KEY = "bansho-github-repo";
 
-function sourceLabel(src: "default" | "custom" | "drive") {
+function sourceLabel(src: "default" | "custom" | "drive" | "host") {
+  if (src === "host") return "マイサーバー";
   if (src === "drive") return "ドライブ";
   if (src === "custom") return "カスタム";
   return "標準";
@@ -42,6 +45,10 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
   const [diag, setDiag] = useState<string[] | null>(null);
   const busyRef = useRef(false);
   busyRef.current = busy;
+  const [hostId, setHostId] = useState(() => getSavedHostId() || getHostTriedId());
+  const [hostMsg, setHostMsg] = useState(() => getHostStatus());
+  const hostValid = isValidHostId(hostId);
+  const hostActive = catalogSource === "host" || !!getSavedHostId();
 
   const handleDrive = (
     result: DriveCatalogResult,
@@ -231,6 +238,37 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const onHostLoad = async () => {
+    const id = normalizeHostId(hostId);
+    setHostId(id);
+    if (!isValidHostId(id)) {
+      setHostMsg("IDは26文字の英数字です（a-z と 2-7）");
+      return;
+    }
+    setBusy(true);
+    setHostMsg("読み込み中…");
+    try {
+      const r = await loadHostCatalog(id);
+      setHostMsg(r.message);
+    } catch {
+      setHostMsg("サーバーに接続できません");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onHostRelease = async () => {
+    setBusy(true);
+    try {
+      await unloadHostCatalog();
+      if (user) await clearUserCatalog().catch(() => undefined);
+      setHostId("");
+      setHostMsg("解除しました。標準データに戻しました");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const onReset = async () => {
     setBusy(true);
     setMsg("");
@@ -274,6 +312,59 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
           いま {sourceLabel(catalogSource)}　{HERO_CARDS.length}人
         </p>
         {msg ? <p className="mb-3 text-xs text-brass">{msg}</p> : null}
+        <section data-testid="host-section" className="mb-3 rounded-md bg-raised/60 p-2 hairline">
+          <p className="mb-1 text-xs font-medium text-fg">マイサーバー</p>
+          <p className="mb-2 text-[12px] leading-relaxed text-muted">
+            自分のサーバーの chars.json と画像を読みます。IDを貼ってください。絵は art や bust に img/名前.png と書くと、サーバーのものを使います。
+          </p>
+          <div className="flex gap-2">
+            <input
+              data-testid="host-id"
+              type="text"
+              inputMode="text"
+              autoCapitalize="none"
+              autoCorrect="off"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="26文字のID"
+              value={hostId}
+              disabled={busy}
+              onChange={(e) => setHostId(normalizeHostId(e.target.value))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && hostValid && !busy) void onHostLoad();
+              }}
+              className="h-11 min-w-0 flex-1 rounded-md bg-bg px-2 font-mono text-[16px] text-fg hairline disabled:opacity-40"
+            />
+            <button
+              type="button"
+              data-testid="host-load"
+              disabled={busy || !hostValid}
+              onClick={() => void onHostLoad()}
+              className="h-11 shrink-0 rounded-md bg-brass px-4 text-sm font-medium text-bg disabled:opacity-40"
+            >
+              読み込む
+            </button>
+          </div>
+          {hostId && !hostValid ? (
+            <p className="mt-1 text-[12px] text-faint tabular">{hostId.length}/26 文字</p>
+          ) : null}
+          {hostMsg ? (
+            <p data-testid="host-msg" className="mt-1 text-xs text-brass">
+              {hostMsg}
+            </p>
+          ) : null}
+          {hostActive ? (
+            <button
+              type="button"
+              data-testid="host-release"
+              disabled={busy}
+              onClick={() => void onHostRelease()}
+              className="mt-2 h-9 w-full rounded-md bg-raised text-xs text-fg hairline disabled:opacity-40"
+            >
+              解除
+            </button>
+          ) : null}
+        </section>
         <input
           ref={fileRef}
           type="file"
