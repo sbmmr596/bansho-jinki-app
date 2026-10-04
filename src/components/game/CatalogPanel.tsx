@@ -16,9 +16,17 @@ import {
 import { redirectForDriveLogin } from "@/game/drive-login";
 import { isMissingTokenDetail, isRetryableLogin, stalledMessage } from "@/game/drive-errors";
 import { useGame } from "@/game/store";
-import { getSavedHostId, isValidHostId, normalizeHostId } from "@/game/host-catalog";
+import {
+  buildHostLink,
+  extractHostIdFromScan,
+  getSavedHostId,
+  isValidHostId,
+  normalizeHostId,
+} from "@/game/host-catalog";
+import { decodeQrFromFile } from "@/game/host-scan";
 import { getHostStatus, getHostTriedId, loadHostCatalog, unloadHostCatalog } from "@/game/host-load";
 import { CloseButton } from "./pieces";
+import { HostQrScanModal, HostQrShowModal } from "./HostQrModals";
 
 /** 廃止した GitHub 読み込みが残したリポジトリ指定。標準に戻すときだけ消す。 */
 const GH_REPO_KEY = "bansho-github-repo";
@@ -49,6 +57,10 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
   const [hostMsg, setHostMsg] = useState(() => getHostStatus());
   const hostValid = isValidHostId(hostId);
   const hostActive = catalogSource === "host" || !!getSavedHostId();
+  const [qrModal, setQrModal] = useState<"show" | "scan" | null>(null);
+  const photoRef = useRef<HTMLInputElement>(null);
+  /** QRにするID: 入力中の正しいID、なければ保存済みID。 */
+  const qrId = hostValid ? hostId : getSavedHostId();
 
   const handleDrive = (
     result: DriveCatalogResult,
@@ -238,8 +250,8 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const onHostLoad = async () => {
-    const id = normalizeHostId(hostId);
+  const onHostLoad = async (override?: string) => {
+    const id = normalizeHostId(override ?? hostId);
     setHostId(id);
     if (!isValidHostId(id)) {
       setHostMsg("IDは26文字の英数字です（a-z と 2-7）");
@@ -255,6 +267,29 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
     } finally {
       setBusy(false);
     }
+  };
+
+  /** 写真（スクショでも撮影でも）からQRを読んで、IDが取れたら読み込む。 */
+  const onQrPhoto = async (file: File) => {
+    setBusy(true);
+    setHostMsg("写真を読んでいます…");
+    let text: string | null = null;
+    try {
+      text = await decodeQrFromFile(file);
+    } catch {
+      text = null;
+    }
+    setBusy(false);
+    if (!text) {
+      setHostMsg("QRが見つかりませんでした。QR全体が大きく写るようにしてね");
+      return;
+    }
+    const id = extractHostIdFromScan(text);
+    if (!id) {
+      setHostMsg("このQRはIDではありません。マイサーバーのQRを写してください");
+      return;
+    }
+    await onHostLoad(id);
   };
 
   const onHostRelease = async () => {
@@ -345,6 +380,47 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
               読み込む
             </button>
           </div>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              data-testid="host-qr-show"
+              disabled={busy || !qrId}
+              onClick={() => setQrModal("show")}
+              className="h-11 rounded-md bg-raised text-[13px] text-fg hairline disabled:opacity-40"
+            >
+              QRを表示
+            </button>
+            <button
+              type="button"
+              data-testid="host-qr-scan"
+              disabled={busy}
+              onClick={() => setQrModal("scan")}
+              className="h-11 rounded-md bg-raised text-[13px] text-fg hairline disabled:opacity-40"
+            >
+              QRを読む
+            </button>
+            <button
+              type="button"
+              data-testid="host-qr-photo"
+              disabled={busy}
+              onClick={() => photoRef.current?.click()}
+              className="h-11 rounded-md bg-raised text-[13px] text-fg hairline disabled:opacity-40"
+            >
+              写真から読む
+            </button>
+          </div>
+          <input
+            ref={photoRef}
+            data-testid="host-qr-photo-input"
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) void onQrPhoto(f);
+            }}
+          />
           {hostId && !hostValid ? (
             <p className="mt-1 text-[12px] text-faint tabular">{hostId.length}/26 文字</p>
           ) : null}
@@ -445,6 +521,26 @@ export function CatalogPanel({ onClose }: { onClose: () => void }) {
           万象陣記 / chars.json。差し替え絵は chars/id.png か cards/id.jpg。JSON の art が /chars/… ならアプリ標準絵のまま。
         </p>
       </div>
+      {qrModal === "show" && qrId ? (
+        <HostQrShowModal
+          link={buildHostLink({ origin: window.location.origin, pathname: window.location.pathname }, qrId)}
+          onClose={() => setQrModal(null)}
+        />
+      ) : null}
+      {qrModal === "scan" ? (
+        <HostQrScanModal
+          onCancel={() => setQrModal(null)}
+          onPickPhoto={() => {
+            setQrModal(null);
+            photoRef.current?.click();
+          }}
+          onId={(id) => {
+            setQrModal(null);
+            setHostId(id);
+            void onHostLoad(id);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
