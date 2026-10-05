@@ -112,8 +112,10 @@ export function TitleScreen() {
         className="absolute inset-0 h-full w-full object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/70 to-bg/25" />
-      <div className="relative flex h-full w-full items-center justify-between gap-12 px-20 py-8">
-        <div className="min-w-0 flex-1">
+      {/* Title block hugs the logo width; the button area spans logo-right → stage-right
+          (no right padding) and centers the column inside it. */}
+      <div className="relative flex h-full w-full items-center py-8 pl-20">
+        <div className="shrink-0">
           <p className="mb-2 text-[18px] tracking-[0.4em] text-brass">BANSHO JINKI</p>
           <h1
             className="font-display select-none text-[90px] leading-none tracking-wide drop-shadow-[0_4px_16px_rgba(0,0,0,0.7)]"
@@ -121,56 +123,79 @@ export function TitleScreen() {
           >
             万象陣記
           </h1>
-          <p className="mt-5 max-w-[620px] text-[18px] leading-relaxed text-fg/90 [text-shadow:0_2px_6px_rgba(0,0,0,0.8)]">
-            カードを集め、陣を敷き、地を取れ。属性の利を読んで覇を決する。
-          </p>
-          <p className="mt-2 max-w-[620px] text-[15px] leading-relaxed text-muted [text-shadow:0_2px_6px_rgba(0,0,0,0.8)]">
-            スマホは横向き推奨。ホーム画面追加（PWA）だと横固定・全画面に近づきます。
-          </p>
+          {/* w-0: the copy lines overflow to the right without widening the title block,
+              so the block's right edge stays at the logo's right edge. */}
+          <div className="w-0">
+            <p className="mt-5 w-max max-w-[620px] text-[18px] leading-relaxed text-fg/90 [text-shadow:0_2px_6px_rgba(0,0,0,0.8)]">
+              カードを集め、陣を敷き、地を取れ。属性の利を読んで覇を決する。
+            </p>
+            <p className="mt-2 w-max max-w-[620px] text-[15px] leading-relaxed text-muted [text-shadow:0_2px_6px_rgba(0,0,0,0.8)]">
+              スマホは横向き推奨。ホーム画面追加（PWA）だと横固定・全画面に近づきます。
+            </p>
+          </div>
         </div>
-        <div className="flex w-[238px] shrink-0 flex-col gap-3">
-          {hasExisting ? (
-            <PrimaryButton onClick={() => continueGame()} className="h-[72px] text-[22px] tracking-widest">
-              つづきから
-            </PrimaryButton>
-          ) : null}
-          {hasExisting ? (
-            <GhostButton onClick={openDifficulty} className="h-[72px] text-[22px] tracking-widest">
-              はじめから
+        <div className="flex min-w-0 flex-1 justify-center">
+          <div className="flex w-[238px] shrink-0 flex-col gap-3">
+            {hasExisting ? (
+              <PrimaryButton
+                onClick={() => continueGame()}
+                className="h-[72px] text-[22px] tracking-widest"
+              >
+                つづきから
+              </PrimaryButton>
+            ) : null}
+            {hasExisting ? (
+              <GhostButton
+                onClick={openDifficulty}
+                className="h-[72px] text-[22px] tracking-widest"
+              >
+                はじめから
+              </GhostButton>
+            ) : (
+              <PrimaryButton
+                onClick={openDifficulty}
+                className="h-[72px] text-[22px] tracking-widest"
+              >
+                はじめる
+              </PrimaryButton>
+            )}
+            <GhostButton
+              onClick={() => setHelp(true)}
+              className="h-[72px] text-[22px] tracking-widest"
+            >
+              遊び方
             </GhostButton>
-          ) : (
-            <PrimaryButton onClick={openDifficulty} className="h-[72px] text-[22px] tracking-widest">
-              はじめる
-            </PrimaryButton>
-          )}
-          <GhostButton onClick={() => setHelp(true)} className="h-[72px] text-[22px] tracking-widest">
-            遊び方
-          </GhostButton>
-          <GhostButton onClick={() => void onFullscreen()} className="h-[72px] text-[22px] tracking-widest">
-            全画面
-          </GhostButton>
-          {displayHint ? (
-            <p className="px-0.5 text-center text-[13px] leading-tight text-faint">{displayHint}</p>
-          ) : null}
-          <div className="mt-1 grid grid-cols-2 gap-1">
-            <button
-              type="button"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                unlockDebug();
-              }}
-              className="debug-hit h-[44px] rounded-md text-[15px] text-faint"
+            <GhostButton
+              onClick={() => void onFullscreen()}
+              className="h-[72px] text-[22px] tracking-widest"
             >
-              内部
-            </button>
-            <button
-              type="button"
-              onClick={() => setCatalogOpen(true)}
-              className="h-[44px] whitespace-nowrap rounded-md text-[15px] text-muted"
-            >
-              マイデータ
-            </button>
+              全画面
+            </GhostButton>
+            {displayHint ? (
+              <p className="px-0.5 text-center text-[13px] leading-tight text-faint">
+                {displayHint}
+              </p>
+            ) : null}
+            <div className="mt-1 grid grid-cols-2 gap-1">
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  unlockDebug();
+                }}
+                className="debug-hit h-[44px] rounded-md text-[15px] text-faint"
+              >
+                内部
+              </button>
+              <button
+                type="button"
+                onClick={() => setCatalogOpen(true)}
+                className="h-[44px] whitespace-nowrap rounded-md text-[15px] text-muted"
+              >
+                マイデータ
+              </button>
+            </div>
           </div>
         </div>
       </div>
